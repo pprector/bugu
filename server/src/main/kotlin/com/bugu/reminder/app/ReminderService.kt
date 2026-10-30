@@ -98,18 +98,20 @@ class ReminderService(
     fun create(creatorId: Long, request: CreateReminderRequest): ReminderView {
         val now = LocalDateTime.now(clock)
         val validated = validate(request, now)
-        val bond = findActiveBond(creatorId, request.receiverId)
+        // 自惦记(送给自己):无互伴载体,跳过绑定/静音/每日上限校验;升级链对方=自己,重推给自己无副作用
+        val isSelf = request.receiverId == creatorId
+        val bond = if (isSelf) null else findActiveBond(creatorId, request.receiverId)
             ?: throw BizException(ErrorCode.FORBIDDEN, HttpStatus.FORBIDDEN, "与对方无有效绑定关系")
-        if (muteSettingRepository.existsByReceiverIdAndCreatorIdAndKind(request.receiverId, creatorId, validated.kind.name)) {
+        if (!isSelf && muteSettingRepository.existsByReceiverIdAndCreatorIdAndKind(request.receiverId, creatorId, validated.kind.name)) {
             throw BizException(ErrorCode.REMINDER_MUTED, HttpStatus.BAD_REQUEST)
         }
-        val silent = isOverDailyLimit(creatorId, request.receiverId, now)
+        val silent = !isSelf && isOverDailyLimit(creatorId, request.receiverId, now)
 
         return transactionTemplate.execute {
             val saved = reminderRepository.save(
                 ReminderMapper.toRow(
                     Reminder(
-                        bondId = bond.id!!,
+                        bondId = bond?.id,
                         creatorId = creatorId,
                         receiverId = request.receiverId,
                         title = validated.title,
@@ -394,11 +396,11 @@ class ReminderService(
         }
     }
 
-    /** 我发起的提醒:仅返回 ACTIVE bond 下的(解绑即时隔离)。 */
+    /** 我发起的提醒:自惦记(bondId=null)恒可见;送互伴的仅返回 ACTIVE bond 下的(解绑即时隔离)。 */
     fun listMine(userId: Long): List<ReminderView> {
         val activeBondIds = activeBondIds(userId)
         return reminderRepository.findByCreatorIdOrderByFireAt(userId)
-            .filter { it.bondId in activeBondIds }
+            .filter { it.bondId == null || it.bondId in activeBondIds }
             .map { toView(it, userId) }
     }
 
@@ -538,6 +540,9 @@ class ReminderService(
         }
         if (request.voiceEnabled && kind != ReminderKind.MUTUAL_ALARM) {
             throw BizException(ErrorCode.INVALID_ARGUMENT, HttpStatus.BAD_REQUEST, "语音叫醒仅互叫闹钟可开")
+        }
+        if (request.receiverId == creatorId && kind == ReminderKind.MUTUAL_ALARM) {
+            throw BizException(ErrorCode.INVALID_ARGUMENT, HttpStatus.BAD_REQUEST, "互叫闹钟需要互伴双方,送给自己请选单次或循环")
         }
         return ValidatedCreate(title, kind, tone, fireAt, repeatRule)
     }

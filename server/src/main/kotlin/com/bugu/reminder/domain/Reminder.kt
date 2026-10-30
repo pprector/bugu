@@ -5,10 +5,11 @@ import java.time.LocalDateTime
 /**
  * 提醒聚合根(PRD FR-02)。创建期不变式在此兜底;用户可见校验在 ReminderService 转 BizException。
  * 状态变更与修改只走聚合方法(revise / cancel),外部禁止直改 status。
+ * bondId=null 表示自惦记(送给自己,无互伴载体)。
  */
 class Reminder(
     val id: Long? = null,
-    val bondId: Long,
+    val bondId: Long?,
     val creatorId: Long,
     val receiverId: Long,
     title: String,

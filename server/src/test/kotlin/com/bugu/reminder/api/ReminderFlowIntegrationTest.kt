@@ -61,6 +61,27 @@ class ReminderFlowIntegrationTest @Autowired constructor(
     }
 
     @Test
+    fun `自惦记_送自己无需bond且mine可见incoming不含`() {
+        val a = client.register()
+        val body = reminders.create(a.token, a.id, title = "提醒我自己喝水")
+            .andExpect { status { isOk() } }
+            .andReturn().response.contentAsString
+        val reminderId = Regex(""""id"\s*:\s*(\d+)""").find(body)!!.groupValues[1].toLong()
+        assertTrue(body.contains(""""bondId":null"""))
+
+        assertTrue(reminders.mine(a.token).contains(""""id":$reminderId"""))
+        // 「我接收的」语义=别人发给我的,自惦记不进 incoming
+        assertTrue(!reminders.incoming(a.token).contains(""""id":$reminderId"""))
+    }
+
+    @Test
+    fun `自惦记禁用互叫闹钟400`() {
+        val a = client.register()
+        reminders.create(a.token, a.id, kind = "MUTUAL_ALARM", voiceEnabled = true)
+            .andExpect { status { isBadRequest() } }
+    }
+
+    @Test
     fun `字段校验失败均400`() {
         val (a, b) = client.boundPair()
         reminders.create(a.token, b.id, title = "这是一个超过二十个字的提醒标题不应该通过校验")

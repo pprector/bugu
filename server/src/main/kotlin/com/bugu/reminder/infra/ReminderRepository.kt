@@ -10,12 +10,12 @@ import org.springframework.data.relational.core.mapping.Table
 import org.springframework.stereotype.Repository
 import java.time.LocalDateTime
 
-/** reminder 行。结构见 V1__baseline.sql;V8 起追加 silent 列(S4)。 */
+/** reminder 行。结构见 V1__baseline.sql;V8 起追加 silent 列(S4);V15 起 bond_id 可空(自惦记)。 */
 @Table("reminder")
 data class ReminderRow(
     @Id
     val id: Long? = null,
-    val bondId: Long,
+    val bondId: Long?,
     val creatorId: Long,
     val receiverId: Long,
     val title: String,

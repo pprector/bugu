@@ -92,11 +92,12 @@ data class MuteSettingView(
  * fireId = 当前查看者可操作的待响应(PENDING/FIRED)fire,供端侧 ack/report 定位;null = 无可操作 fire
  * (E8 S3 契约补充:客户端此前无法经 API 取得 fireId,ack/report 闭环断裂)。
  * ackId = 提醒已 ACKED 时最早一次 DONE 确认,供发起人撤销误触(E6-S2 / E8 S3 契约补充);其余状态 null。
+ * bondId = null 表示自惦记(送给自己)。
  */
 @Serializable
 data class ReminderView(
     val id: Long,
-    val bondId: Long,
+    val bondId: Long?,
     val creatorId: Long,
     val receiverId: Long,
     val title: String,
