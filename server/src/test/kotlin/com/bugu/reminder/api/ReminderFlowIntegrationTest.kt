@@ -67,7 +67,8 @@ class ReminderFlowIntegrationTest @Autowired constructor(
             .andExpect { status { isOk() } }
             .andReturn().response.contentAsString
         val reminderId = Regex(""""id"\s*:\s*(\d+)""").find(body)!!.groupValues[1].toLong()
-        assertTrue(body.contains(""""bondId":null"""))
+        // explicitNulls=false:null 字段直接省略,断言不含 bondId 数值(未挂互伴)
+        assertTrue(!body.contains(Regex(""""bondId"\s*:\s*\d+""")))
 
         assertTrue(reminders.mine(a.token).contains(""""id":$reminderId"""))
         // 「我接收的」语义=别人发给我的,自惦记不进 incoming

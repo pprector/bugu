@@ -418,6 +418,7 @@ private fun MainHost(
 
                             Tab.CREATE -> CreateReminderScreen(
                                 api = api,
+                                userId = user?.id ?: 0L,
                                 peerName = peerName,
                                 bonds = bonds,
                                 bondsLoading = bondsLoading,

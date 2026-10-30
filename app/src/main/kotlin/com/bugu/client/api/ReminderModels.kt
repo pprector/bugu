@@ -101,12 +101,13 @@ data class ParseDraft(
  * 提醒视图:server reminder/api/ReminderView 同形,双方列表(mine/incoming)与创建/确认共用。
  * silent=true 表示超每日上限静默落库,端侧到点不弹强提醒;
  * fireId = 当前查看者可操作的待响应 fire(E8 S3 契约),null = 无可操作 fire;
- * ackId = 已 ACKED 时最早一次 DONE 确认,发起人撤销误触用,null = 无。
+ * ackId = 已 ACKED 时最早一次 DONE 确认,发起人撤销误触用,null = 无;
+ * bondId = null 表示自惦记(送给自己;服务端 explicitNulls=false 时该字段直接省略)。
  */
 @Serializable
 data class ReminderView(
     val id: Long,
-    val bondId: Long,
+    val bondId: Long? = null,
     val creatorId: Long,
     val receiverId: Long,
     val title: String,
