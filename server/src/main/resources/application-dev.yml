@@ -1,0 +1,24 @@
+# 本地开发 profile:日志级别 + 本地代理;凭证类配置统一放 server/application-local.yml(gitignore)
+logging:
+  level:
+    com.bugu: DEBUG
+
+management:
+  endpoint:
+    health:
+      show-details: always
+
+# 本地开发开启真实外部通道(集成测试不激活 dev,不受影响):
+# - llm:火山方舟真实通道(密钥/模型见主配置 bugu.llm.openai,已实测连通)
+# - sms:火山短信真实通道(AK/SK 见 server/application-local.yml,不入库);真发短信会计费,平时联验完记得切回 console
+bugu:
+  llm:
+    provider: openai
+  sms:
+    provider: volc
+    volc:
+      sign: 瀛洲绘智
+      template-id: SPT_09a29a26
+      sms-account: ""
+      proxy-host: 127.0.0.1
+      proxy-port: 7897

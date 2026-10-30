@@ -1,0 +1,69 @@
+# 「布谷」生产部署:PostgreSQL + Redis + 服务端同机
+# 用法:部署前直接修改下方标注【部署前修改】的值,然后
+#   docker compose -f docker-compose.prod.yml up -d
+# 安全:PostgreSQL/Redis 不映射宿主端口,仅容器网内可达;对外只暴露 8081
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: bugu-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: bugu
+      POSTGRES_USER: bugu
+      POSTGRES_PASSWORD: bugu-prod-change-me # 【部署前修改】
+      TZ: Asia/Shanghai
+    volumes:
+      - pg-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U bugu -d bugu"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+
+  redis:
+    image: redis:7.4-alpine
+    container_name: bugu-redis
+    restart: unless-stopped
+    command: ["redis-server", "--appendonly", "yes"]
+    volumes:
+      - redis-data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 3s
+      retries: 10
+
+  server:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: bugu-server
+    restart: unless-stopped
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    ports:
+      - "8081:8081"
+    environment:
+      TZ: Asia/Shanghai
+      # Spring relaxed binding:环境变量覆盖 application.yml 中写死的同名属性
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/bugu
+      SPRING_DATASOURCE_USERNAME: bugu
+      SPRING_DATASOURCE_PASSWORD: bugu-prod-change-me # 【部署前修改】与 postgres 一致
+      # 生产 JWT 密钥(≥32 字节随机串,生成:openssl rand -base64 48)
+      BUGU_JWT_SECRET: change-me-min-32-bytes-random-secret-string # 【部署前修改】
+      # 后台 SUPER 初始密码(首次启动创建,幂等)
+      BUGU_ADMIN_SEED_PASSWORD: change-me # 【部署前修改】
+      # 腾讯云 COS 对象存储(头像签名直传;未配置时头像功能不可用)
+      BUGU_COS_SECRET_ID: change-me # 【部署前修改】访问管理 CAM 子账号 SecretId
+      BUGU_COS_SECRET_KEY: change-me # 【部署前修改】对应 SecretKey
+      BUGU_COS_BUCKET: change-me-1250000000 # 【部署前修改】桶全名
+      BUGU_COS_REGION: ap-guangzhou
+      # BUGU_COS_PUBLIC_BASE_URL: https://cdn.example.com # 可选:CDN 加速域名
+      # 可选通道(LLM/极光推送)同样经 BUGU_* 环境变量覆盖,按需追加
+
+volumes:
+  pg-data:
+  redis-data:

@@ -1,0 +1,219 @@
+/* 布谷官网 · 设计系统
+   色板取自 App 端 com.bugu.ui.theme.H（暖米底 + 珊瑚主色 + 薄荷点缀），
+   与 Android 端保持同一套品牌视觉。 */
+
+:root {
+  --canvas: #faf8f5;
+  --card: #ffffff;
+  --hairline: #efece6;
+  --warm-fill: #f4f1ea;
+  --track: #ede7e0;
+
+  --ink: #1e1b18;
+  --ink-2: #5c564e;
+  --ink-3: #9c9488;
+
+  --coral: #fa5e38;
+  --coral-light: #ff7243;
+  --coral-deep: #f04e27;
+  --coral-tint: rgba(250, 94, 56, 0.1);
+  --mint: #10b981;
+  --mint-tint: rgba(16, 185, 129, 0.12);
+  --indigo: #6366f1;
+  --indigo-tint: rgba(99, 102, 241, 0.1);
+  --rose: #f43f5e;
+  --amber: #ffc966;
+
+  --radius-lg: 24px;
+  --radius-md: 16px;
+
+  --font-sans:
+    -apple-system, BlinkMacSystemFont, 'PingFang SC', 'HarmonyOS Sans SC',
+    'Source Han Sans SC', 'Noto Sans SC', 'Microsoft YaHei', 'Segoe UI',
+    sans-serif;
+  --ease-out: cubic-bezier(0.22, 1, 0.36, 1);
+  --ease-spring: cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  font-family: var(--font-sans);
+  background: var(--canvas);
+  color: var(--ink);
+  line-height: 1.6;
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+  overflow-x: hidden;
+}
+
+::selection {
+  background: var(--coral-tint);
+  color: var(--coral-deep);
+}
+
+a {
+  color: inherit;
+  text-decoration: none;
+}
+
+img,
+svg {
+  display: block;
+  max-width: 100%;
+}
+
+button {
+  font-family: inherit;
+}
+
+:focus-visible {
+  outline: 2px solid var(--coral);
+  outline-offset: 3px;
+  border-radius: 4px;
+}
+
+section {
+  scroll-margin-top: 84px;
+}
+
+/* ---- 布局 ---- */
+
+.container {
+  max-width: 1120px;
+  margin-inline: auto;
+  padding-inline: clamp(20px, 5vw, 40px);
+}
+
+.section {
+  padding-block: clamp(88px, 12vw, 150px);
+}
+
+.section-alt {
+  background: var(--warm-fill);
+}
+
+.eyebrow {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 14px;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  color: var(--coral);
+}
+
+.eyebrow::before {
+  content: '';
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--coral);
+}
+
+.section-title {
+  font-size: clamp(30px, 4.4vw, 48px);
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  line-height: 1.22;
+  margin-top: 14px;
+}
+
+.section-lead {
+  margin-top: 16px;
+  max-width: 560px;
+  font-size: clamp(15px, 1.6vw, 17px);
+  color: var(--ink-2);
+}
+
+/* ---- 按钮 ---- */
+
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 9px;
+  padding: 15px 30px;
+  border-radius: 999px;
+  font-size: 16px;
+  font-weight: 700;
+  letter-spacing: 0.01em;
+  border: none;
+  cursor: pointer;
+  transition:
+    transform 0.25s var(--ease-out),
+    box-shadow 0.25s var(--ease-out),
+    background 0.25s var(--ease-out);
+}
+
+.btn:active {
+  transform: scale(0.96);
+}
+
+.btn-primary {
+  background: linear-gradient(135deg, var(--coral-light), var(--coral));
+  color: #fff;
+  box-shadow: 0 10px 26px -10px rgba(250, 94, 56, 0.55);
+}
+
+.btn-primary:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 16px 32px -12px rgba(250, 94, 56, 0.6);
+}
+
+.btn-ghost {
+  background: transparent;
+  color: var(--ink);
+  box-shadow: inset 0 0 0 1.5px var(--track);
+}
+
+.btn-ghost:hover {
+  transform: translateY(-2px);
+  box-shadow: inset 0 0 0 1.5px var(--ink-3);
+}
+
+/* ---- 滚动显现 ---- */
+
+.reveal {
+  opacity: 0;
+  transform: translateY(28px);
+  transition:
+    opacity 0.8s var(--ease-out),
+    transform 0.8s var(--ease-out);
+  transition-delay: var(--reveal-delay, 0ms);
+}
+
+.reveal.is-revealed {
+  opacity: 1;
+  transform: none;
+}
+
+/* ---- 无障碍：跟随系统减少动效 ---- */
+
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
+
+  .reveal {
+    opacity: 1;
+    transform: none;
+    transition: none;
+  }
+
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}

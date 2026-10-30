@@ -1,0 +1,41 @@
+# 「布谷」本地开发中间件
+# 用法:docker compose up -d
+# PostgreSQL 5432 / Redis 6380(Redis 用 6380,避开本机 6379 默认实例)
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: bugu-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: bugu
+      POSTGRES_USER: bugu
+      POSTGRES_PASSWORD: bugu
+      TZ: Asia/Shanghai
+    ports:
+      - "5432:5432"
+    volumes:
+      - pg-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U bugu -d bugu"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+
+  redis:
+    image: redis:7.4-alpine
+    container_name: bugu-redis
+    restart: unless-stopped
+    command: ["redis-server", "--appendonly", "yes"]
+    ports:
+      - "6380:6379"
+    volumes:
+      - redis-data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 3s
+      retries: 10
+
+volumes:
+  pg-data:
+  redis-data:

@@ -1,0 +1,101 @@
+server:
+  port: 8081
+  shutdown: graceful
+
+spring:
+  application:
+    name: bugu-server
+
+  # 本地私密凭证自动加载:server/application-local.yml(已 gitignore);文件不存在自动跳过,生产经环境变量注入
+  config:
+    import:
+      - optional:file:./application-local.yml
+
+  # Java 21+ 虚拟线程(技术架构 2.1:推荐 JDK 25)
+  threads:
+    virtual:
+      enabled: true
+
+  # multipart 上限(预留;头像已改 COS 签名直传,不再流经服务端)
+  servlet:
+    multipart:
+      max-file-size: 2MB
+      max-request-size: 3MB
+
+  datasource:
+    # 生产经 docker-compose.prod.yml 的 SPRING_DATASOURCE_* 环境变量覆盖
+    url: jdbc:postgresql://127.0.0.1:5432/bugu
+    username: bugu
+    password: bugu
+    hikari:
+      pool-name: bugu-pool
+      maximum-pool-size: 10
+      connection-timeout: 5000
+
+  flyway:
+    enabled: true
+    locations: classpath:db/migration
+    baseline-on-migrate: false
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics
+  endpoint:
+    health:
+      show-details: when-authorized
+
+springdoc:
+  api-docs:
+    path: /api-docs
+  swagger-ui:
+    path: /docs
+
+bugu:
+  cos:
+    # 腾讯云 COS 对象存储(头像签名直传):凭证只在服务端,端侧拿一次性上传凭证直传桶
+    # SecretId/SecretKey 在控制台「访问管理 CAM」建子账号获取;桶需公有读私有写
+    # 凭证不入库:本地放 server/application-local.yml,生产经 BUGU_COS_SECRET_ID / BUGU_COS_SECRET_KEY 环境变量覆盖
+    region: ap-shanghai # 桶所在地域,如 ap-guangzhou / ap-shanghai
+    bucket: "bugu-1258638720" # 【部署前修改】桶全名,如 bugu-1250000000;未配置时头像接口报「对象存储未配置」
+    # 头像公网读取域名:留空=桶默认域名 https://{bucket}.cos.{region}.myqcloud.com;接 CDN 后填加速域名
+    public-base-url: ""
+    expire-seconds: 600 # 上传凭证有效期(秒)
+  llm:
+    # none=不注册网关,全部走模板降级(集成测试依赖此默认值);openai=火山方舟真实通道(真机联验时改此值或激活 dev profile)
+    provider: none
+    openai:
+      # 火山方舟 OpenAI 兼容端点(网关拼 {base-url}/chat/completions);密钥与模型 2026-10-29 curl 实测连通
+      base-url: https://ark.cn-beijing.volces.com/api/v3
+      # api-key 不入库:本地放 server/application-local.yml,生产经 BUGU_LLM_OPENAI_API_KEY 环境变量覆盖
+      model: deepseek-v4-1-flash-economy-261017
+  jwt:
+    # 生产部署前在 docker-compose.prod.yml 用 BUGU_JWT_SECRET 覆盖(≥32 字节)
+    secret: bugu-dev-secret-key-0123456789abcdef000
+    expire-days: 7
+  sms:
+    # console=控制台假实现(集成测试依赖此默认值);volc=火山真实通道(凭证已配齐,真机联验时改此值或激活 dev profile)
+    provider: console
+    volc:
+      # 官方 SDK(volc-sdk-java SmsService)实现,签名/重试由 SDK 处理
+      # AK/SK 不入库(火山控制台「访问密钥」获取):本地放 server/application-local.yml,生产经 BUGU_SMS_VOLC_AK / BUGU_SMS_VOLC_SK 覆盖
+      sign: 瀛洲绘智
+      template-id: SPT_09a29a26
+      # 消息组 ID(火山控制台「消息组管理」):本地放 application-local.yml,生产经 BUGU_SMS_VOLC_SMSACCOUNT 覆盖
+      sms-account: ""
+      # 本地开发经代理出网(留空直连,生产为空);dev profile 内已配 127.0.0.1:7897
+      proxy-host: ""
+      proxy-port: 0
+  admin:
+    # 后台 SUPER 种子账号(E9):首次启动且无 SUPER 用户时创建,幂等;生产部署前在 compose 覆盖初始密码
+    seed-username: super
+    seed-password: bugu-admin-2026
+  push:
+    # console=控制台假实现(默认);jiguang=极光 JPush 真实通道(E8-S5,D4 定案;appKey/master-secret 联验时填入)
+    provider: jiguang
+    jiguang:
+      # AppKey/MasterSecret 不入库(极光控制台获取):本地放 server/application-local.yml,生产经 BUGU_PUSH_JIGUANG_APP_KEY / BUGU_PUSH_JIGUANG_MASTER_SECRET 覆盖
+      # 本地开发经代理出网(留空直连,生产为空)
+      proxy-host: ""
+      proxy-port: 0

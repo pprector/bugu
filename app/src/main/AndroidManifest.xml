@@ -1,0 +1,71 @@
+<?xml version="1.0" encoding="utf-8"?>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+
+    <uses-permission android:name="android.permission.INTERNET" />
+    <!-- FR-07 可信调度:精确闹钟(闹钟类目,Android 14 默认授予)+ 开机重排 + 全屏响铃 -->
+    <uses-permission android:name="android.permission.USE_EXACT_ALARM" />
+    <uses-permission android:name="android.permission.SCHEDULE_EXACT_ALARM" />
+    <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
+    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
+    <uses-permission android:name="android.permission.WAKE_LOCK" />
+    <uses-permission android:name="android.permission.USE_FULL_SCREEN_INTENT" />
+    <uses-permission android:name="android.permission.VIBRATE" />
+
+    <application
+        android:name=".BuguApp"
+        android:label="布谷"
+        android:icon="@mipmap/ic_launcher"
+        android:supportsRtl="true"
+        android:usesCleartextTraffic="true"
+        android:theme="@style/Theme.Bugu">
+
+        <!-- 极光 SDK AAR 自带 JPUSH_APPKEY/JPUSH_CHANNEL meta-data(均引用占位符),
+             值经 build.gradle.kts 从 local.properties 的 jpush.appKey 注入,不进 git -->
+
+        <!-- 极光要求宿主提供 JCommonService 子类,缺失时 SDK 告警且推送通道不建立 -->
+        <service
+            android:name=".push.BuguPushService"
+            android:enabled="true"
+            android:exported="false" />
+
+        <!-- 极光要求宿主提供 JPushMessageReceiver 子类(自定义消息/通知点击回调) -->
+        <receiver
+            android:name=".push.BuguPushMessageReceiver"
+            android:enabled="true"
+            android:exported="false">
+            <intent-filter>
+                <action android:name="cn.jpush.android.intent.RECEIVE_MESSAGE" />
+                <category android:name="com.bugu" />
+            </intent-filter>
+        </receiver>
+
+        <activity
+            android:name=".MainActivity"
+            android:exported="true"
+            android:windowSoftInputMode="adjustResize">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+        </activity>
+
+        <!-- 全屏响铃:showWhenLocked 使锁屏可现(通知权限关闭时的 FR-07 降级路径) -->
+        <activity
+            android:name=".ui.RingActivity"
+            android:exported="false"
+            android:showWhenLocked="true"
+            android:turnScreenOn="true" />
+
+        <receiver android:name=".diagnostics.LocalTestReceiver" android:exported="false" />
+
+        <receiver
+            android:name=".schedule.AlarmReceiver"
+            android:enabled="true"
+            android:exported="false">
+            <intent-filter>
+                <action android:name="com.bugu.ACTION_FIRE" />
+                <action android:name="android.intent.action.BOOT_COMPLETED" />
+            </intent-filter>
+        </receiver>
+    </application>
+</manifest>

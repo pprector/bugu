@@ -1,0 +1,47 @@
+# 构建产物
+build/
+target/
+out/
+
+# Kotlin 编译器会话文件
+.kotlin/
+
+# Gradle
+.gradle/
+gradle-app.setting
+!gradle-wrapper.jar
+
+# 本地工具链(JDK / Gradle / Node,不入库)
+.toolchain/
+
+# 前端
+node_modules/
+dist/
+.pnpm-store/
+*.tsbuildinfo
+
+# IDE
+.idea/
+*.iml
+.vscode/
+
+# 系统与日志
+.DS_Store
+*.log
+logs/
+
+# 本地环境变量
+.env
+.env.local
+
+# 服务端本地数据(头像等)
+data/
+
+# 服务端本地私密凭证(第三方云 AK/SK,不入库)
+server/application-local.yml
+
+# Android 本地配置(SDK 路径 / 极光 AppKey,不入库)
+local.properties
+
+# JVM 堆转储
+*.hprof
