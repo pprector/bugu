@@ -148,7 +148,7 @@ class FireReportIntegrationTest @Autowired constructor(
 
     @Test
     fun `长辈模式账号可上报_过滤白名单放行`() {
-        val (a, b) = client.boundPair()
+        val (a, b) = client.elderPair()
         val reminderId = reminders.createAndGetId(a.token, b.id)
         val fire = firstFire(reminderId)
 

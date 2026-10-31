@@ -7,7 +7,7 @@ import com.bugu.bond.domain.BondStatus
 import com.bugu.bond.domain.BindCodePolicy
 import com.bugu.bond.infra.BondMapper
 import com.bugu.bond.infra.BondRepository
-import com.bugu.bond.infra.hasActiveBond
+import com.bugu.identity.infra.UserRepository
 import com.bugu.identity.api.UserDto
 import com.bugu.identity.app.UserService
 import com.bugu.identity.infra.JwtTokenService
@@ -27,6 +27,7 @@ import java.time.LocalDateTime
 @Service
 class ElderBondService(
     private val bondRepository: BondRepository,
+    private val userRepository: UserRepository,
     private val userService: UserService,
     private val jwtTokenService: JwtTokenService,
     private val clock: Clock,
@@ -56,10 +57,12 @@ class ElderBondService(
             if (expiresAt != null && BindCodePolicy.isExpired(expiresAt, now)) {
                 throw BizException(ErrorCode.BOND_INVALID, HttpStatus.BAD_REQUEST, "邀请码已过期")
             }
-            requireNoActiveBond(row.requesterId)
+            userRepository.lockUser(row.requesterId)
+            val lockedRow = bondRepository.findFirstByBindCodeAndStatus(inviteCode, BondStatus.PENDING_OUTBOUND.name)
+                ?: throw BizException(ErrorCode.BOND_INVALID, HttpStatus.BAD_REQUEST, "邀请码已处理")
 
             val elder = userService.createElder(deviceUuid, deviceModel)
-            val domain = BondMapper.toDomain(row)
+            val domain = BondMapper.toDomain(lockedRow)
             domain.confirm(elder.id!!, now)
             val saved = bondRepository.save(BondMapper.toRow(domain))
             log.info("长辈账号注册并绑定 elderUserId={} bondId={} requester={}", elder.id, saved.id, row.requesterId)
@@ -79,6 +82,7 @@ class ElderBondService(
         val bondRow = findActiveBondBetween(childId, elderId)
             ?: throw BizException(ErrorCode.FORBIDDEN, HttpStatus.FORBIDDEN, "与该长辈无绑定关系")
 
+        requireManagedElder(childId, elderId)
         val updatedUser = userService.updateProfile(elderId, request.nickname, request.avatarUrl)
         val relationTag = request.relationTag?.let { tag ->
             val domain = BondMapper.toDomain(bondRow)
@@ -90,7 +94,7 @@ class ElderBondService(
 
     /**
      * 子女端标记/取消 bond 对方为长辈模式(FR-06):即时生效。
-     * 仅 ACTIVE bond 双方可互相标记(通常子女标记长辈);不能标记自己。
+     * 仅免注册长辈账号的 ACTIVE 邀请方可代管;不能标记自己。
      */
     fun setElderMode(actorId: Long, peerId: Long, enabled: Boolean): UserDto {
         if (peerId == actorId) {
@@ -98,6 +102,7 @@ class ElderBondService(
         }
         findActiveBondBetween(actorId, peerId)
             ?: throw BizException(ErrorCode.FORBIDDEN, HttpStatus.FORBIDDEN, "与对方无绑定关系")
+        requireManagedElder(actorId, peerId)
         val updated = userService.setElderMode(peerId, enabled)
         log.info("elder mode set userId={} enabled={} by={}", peerId, enabled, actorId)
         return userService.toDto(updated)
@@ -107,9 +112,11 @@ class ElderBondService(
         bondRepository.findFirstByRequesterIdAndReceiverIdAndStatus(a, b, BondStatus.ACTIVE.name)
             ?: bondRepository.findFirstByReceiverIdAndRequesterIdAndStatus(a, b, BondStatus.ACTIVE.name)
 
-    private fun requireNoActiveBond(userId: Long) {
-        if (bondRepository.hasActiveBond(userId)) {
-            throw BizException(ErrorCode.BOND_LIMITED, HttpStatus.CONFLICT, "已有绑定关系,上限 1 条")
+    private fun requireManagedElder(actorId: Long, peerId: Long) {
+        val bond = findActiveBondBetween(actorId, peerId)
+        val peer = userService.findById(peerId)
+        if (bond?.requesterId != actorId || peer?.accountType != "ELDER") {
+            throw BizException(ErrorCode.FORBIDDEN, HttpStatus.FORBIDDEN, "仅长辈免注册账号的邀请方可代管")
         }
     }
 }

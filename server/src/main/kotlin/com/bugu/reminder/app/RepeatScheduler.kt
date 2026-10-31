@@ -6,6 +6,8 @@ import com.bugu.reminder.infra.ReminderFireRepository
 import com.bugu.reminder.infra.ReminderFireRow
 import com.bugu.reminder.infra.ReminderMapper
 import com.bugu.reminder.infra.ReminderRepository
+import com.bugu.bond.infra.BondRepository
+import com.bugu.bond.domain.BondStatus
 import com.bugu.reminder.infra.ReminderRow
 import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Component
@@ -20,14 +22,18 @@ import java.time.LocalDateTime
 @Component
 class RepeatScheduler(
     private val reminderRepository: ReminderRepository,
+    private val bondRepository: BondRepository,
     private val reminderFireRepository: ReminderFireRepository,
 ) {
 
     private val log = LoggerFactory.getLogger(javaClass)
 
     /** 为 REPEAT 提醒排下一次;非重复、规则缺失或已排过返回 null。 */
+    @org.springframework.transaction.annotation.Transactional
     fun scheduleNext(row: ReminderRow, now: LocalDateTime): ReminderFireRow? {
         if (row.kind != ReminderKind.REPEAT.name) return null
+        if (row.bondId != null && bondRepository.lockById(row.bondId)?.status != BondStatus.ACTIVE.name) return null
+        if (row.status == "CANCELED") return null
         val reminderId = row.id ?: return null
         val rule = row.repeatRule ?: run {
             log.warn("repeat reminder {} 缺 repeatRule,跳过续期", reminderId)

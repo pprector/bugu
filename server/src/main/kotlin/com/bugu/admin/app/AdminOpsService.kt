@@ -31,6 +31,7 @@ import java.time.LocalDateTime
 class AdminOpsService(
     private val userService: UserService,
     private val bondRepository: BondRepository,
+    private val bondLifecycle: com.bugu.bond.app.BondLifecycle,
     private val reminderRepository: ReminderRepository,
     private val reminderFireRepository: ReminderFireRepository,
     private val escalationLogRepository: EscalationLogRepository,
@@ -95,11 +96,12 @@ class AdminOpsService(
     /** 管理员解绑:聚合 adminDissolve,即时隔离。 */
     fun unbind(bondId: Long) {
         transactionTemplate.execute {
-            val row = bondRepository.findByIdOrNull(bondId)
+            val row = bondRepository.lockById(bondId)
                 ?: throw BizException(ErrorCode.NOT_FOUND, HttpStatus.NOT_FOUND, "绑定不存在")
             val domain = BondMapper.toDomain(row)
             domain.adminDissolve(LocalDateTime.now())
             bondRepository.save(BondMapper.toRow(domain))
+            bondLifecycle.deactivate(bondId)
         }
     }
 

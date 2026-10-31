@@ -23,6 +23,8 @@ data class BondRow(
     val confirmedAt: LocalDateTime? = null,
     val unboundAt: LocalDateTime? = null,
     val relationTag: String? = null,
+    val requesterRemark: String? = null,
+    val receiverRemark: String? = null,
     val createdAt: LocalDateTime = LocalDateTime.now(),
     val updatedAt: LocalDateTime = LocalDateTime.now(),
 )
@@ -40,6 +42,8 @@ object BondMapper {
         confirmedAt = row.confirmedAt,
         unboundAt = row.unboundAt,
         relationTag = row.relationTag,
+        requesterRemark = row.requesterRemark,
+        receiverRemark = row.receiverRemark,
         createdAt = row.createdAt,
     )
 
@@ -53,6 +57,8 @@ object BondMapper {
         confirmedAt = domain.confirmedAt,
         unboundAt = domain.unboundAt,
         relationTag = domain.relationTag,
+        requesterRemark = domain.requesterRemark,
+        receiverRemark = domain.receiverRemark,
         createdAt = domain.createdAt,
         updatedAt = LocalDateTime.now(),
     )
@@ -60,6 +66,9 @@ object BondMapper {
 
 @Repository
 interface BondRepository : CrudRepository<BondRow, Long> {
+    @org.springframework.data.jdbc.repository.query.Query("SELECT * FROM bond WHERE id = :id FOR UPDATE")
+    fun lockById(id: Long): BondRow?
+
     fun findFirstByRequesterIdAndStatus(requesterId: Long, status: String): BondRow?
     fun findFirstByBindCodeAndStatus(bindCode: String, status: String): BondRow?
     fun existsByBindCode(bindCode: String): Boolean

@@ -46,6 +46,18 @@ class AuthTestClient(private val mockMvc: MockMvc, private val smsSender: Consol
         return a to b
     }
 
+    fun elderPair(): Pair<TestUser, TestUser> {
+        val child = register()
+        val code = initiateAndGetCode(child.token)
+        val body = mockMvc.post("/api/v1/auth/elder-register") {
+            contentType = MediaType.APPLICATION_JSON
+            content = """{"deviceUuid":"test-${java.util.UUID.randomUUID()}","deviceModel":"Test","inviteCode":"$code"}"""
+        }.andExpect { status { isOk() } }.andReturn().response.contentAsString
+        val id = Regex(""""id"\s*:\s*(\d+)""").find(body)!!.groupValues[1].toLong()
+        val token = Regex(""""token"\s*:\s*"([^"]+)"""").find(body)!!.groupValues[1]
+        return child to TestUser(id, token, "")
+    }
+
     fun initiate(token: String) = mockMvc.post("/api/v1/bond/initiate") {
         header("Authorization", "Bearer $token")
     }

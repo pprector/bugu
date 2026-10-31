@@ -42,6 +42,8 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import com.bugu.client.api.BondDto
+import com.bugu.client.domain.directionLabel
 import com.bugu.client.api.GeitaApi
 import com.bugu.client.api.GeitaApiException
 import com.bugu.client.api.ReminderView
@@ -61,21 +63,21 @@ private data class CalEntry(val r: ReminderView, val byMe: Boolean)
  * 有惦记的日期打点,点选日期看当日列表;月份循环切换。
  */
 @Composable
-fun CalendarScreen(api: GeitaApi, peerName: String, onBack: () -> Unit) {
+fun CalendarScreen(api: GeitaApi, bonds: List<BondDto>, onBack: () -> Unit) {
     var entries by remember { mutableStateOf<List<CalEntry>?>(null) } // null = 首载中
     var month by remember { mutableStateOf(YearMonth.now()) }
     var selectedDay by remember { mutableStateOf(LocalDate.now()) }
 
-    LaunchedEffect(Unit) {
+    var failed by remember { mutableStateOf(false) }
+    var retry by remember { mutableStateOf(0) }
+    LaunchedEffect(retry) {
+        failed = false
         try {
             val mine = api.myReminders()
             val incoming = api.incomingReminders()
-            entries = mine.map { CalEntry(it, byMe = true) } + incoming.map { CalEntry(it, byMe = false) }
-        } catch (_: GeitaApiException) {
-            entries = emptyList()
-        } catch (_: Exception) {
-            entries = emptyList()
-        }
+            entries = (mine.map { CalEntry(it, byMe = true) } + incoming.map { CalEntry(it, byMe = false) }).distinctBy { it.r.id }
+        } catch (e: kotlinx.coroutines.CancellationException) { throw e }
+        catch (_: Exception) { failed = true }
     }
 
     val all = entries.orEmpty()
@@ -132,7 +134,9 @@ fun CalendarScreen(api: GeitaApi, peerName: String, onBack: () -> Unit) {
         ) {
             Spacer(Modifier.height(14.dp))
 
-            if (entries == null) {
+            if (failed) {
+                EmptyState(title = "日历加载失败", subtitle = "检查网络后再试试", actionText = "重试", onAction = { retry++ })
+            } else if (entries == null) {
                 Box(Modifier.fillMaxWidth().padding(vertical = 32.dp), contentAlignment = Alignment.Center) {
                     CircularProgressIndicator(color = H.Coral, modifier = Modifier.size(28.dp), strokeWidth = 2.5.dp)
                 }
@@ -291,7 +295,7 @@ fun CalendarScreen(api: GeitaApi, peerName: String, onBack: () -> Unit) {
                                 )
                                 Spacer(Modifier.height(3.dp))
                                 Text(
-                                    "${if (e.byMe) "我 → $peerName" else "$peerName → 我"} · ${repeatLabel(e.r.repeatRule)}",
+                                    "${e.r.directionLabel(bonds, e.byMe)} · ${repeatLabel(e.r.repeatRule)}",
                                     style = MaterialTheme.typography.bodySmall,
                                     color = H.Ink3,
                                 )

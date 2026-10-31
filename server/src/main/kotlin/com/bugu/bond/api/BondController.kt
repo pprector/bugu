@@ -33,6 +33,10 @@ class BondController(private val bondService: BondService) {
     fun mine(currentUser: CurrentUser): ApiResponse<List<BondDto>> =
         ApiResponse.ok(bondService.listMine(currentUser.id))
 
+    @org.springframework.web.bind.annotation.PutMapping("/{id}/remark")
+    fun remark(currentUser: CurrentUser, @PathVariable id: Long, @RequestBody request: UpdateBondRemarkRequest): ApiResponse<BondDto> =
+        ApiResponse.ok(bondService.updateRemark(currentUser.id, id, request.remark))
+
     @PostMapping("/{id}/unbind")
     fun unbind(currentUser: CurrentUser, @PathVariable id: Long): ApiResponse<BondDto> =
         ApiResponse.ok(bondService.unbind(currentUser.id, id))

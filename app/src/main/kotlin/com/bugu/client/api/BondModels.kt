@@ -27,11 +27,7 @@ data class InvitationDto(
     val expiresAt: String,
 )
 
-/**
- * 绑定关系视图:server bond/api/BondDto 同形。
- * counterpartNickname / counterpartRelationTag / counterpartElderMode 为界面上位字段:
- * 服务端补齐前解码为 null,UI 以「家人」兜底;补齐后无需改客户端即可显示真实称谓。
- */
+/** 绑定关系视图:新增资料字段可缺省，备注仅当前调用者可见。 */
 @Serializable
 data class BondDto(
     val id: Long,
@@ -50,7 +46,28 @@ data class BondDto(
     val counterpartRelationTag: String? = null,
     /** 对方是否处于长辈模式,待服务端补充 */
     val counterpartElderMode: Boolean? = null,
+    val remark: String? = null,
+    val senderNickname: String? = null,
+    val receiverNickname: String? = null,
+    val senderAvatarUrl: String? = null,
+    val receiverAvatarUrl: String? = null,
+    val counterpartAvatarUrl: String? = null,
 )
+
+val BondDto.displayName: String
+    get() = remark?.trim()?.takeIf { it.isNotEmpty() }
+        ?: counterpartNickname?.trim()?.takeIf { it.isNotEmpty() }
+        ?: (if (role == "REQUESTER") receiverNickname else senderNickname)?.trim()?.takeIf { it.isNotEmpty() }
+        ?: "亲友"
+
+@Serializable
+data class BondRemarkRequest(val remark: String?) {
+    init { require(remark == null || remark.length <= 30) }
+
+    fun toJson() = kotlinx.serialization.json.buildJsonObject {
+        put("remark", remark?.let { kotlinx.serialization.json.JsonPrimitive(it) } ?: kotlinx.serialization.json.JsonNull)
+    }
+}
 
 /** 子女端标记/取消对方长辈模式(FR-06)。POST /api/v1/bond/elder-mode */
 @Serializable

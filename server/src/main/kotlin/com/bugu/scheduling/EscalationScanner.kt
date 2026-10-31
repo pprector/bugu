@@ -111,7 +111,18 @@ class EscalationScanner(
         }
 
         for (fire in candidates) {
-            runCatching { processFire(fire, now) }
+            runCatching {
+                transactionTemplate.execute {
+                    val row = reminderRepository.findByIdOrNull(fire.reminderId) ?: return@execute
+                    if (row.bondId != null && jdbc.queryForObject(
+                            "SELECT status FROM bond WHERE id = ? FOR UPDATE", String::class.java, row.bondId,
+                        ) != "ACTIVE"
+                    ) return@execute
+                    val current = reminderFireRepository.findByIdOrNull(fire.id!!) ?: return@execute
+                    if (current.state !in listOf("PENDING", "FIRED") || row.status == "CANCELED") return@execute
+                    processFire(current, now)
+                }
+            }
                 .onFailure { log.error("escalation scan: process fire {} failed", fire.id, it) }
         }
     }
@@ -126,6 +137,10 @@ class EscalationScanner(
             return
         }
         val reminder = ReminderMapper.toDomain(reminderRow)
+        if (reminder.bondId != null && jdbc.queryForObject(
+                "SELECT status FROM bond WHERE id = ?", String::class.java, reminder.bondId,
+            ) != "ACTIVE"
+        ) return
         val elapsed = Duration.between(fire.fireAt, now)
 
         // 路径 B(E7/FR-07):未上报且超 2h 宽限 → 设备关机错过,直接收口,不发 T1/T2;

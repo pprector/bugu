@@ -58,7 +58,9 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.bugu.client.api.AckRequest
+import com.bugu.client.api.BondDto
 import com.bugu.client.api.GeitaApi
+import com.bugu.client.domain.companionName
 import com.bugu.client.api.GeitaApiException
 import com.bugu.client.api.ReminderView
 import com.bugu.client.domain.EscalationCountdown
@@ -159,7 +161,7 @@ internal fun repeatLabel(rule: String?): String = when {
 @Composable
 fun DashboardScreen(
     api: GeitaApi,
-    peerName: String,
+    bonds: List<BondDto>,
     onOpenHistory: () -> Unit,
     onOpenCalendar: () -> Unit,
     onGoCreate: () -> Unit,
@@ -239,7 +241,7 @@ fun DashboardScreen(
                         snoozeMinutes = if (action == "SNOOZE") 15 else null,
                     ),
                 )
-                notice = if (action == "DONE") "已完成「${r.title}」" else if (action == "SNOOZE") "15 分钟后咕咕再叫你" else "已告诉${peerName}这会儿不方便"
+                notice = if (action == "DONE") "已完成「${r.title}」" else if (action == "SNOOZE") "15 分钟后咕咕再叫你" else "已告诉${r.companionName(bonds)}这会儿不方便"
                 refresh()
             } catch (e: GeitaApiException) {
                 error = e.message ?: "操作失败,请稍后再试"
@@ -398,7 +400,7 @@ fun DashboardScreen(
                 val stageText = when (stage) {
                     EscalationCountdown.Stage.BEFORE_T1 -> "咕咕守着呢"
                     EscalationCountdown.Stage.AFTER_T1 -> "已再推一次"
-                    EscalationCountdown.Stage.AFTER_T2 -> "已通知$peerName"
+                    EscalationCountdown.Stage.AFTER_T2 -> "已通知${live.companionName(bonds)}"
                     EscalationCountdown.Stage.CLOSED -> "今日收口"
                 }
                 RiseIn {
@@ -430,7 +432,7 @@ fun DashboardScreen(
                         Text(
                             buildString {
                                 val fireDate = parseIsoTime(live.fireAt)?.toLocalDate()
-                                append("来自$peerName · ")
+                                append("来自${live.companionName(bonds)} · ")
                                 if (fireDate != null) append(relativeDayLabel(fireDate, today)).append(" ")
                                 append(parseIsoTime(live.fireAt)?.format(TIME_FMT) ?: live.fireAt)
                                 if (stage != EscalationCountdown.Stage.CLOSED) append(" · 距下次呼唤 $remain")
@@ -588,7 +590,7 @@ fun DashboardScreen(
                         Spacer(Modifier.height(4.dp))
                         Text(
                             if (hasEnded) "已结束的惦记都收在历史里,可随时回看"
-                            else "设一条惦记,到点咕咕替你呼唤${peerName}",
+                            else "设一条惦记,到点咕咕替你呼唤亲友",
                             style = MaterialTheme.typography.bodySmall,
                             color = H.Ink3Strong,
                         )
@@ -632,7 +634,7 @@ fun DashboardScreen(
                             )
                             Spacer(Modifier.height(3.dp))
                             Text(
-                                "${kindLabel(r.kind)} · ${repeatLabel(r.repeatRule)} · ${toneLabel(r.tone)}",
+                                "给${r.companionName(bonds)} · ${kindLabel(r.kind)} · ${repeatLabel(r.repeatRule)}",
                                 style = MaterialTheme.typography.bodySmall,
                                 color = H.Ink3Strong,
                             )
@@ -671,7 +673,7 @@ fun DashboardScreen(
                         horizontalAlignment = Alignment.CenterHorizontally,
                     ) {
                         Text(
-                            if (hasEnded) "没有待回应的惦记" else "${peerName}还没给你设惦记",
+                            if (hasEnded) "没有待回应的惦记" else "亲友还没给你设惦记",
                             style = MaterialTheme.typography.titleMedium,
                             color = H.Ink,
                         )
@@ -698,7 +700,7 @@ fun DashboardScreen(
                             .padding(horizontal = 20.dp, vertical = 14.dp),
                     ) {
                         Row(verticalAlignment = Alignment.CenterVertically) {
-                            StatusAvatar(avatar = null, size = 44.dp, fallbackText = peerName.take(1))
+                            StatusAvatar(avatar = null, size = 44.dp, fallbackText = r.companionName(bonds).take(1))
                             Spacer(Modifier.width(14.dp))
                             Column(Modifier.weight(1f)) {
                                 Row(verticalAlignment = Alignment.CenterVertically) {
@@ -715,6 +717,7 @@ fun DashboardScreen(
                                 Spacer(Modifier.height(3.dp))
                                 Text(
                                     buildString {
+                                        append("来自${r.companionName(bonds)} · ")
                                         parseIsoTime(r.fireAt)?.toLocalDate()?.let {
                                             append(relativeDayLabel(it, today)).append(" ")
                                         }

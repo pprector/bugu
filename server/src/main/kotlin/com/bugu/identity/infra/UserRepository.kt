@@ -2,6 +2,7 @@ package com.bugu.identity.infra
 
 import org.springframework.data.annotation.Id
 import org.springframework.data.repository.CrudRepository
+import org.springframework.data.jdbc.repository.query.Query
 import org.springframework.data.relational.core.mapping.Table
 import org.springframework.stereotype.Repository
 import java.time.LocalDateTime
@@ -29,4 +30,7 @@ interface UserRepository : CrudRepository<UserRow, Long> {
     fun findByPhone(phone: String): UserRow?
     fun existsByPhone(phone: String): Boolean
     fun findByDeviceUuid(deviceUuid: String): UserRow?
+
+    @Query("SELECT id FROM app_user WHERE id = :id FOR UPDATE")
+    fun lockUser(id: Long): Long?
 }

@@ -11,6 +11,15 @@ import com.bugu.client.api.ReminderView
  */
 object ReminderSync {
 
+    fun removeBond(context: Context, bondId: Long) {
+        val stores = PrefsStores(context)
+        val remaining = stores.lastIncoming.load().filterNot { it.bondId == bondId }
+        stores.lastIncoming.save(remaining)
+        AlarmScheduler(context, stores.scheduledAlarms).reschedule(
+            ReminderPlanner.plan(remaining, System.currentTimeMillis()),
+        )
+    }
+
     suspend fun sync(context: Context, api: GeitaApi): List<ReminderView> {
         val incoming = api.incomingReminders()
         val stores = PrefsStores(context)

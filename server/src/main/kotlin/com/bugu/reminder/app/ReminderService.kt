@@ -8,6 +8,7 @@ import com.bugu.ai.infra.AiGenLogRow
 import com.bugu.bond.domain.BondStatus
 import com.bugu.bond.infra.BondRepository
 import com.bugu.bond.infra.BondRow
+import com.bugu.reminder.api.BatchCreateReminderRequest
 import com.bugu.reminder.api.CreateReminderRequest
 import com.bugu.reminder.api.FireReportRequest
 import com.bugu.reminder.api.FireReportView
@@ -52,6 +53,7 @@ import java.time.LocalDateTime
  * 查询:双方列表按 ACTIVE bond 过滤,解绑即时隔离(复用 E1 语义)。
  */
 @Service
+@org.springframework.transaction.annotation.Transactional
 class ReminderService(
     private val reminderRepository: ReminderRepository,
     private val reminderFireRepository: ReminderFireRepository,
@@ -97,11 +99,12 @@ class ReminderService(
 
     fun create(creatorId: Long, request: CreateReminderRequest): ReminderView {
         val now = LocalDateTime.now(clock)
-        val validated = validate(request, now)
+        val validated = validate(creatorId, request, now)
         // 自惦记(送给自己):无互伴载体,跳过绑定/静音/每日上限校验;升级链对方=自己,重推给自己无副作用
         val isSelf = request.receiverId == creatorId
         val bond = if (isSelf) null else findActiveBond(creatorId, request.receiverId)
             ?: throw BizException(ErrorCode.FORBIDDEN, HttpStatus.FORBIDDEN, "与对方无有效绑定关系")
+        bond?.id?.let { requireActiveBond(it) }
         if (!isSelf && muteSettingRepository.existsByReceiverIdAndCreatorIdAndKind(request.receiverId, creatorId, validated.kind.name)) {
             throw BizException(ErrorCode.REMINDER_MUTED, HttpStatus.BAD_REQUEST)
         }
@@ -148,6 +151,34 @@ class ReminderService(
         }
     }
 
+    fun createBatch(creatorId: Long, request: BatchCreateReminderRequest): List<ReminderView> {
+        val receiverIds = request.receiverIds.distinct()
+        if (receiverIds.isEmpty()) {
+            throw BizException(ErrorCode.INVALID_ARGUMENT, HttpStatus.BAD_REQUEST, "至少选择一位接收人")
+        }
+        if (receiverIds.size > 20) {
+            throw BizException(ErrorCode.INVALID_ARGUMENT, HttpStatus.BAD_REQUEST, "最多选择 20 位接收人")
+        }
+        if (request.kind == "MUTUAL_ALARM" && receiverIds.size != 1) {
+            throw BizException(ErrorCode.INVALID_ARGUMENT, HttpStatus.BAD_REQUEST, "互叫闹钟只能选择一位接收人")
+        }
+        return receiverIds.map { receiverId ->
+            create(
+                creatorId,
+                CreateReminderRequest(
+                    receiverId = receiverId,
+                    title = request.title,
+                    kind = request.kind,
+                    fireAt = request.fireAt,
+                    repeatRule = request.repeatRule,
+                    tone = request.tone,
+                    voiceEnabled = request.voiceEnabled,
+                    note = request.note,
+                ),
+            )
+        }
+    }
+
     /**
      * 修改提醒(S4):仅发起人、仅 PENDING、仅标题与 fireAt(为 null 保持不变,两字段全空 400)。
      * 改 fireAt 时同事务删除 PENDING 状态 fire 并按新时刻重生成首条(幂等键同步更新)。
@@ -158,6 +189,7 @@ class ReminderService(
         if (row.creatorId != userId) {
             throw BizException(ErrorCode.FORBIDDEN, HttpStatus.FORBIDDEN, "仅发起人可修改")
         }
+        requireActiveBond(row.bondId)
         if (row.status != ReminderStatus.PENDING.name) {
             throw BizException(ErrorCode.CONFLICT, HttpStatus.CONFLICT, "仅待触发提醒可修改")
         }
@@ -200,6 +232,7 @@ class ReminderService(
         if (row.creatorId != userId) {
             throw BizException(ErrorCode.FORBIDDEN, HttpStatus.FORBIDDEN, "仅发起人可取消")
         }
+        requireActiveBond(row.bondId)
         if (!ReminderStatus.valueOf(row.status).canTransitTo(ReminderStatus.CANCELED)) {
             throw BizException(ErrorCode.CONFLICT, HttpStatus.CONFLICT, "当前状态不可取消")
         }
@@ -244,6 +277,7 @@ class ReminderService(
         if (fire.targetUserId != receiverId) {
             throw BizException(ErrorCode.FORBIDDEN, HttpStatus.FORBIDDEN, "仅触发目标本人可确认")
         }
+        requireActiveBond(reminderRow.bondId)
         val isMutual = reminderRow.kind == ReminderKind.MUTUAL_ALARM.name
         if (isMutual && action != AckAction.DONE) {
             throw BizException(ErrorCode.INVALID_ARGUMENT, HttpStatus.BAD_REQUEST, "互叫闹钟仅支持确认已起")
@@ -323,17 +357,19 @@ class ReminderService(
      * RESPONDED 仍可补报(先确认后补报的离线队列回放),CLOSED 已收口 409(端侧据此展示「已错过」)。
      * fire.state 不变——reported_at 是调度扫描器区分「已触发/关机错过」的唯一信号,升级链照常推进。
      */
+    @org.springframework.transaction.annotation.Transactional
     fun reportFire(userId: Long, fireId: Long, request: FireReportRequest): FireReportView {
         val fire = reminderFireRepository.findByIdOrNull(fireId)
             ?: throw BizException(ErrorCode.NOT_FOUND, HttpStatus.NOT_FOUND, "触发记录不存在")
+        val reminderRow = reminderRepository.findByIdOrNull(fire.reminderId)
+            ?: throw BizException(ErrorCode.NOT_FOUND, HttpStatus.NOT_FOUND, "提醒不存在")
+        requireActiveBond(reminderRow.bondId)
         if (fire.idempotencyKey != request.idempotencyKey) {
             throw BizException(ErrorCode.INVALID_ARGUMENT, HttpStatus.BAD_REQUEST, "幂等键与触发记录不匹配")
         }
         if (request.source !in FIRE_SOURCES) {
             throw BizException(ErrorCode.INVALID_ARGUMENT, HttpStatus.BAD_REQUEST, "来源非法,须为 LOCAL_ALARM 或 PUSH")
         }
-        val reminderRow = reminderRepository.findByIdOrNull(fire.reminderId)
-            ?: throw BizException(ErrorCode.NOT_FOUND, HttpStatus.NOT_FOUND, "提醒不存在")
         if (reminderRow.creatorId != userId && fire.targetUserId != userId) {
             throw BizException(ErrorCode.FORBIDDEN, HttpStatus.FORBIDDEN, "仅发起人或触发目标可上报")
         }
@@ -365,6 +401,7 @@ class ReminderService(
         if (reminderRow.creatorId != userId) {
             throw BizException(ErrorCode.FORBIDDEN, HttpStatus.FORBIDDEN, "仅发起人可撤销误触")
         }
+        requireActiveBond(reminderRow.bondId)
         if (fire.state != "RESPONDED") {
             throw BizException(ErrorCode.CONFLICT, HttpStatus.CONFLICT, "该确认已撤销或不可撤销")
         }
@@ -400,7 +437,7 @@ class ReminderService(
     fun listMine(userId: Long): List<ReminderView> {
         val activeBondIds = activeBondIds(userId)
         return reminderRepository.findByCreatorIdOrderByFireAt(userId)
-            .filter { it.bondId == null || it.bondId in activeBondIds }
+            .filter { it.bondId == null || it.bondId in activeBondIds || it.status in setOf("ACKED", "DECLINED", "MISSED") }
             .map { toView(it, userId) }
     }
 
@@ -491,6 +528,13 @@ class ReminderService(
         return toView(row, userId)
     }
 
+    private fun requireActiveBond(bondId: Long?) {
+        if (bondId == null) return
+        if (bondRepository.lockById(bondId)?.status != BondStatus.ACTIVE.name) {
+            throw BizException(ErrorCode.CONFLICT, HttpStatus.CONFLICT, "绑定已解除,该提醒不可再操作")
+        }
+    }
+
     private fun parseKind(raw: String): ReminderKind =
         runCatching { ReminderKind.valueOf(raw) }.getOrElse {
             throw BizException(ErrorCode.INVALID_ARGUMENT, HttpStatus.BAD_REQUEST, "未知提醒类型")
@@ -500,12 +544,12 @@ class ReminderService(
     fun listIncoming(userId: Long): List<ReminderView> {
         val activeBondIds = activeBondIds(userId)
         return reminderRepository.findByReceiverIdOrderByFireAt(userId)
-            .filter { it.bondId in activeBondIds }
+            .filter { it.bondId in activeBondIds || it.status in setOf("ACKED", "DECLINED", "MISSED") }
             .map { toView(it, userId) }
     }
 
     /** 用户可见校验;聚合 init 做不变式兜底。 */
-    private fun validate(request: CreateReminderRequest, now: LocalDateTime): ValidatedCreate {
+    private fun validate(creatorId: Long, request: CreateReminderRequest, now: LocalDateTime): ValidatedCreate {
         val title = request.title.trim()
         if (title.isEmpty() || title.length > Reminder.MAX_TITLE) {
             throw BizException(ErrorCode.INVALID_ARGUMENT, HttpStatus.BAD_REQUEST, "标题必填且不超过 20 字")

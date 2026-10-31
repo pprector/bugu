@@ -10,6 +10,7 @@ import org.springframework.jdbc.core.simple.JdbcClient
 import org.springframework.test.web.servlet.MockMvc
 import org.springframework.test.web.servlet.get
 import org.springframework.test.web.servlet.post
+import org.springframework.test.web.servlet.put
 import java.sql.Timestamp
 import java.time.LocalDateTime
 import kotlin.random.Random
@@ -115,11 +116,49 @@ class BondFlowIntegrationTest @Autowired constructor(
             jsonPath("$.data[0].role") { value("RECEIVER") }
         }
 
-        // A 已有 ACTIVE,再次发起被拒(绑定上限)
-        initiate(aToken).andExpect {
-            status { isConflict() }
-            jsonPath("$.code") { value("BOND_LIMITED") }
+        // A 可继续发起另一条关系,同一对用户仍禁止重复 ACTIVE
+        val (_, cToken) = register()
+        confirm(cToken, initiateAndExtractCode(aToken)).andExpect { status { isOk() } }
+        mockMvc.get("/api/v1/bond") {
+            header("Authorization", "Bearer $aToken")
+        }.andExpect { jsonPath("$.data.length()") { value(2) } }
+    }
+
+    @Test
+    fun `双方私人备注隔离并可清空`() {
+        val (aId, aToken) = register()
+        val (bId, bToken) = register()
+        val bondId = confirm(bToken, initiateAndExtractCode(aToken)).andExpect { status { isOk() } }
+            .andReturn().response.contentAsString.let {
+                Regex(""""id"\s*:\s*(\d+)""").find(it)!!.groupValues[1]
+            }
+
+        mockMvc.put("/api/v1/bond/$bondId/remark") {
+            header("Authorization", "Bearer $aToken")
+            contentType = MediaType.APPLICATION_JSON
+            content = """{"remark":"我的备注"}"""
+        }.andExpect { status { isOk() }; jsonPath("$.data.remark") { value("我的备注") } }
+        mockMvc.put("/api/v1/bond/$bondId/remark") {
+            header("Authorization", "Bearer $bToken")
+            contentType = MediaType.APPLICATION_JSON
+            content = """{"remark":"另一方备注"}"""
+        }.andExpect { status { isOk() }; jsonPath("$.data.remark") { value("另一方备注") } }
+        mockMvc.get("/api/v1/bond") { header("Authorization", "Bearer $aToken") }.andExpect {
+            jsonPath("$.data[0].remark") { value("我的备注") }
+            jsonPath("$.data[0].senderNickname") { exists() }
+            jsonPath("$.data[0].receiverNickname") { exists() }
         }
+        mockMvc.put("/api/v1/bond/$bondId/remark") {
+            header("Authorization", "Bearer $aToken")
+            contentType = MediaType.APPLICATION_JSON
+            content = """{"remark":null}"""
+        }.andExpect { status { isOk() } }
+        val (_, outsiderToken) = register()
+        mockMvc.put("/api/v1/bond/$bondId/remark") {
+            header("Authorization", "Bearer $outsiderToken")
+            contentType = MediaType.APPLICATION_JSON
+            content = """{"remark":"非法"}"""
+        }.andExpect { status { isForbidden() } }
     }
 
     @Test
@@ -211,7 +250,7 @@ class BondFlowIntegrationTest @Autowired constructor(
     }
 
     @Test
-    fun `已有ACTIVE的用户不能再被他人绑定_BOND_LIMITED`() {
+    fun `已有ACTIVE可关联第三人_同对用户反向重复拒绝`() {
         val (_, aToken) = register()
         val (_, bToken) = register()
         val (_, cToken) = register()
@@ -219,11 +258,11 @@ class BondFlowIntegrationTest @Autowired constructor(
         // A-B 建绑
         confirm(bToken, initiateAndExtractCode(aToken)).andExpect { status { isOk() } }
 
-        // C 发起,B 试图确认 → B 已有 ACTIVE → BOND_LIMITED
         val cCode = initiateAndExtractCode(cToken)
-        confirm(bToken, cCode).andExpect {
+        confirm(bToken, cCode).andExpect { status { isOk() } }
+        confirm(aToken, initiateAndExtractCode(bToken)).andExpect {
             status { isConflict() }
-            jsonPath("$.code") { value("BOND_LIMITED") }
+            jsonPath("$.code") { value("BOND_INVALID") }
         }
     }
 

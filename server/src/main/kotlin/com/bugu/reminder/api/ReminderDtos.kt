@@ -18,6 +18,18 @@ data class CreateReminderRequest(
     val note: String? = null,
 )
 
+@Serializable
+data class BatchCreateReminderRequest(
+    val receiverIds: List<Long>,
+    val title: String,
+    val kind: String,
+    val fireAt: String,
+    val repeatRule: String? = null,
+    val tone: String = "GENTLE",
+    val voiceEnabled: Boolean = false,
+    val note: String? = null,
+)
+
 /** 修改提醒请求(S4):仅标题与 fireAt 可改,为 null 保持不变,至少一项。 */
 @Serializable
 data class UpdateReminderRequest(

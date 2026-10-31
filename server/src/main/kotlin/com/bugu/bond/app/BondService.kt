@@ -11,7 +11,7 @@ import com.bugu.bond.infra.BondMapper
 import com.bugu.bond.infra.BondRepository
 import com.bugu.bond.infra.BondRow
 import com.bugu.bond.infra.ConfirmThrottleRepository
-import com.bugu.bond.infra.hasActiveBond
+import com.bugu.identity.infra.UserRepository
 import com.bugu.shared.api.BizException
 import com.bugu.shared.api.ErrorCode
 import org.slf4j.LoggerFactory
@@ -31,6 +31,8 @@ import java.time.LocalDateTime
 @Service
 class BondService(
     private val bondRepository: BondRepository,
+    private val userRepository: UserRepository,
+    private val bondLifecycle: BondLifecycle,
     private val confirmThrottleRepository: ConfirmThrottleRepository,
     private val clock: Clock,
     private val transactionTemplate: TransactionTemplate,
@@ -46,7 +48,7 @@ class BondService(
     fun initiate(requesterId: Long): InitiateResponse {
         val now = LocalDateTime.now(clock)
         return transactionTemplate.execute {
-            requireNoActiveBond(requesterId)
+            userRepository.lockUser(requesterId)
             val existing = bondRepository.findFirstByRequesterIdAndStatus(requesterId, BondStatus.PENDING_OUTBOUND.name)
 
             val bond: Bond = if (existing != null &&
@@ -100,6 +102,9 @@ class BondService(
         }
         return try {
             transactionTemplate.execute {
+                val invitation = bondRepository.findFirstByBindCodeAndStatus(code, BondStatus.PENDING_OUTBOUND.name)
+                    ?: throw BizException(ErrorCode.BOND_INVALID, HttpStatus.BAD_REQUEST, "绑定码无效")
+                listOf(invitation.requesterId, confirmerId).distinct().sorted().forEach { userRepository.lockUser(it) }
                 val row = bondRepository.findFirstByBindCodeAndStatus(code, BondStatus.PENDING_OUTBOUND.name)
                     ?: throw BizException(ErrorCode.BOND_INVALID, HttpStatus.BAD_REQUEST, "绑定码无效")
                 val expiresAt = row.codeExpiresAt
@@ -109,7 +114,9 @@ class BondService(
                 if (row.requesterId == confirmerId) {
                     throw BizException(ErrorCode.BOND_INVALID, HttpStatus.BAD_REQUEST, "不能与自己绑定")
                 }
-                requireNoActiveBond(confirmerId)
+                if (bondRepository.findFirstByRequesterIdAndReceiverIdAndStatus(row.requesterId, confirmerId, "ACTIVE") != null ||
+                    bondRepository.findFirstByRequesterIdAndReceiverIdAndStatus(confirmerId, row.requesterId, "ACTIVE") != null
+                ) throw BizException(ErrorCode.BOND_INVALID, HttpStatus.CONFLICT, "双方已有有效绑定关系")
 
                 val domain = BondMapper.toDomain(row)
                 domain.confirm(confirmerId, now)
@@ -143,7 +150,7 @@ class BondService(
     fun unbind(userId: Long, bondId: Long): BondDto {
         val now = LocalDateTime.now(clock)
         return transactionTemplate.execute {
-            val row = bondRepository.findByIdOrNull(bondId)
+            val row = bondRepository.lockById(bondId)
                 ?: throw BizException(ErrorCode.NOT_FOUND, HttpStatus.NOT_FOUND, "绑定关系不存在")
             if (userId != row.requesterId && userId != row.receiverId) {
                 throw BizException(ErrorCode.FORBIDDEN, HttpStatus.FORBIDDEN)
@@ -153,7 +160,9 @@ class BondService(
             }
             val domain = BondMapper.toDomain(row)
             domain.unbind(userId, now)
-            bondRepository.save(BondMapper.toRow(domain)).toDto(userId)
+            val saved = bondRepository.save(BondMapper.toRow(domain))
+            bondLifecycle.deactivate(saved.id!!)
+            saved.toDto(userId)
         }
     }
 
@@ -169,9 +178,20 @@ class BondService(
             }
             .map { it.toDto(userId) }
 
-    private fun requireNoActiveBond(userId: Long) {
-        if (bondRepository.hasActiveBond(userId)) {
-            throw BizException(ErrorCode.BOND_LIMITED, HttpStatus.CONFLICT, "已有绑定关系,上限 1 条")
+    fun updateRemark(userId: Long, bondId: Long, remark: String?): BondDto {
+        if (remark != null && remark.length > 30) {
+            throw BizException(ErrorCode.INVALID_ARGUMENT, HttpStatus.BAD_REQUEST, "备注不超过30字")
+        }
+        return transactionTemplate.execute {
+            val row = bondRepository.lockById(bondId)
+                ?: throw BizException(ErrorCode.NOT_FOUND, HttpStatus.NOT_FOUND, "绑定关系不存在")
+            if (userId != row.requesterId && userId != row.receiverId) {
+                throw BizException(ErrorCode.FORBIDDEN, HttpStatus.FORBIDDEN)
+            }
+            if (row.status != "ACTIVE") throw BizException(ErrorCode.BOND_INVALID, HttpStatus.CONFLICT)
+            val domain = BondMapper.toDomain(row)
+            domain.updateRemark(userId, remark?.trim()?.takeIf { it.isNotEmpty() })
+            bondRepository.save(BondMapper.toRow(domain)).toDto(userId)
         }
     }
 
@@ -201,12 +221,25 @@ class BondService(
 
     private fun deeplink(code: String): String = "bugu://bond?code=$code"
 
-    private fun BondRow.toDto(viewerId: Long) = BondDto(
-        id = id!!,
-        status = status,
-        role = if (requesterId == viewerId) "REQUESTER" else "RECEIVER",
-        counterpartId = if (requesterId == viewerId) receiverId else requesterId,
-        createdAt = createdAt.toString(),
-        confirmedAt = confirmedAt?.toString(),
-    )
+    private fun BondRow.toDto(viewerId: Long): BondDto {
+        val counterpartId = if (requesterId == viewerId) receiverId else requesterId
+        val counterpart = counterpartId?.let { userRepository.findByIdOrNull(it) }
+        val sender = userRepository.findByIdOrNull(requesterId)
+        val receiver = receiverId?.let { userRepository.findByIdOrNull(it) }
+        return BondDto(
+            id = id!!,
+            status = status,
+            role = if (requesterId == viewerId) "REQUESTER" else "RECEIVER",
+            counterpartId = counterpartId,
+            createdAt = createdAt.toString(),
+            confirmedAt = confirmedAt?.toString(),
+            remark = if (requesterId == viewerId) requesterRemark else receiverRemark,
+            counterpartNickname = counterpart?.nickname,
+            counterpartAvatarUrl = counterpart?.avatarUrl,
+            senderNickname = sender?.nickname,
+            receiverNickname = receiver?.nickname,
+            senderAvatarUrl = sender?.avatarUrl,
+            receiverAvatarUrl = receiver?.avatarUrl,
+        )
+    }
 }

@@ -246,7 +246,7 @@ fun GradientButton(
             .clip(RoundedCornerShape(999.dp))
             .background(Brush.linearGradient(listOf(H.CoralLight, H.Coral)))
             .alpha(if (enabled) 1f else 0.45f)
-            .clickable(enabled = enabled && !loading, onClick = onClick),
+            .clickable(role = androidx.compose.ui.semantics.Role.Button, enabled = enabled && !loading, onClick = onClick),
         contentAlignment = Alignment.Center,
     ) {
         Row(verticalAlignment = Alignment.CenterVertically) {

@@ -34,7 +34,7 @@ class ElderModeIntegrationTest @Autowired constructor(
 
     @Test
     fun `标记长辈模式后对方仅可访问白名单端点`() {
-        val (a, b) = client.boundPair()
+        val (a, b) = client.elderPair()
         setElderMode(a.token, b.id, enabled = true).andExpect {
             status { isOk() }
             jsonPath("$.data.elderMode") { value(true) }
@@ -70,7 +70,7 @@ class ElderModeIntegrationTest @Autowired constructor(
 
     @Test
     fun `取消长辈模式后恢复全量访问`() {
-        val (a, b) = client.boundPair()
+        val (a, b) = client.elderPair()
         setElderMode(a.token, b.id, enabled = true)
         setElderMode(a.token, b.id, enabled = false).andExpect {
             status { isOk() }
@@ -93,8 +93,19 @@ class ElderModeIntegrationTest @Autowired constructor(
     }
 
     @Test
-    fun `current返回最早待处理提醒_无则null`() {
+    fun `普通关联不能修改对方全局模式和资料`() {
         val (a, b) = client.boundPair()
+        setElderMode(a.token, b.id, enabled = true).andExpect { status { isForbidden() } }
+        mockMvc.post("/api/v1/bond/elder-profile") {
+            header("Authorization", "Bearer ${a.token}")
+            contentType = MediaType.APPLICATION_JSON
+            content = """{"elderUserId":${b.id},"nickname":"被修改"}"""
+        }.andExpect { status { isForbidden() } }
+    }
+
+    @Test
+    fun `current返回最早待处理提醒_无则null`() {
+        val (a, b) = client.elderPair()
         setElderMode(a.token, b.id, enabled = true)
 
         // 无提醒时 current 返回 null(explicitNulls=false,data 字段省略)

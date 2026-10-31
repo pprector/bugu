@@ -63,6 +63,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
+import com.bugu.client.api.displayName
 import com.bugu.client.api.BondDto
 import com.bugu.client.api.GeitaApi
 import com.bugu.client.api.UserDto
@@ -90,8 +91,8 @@ fun ProfileScreen(
     onCareModeChange: (Boolean) -> Unit,
     onSnack: (String) -> Unit,
 ) {
-    val active = bonds.firstOrNull { it.status == "ACTIVE" }
-    val peerName = active?.counterpartNickname ?: "家人"
+    val active = bonds.filter { it.status == "ACTIVE" }
+    val names = active.take(3).joinToString("、") { it.displayName }
     // 账号类型:NORMAL 手机号账号;ELDER 为免注册接入的长辈设备账号
     val accountLabel = if (user.accountType == "ELDER") "长辈设备账号" else "手机号账号"
 
@@ -243,15 +244,15 @@ fun ProfileScreen(
                 }
                 Spacer(Modifier.width(12.dp))
                 Column(Modifier.weight(1f)) {
-                    if (active != null) {
-                        Text("与${peerName}互伴中", style = MaterialTheme.typography.titleMedium, color = H.Ink)
-                        Text("惦记彼此可见,去管理绑定", style = MaterialTheme.typography.bodySmall, color = H.Ink3)
+                    if (active.isNotEmpty()) {
+                        Text("与 ${active.size} 位亲友互伴中", style = MaterialTheme.typography.titleMedium, color = H.Ink)
+                        Text(names + if (active.size > 3) "等 · 管理亲友" else " · 管理亲友", style = MaterialTheme.typography.bodySmall, color = H.Ink3)
                     } else {
                         Text("还没有互伴", style = MaterialTheme.typography.titleMedium, color = H.Ink)
                         Text("绑定家人朋友,开始互相惦记", style = MaterialTheme.typography.bodySmall, color = H.Ink3)
                     }
                 }
-                TagChip(text = if (active != null) "已互伴" else "去绑定", tint = H.Coral)
+                TagChip(text = if (active.isNotEmpty()) "管理" else "添加亲友", tint = H.Coral)
                 Icon(Icons.AutoMirrored.Filled.KeyboardArrowRight, null, Modifier.size(18.dp), tint = H.Ink3)
             }
         }

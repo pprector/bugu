@@ -45,7 +45,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.rounded.ArrowBack
 import androidx.compose.material.icons.automirrored.rounded.Send
 import androidx.compose.material.icons.rounded.Alarm
-import androidx.compose.material.icons.rounded.Chat
+import androidx.compose.material.icons.automirrored.rounded.Chat
 import androidx.compose.material.icons.rounded.CheckCircle
 import androidx.compose.material.icons.rounded.Edit
 import androidx.compose.material.icons.rounded.EditNote
@@ -91,7 +91,8 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
 import com.bugu.client.api.BondDto
-import com.bugu.client.api.CreateReminderRequest
+import com.bugu.client.api.displayName
+import com.bugu.client.api.BatchCreateReminderRequest
 import com.bugu.client.api.GeitaApi
 import com.bugu.client.api.GeitaApiException
 import com.bugu.ui.common.BrandSwitch
@@ -142,7 +143,6 @@ private val TIME_HINT_REGEX = Regex(
 fun CreateReminderScreen(
     api: GeitaApi,
     userId: Long,
-    peerName: String,
     bonds: List<BondDto>,
     bondsLoading: Boolean,
     bondsError: Boolean,
@@ -153,19 +153,39 @@ fun CreateReminderScreen(
     onRefreshBonds: () -> Unit,
     onSnack: (String) -> Unit,
     onCreated: () -> Unit,
+    preselectedBondId: Long? = null,
+    createRequest: Int = 0,
+    onPreselectionConsumed: () -> Unit = {},
 ) {
     val scope = rememberCoroutineScope()
     val context = LocalContext.current
     val focusManager = LocalFocusManager.current
     val scrollState = rememberScrollState()
 
-    // ---- 接收人:0=自己(默认),>0=ACTIVE 绑定 id;派生选中避免异步竞态 ----
+    // ---- 接收人:自己和 ACTIVE 绑定可多选;派生选中避免异步竞态 ----
     val activeBonds = remember(bonds) { bonds.filter { it.status == "ACTIVE" && it.counterpartId != null } }
-    var pickedBondId by rememberSaveable { mutableStateOf(0L) }
-    // 选中的绑定已被解绑时回落「自己」,避免悬空引用
-    val selectedBond = if (pickedBondId != 0L) activeBonds.firstOrNull { it.id == pickedBondId } else null
-    val selfSelected = selectedBond == null
-    val receiverName = selectedBond?.counterpartNickname?.takeIf { it.isNotBlank() } ?: "你"
+    var selectedRecipientIds by rememberSaveable { mutableStateOf(listOf(userId)) }
+    LaunchedEffect(createRequest, userId) {
+        if (preselectedBondId != null) {
+            activeBonds.firstOrNull { it.id == preselectedBondId }?.counterpartId?.let { counterpartId ->
+                selectedRecipientIds = listOf(counterpartId)
+            }
+        }
+        onPreselectionConsumed()
+    }
+    val selectedRecipientIdSet = selectedRecipientIds.toSet()
+    val selectedBonds = activeBonds.filter { it.counterpartId in selectedRecipientIdSet }
+    val invalidRecipient = selectedRecipientIds.any { recipientId ->
+        recipientId != userId && activeBonds.none { it.counterpartId == recipientId }
+    }
+    val selfSelected = userId in selectedRecipientIdSet
+    val singleBondRecipient = selectedBonds.singleOrNull()?.counterpartId
+    val mutualAlarmAvailable = selectedRecipientIds.size == 1 && singleBondRecipient != null
+    val receiverNames = buildList {
+        if (selfSelected) add("你")
+        addAll(selectedBonds.map { it.displayName })
+    }
+    val receiverName = receiverNames.joinToString("、").ifEmpty { "亲友" }
 
     // ---- 可保存的表单状态(切页面/进程回收不丢) ----
     var title by rememberSaveable { mutableStateOf("") }
@@ -220,7 +240,7 @@ fun CreateReminderScreen(
         repeatMode == "WEEKDAY" -> "WEEKLY:$WORKDAY_CSV"
         else -> "WEEKLY:" + DAY_CODES.filter { it in selectedDays }.joinToString(",")
     }
-    val canSubmit = !busy && title.isNotBlank()
+    val canSubmit = !busy && title.isNotBlank() && selectedRecipientIds.isNotEmpty() && !invalidRecipient
 
     // 系统返回键:回看板而不是退出 App(与左上角箭头一致)
     BackHandler { onBack() }
@@ -231,11 +251,28 @@ fun CreateReminderScreen(
         formError = ""
     }
 
-    /** 选择提醒类型:非互叫类型必须关掉仅它可用的语音叫醒;互叫需要双方,送自己时回落单次。 */
+    /** 选择提醒类型:非互叫类型必须关掉语音;多人或自己参与时不能使用互叫闹钟。 */
     fun selectKind(next: String) {
-        kind = next
-        if (next != "MUTUAL_ALARM") voiceEnabled = false
-        if (next == "MUTUAL_ALARM" && selfSelected) kind = "ONCE"
+        kind = if (next == "MUTUAL_ALARM" && !mutualAlarmAvailable) "ONCE" else next
+        if (kind != "MUTUAL_ALARM") voiceEnabled = false
+        formError = ""
+    }
+
+    fun toggleRecipient(recipientId: Long) {
+        if (busy) return
+        selectedRecipientIds = when {
+            recipientId in selectedRecipientIds -> selectedRecipientIds - recipientId
+            selectedRecipientIds.size >= 20 -> {
+                onSnack("最多选择 20 位接收人")
+                selectedRecipientIds
+            }
+            else -> selectedRecipientIds + recipientId
+        }
+        if (kind == "MUTUAL_ALARM" &&
+            (selectedRecipientIds.size != 1 || userId in selectedRecipientIds)) {
+            kind = "ONCE"
+            voiceEnabled = false
+        }
         formError = ""
     }
 
@@ -390,7 +427,7 @@ fun CreateReminderScreen(
     fun doCreate() {
         if (creating) return
         clearErrors()
-        val bond = selectedBond
+        val receiverIds = selectedRecipientIds.toList()
         when {
             title.isBlank() -> {
                 titleError = "给惦记起个名字吧"
@@ -412,21 +449,29 @@ fun CreateReminderScreen(
                 formError = "循环至少选一天"
                 return
             }
-            kind == "MUTUAL_ALARM" && selfSelected -> {
-                formError = "互叫闹钟需要互伴双方,先选一位好友或换成单次"
+            kind == "MUTUAL_ALARM" && !mutualAlarmAvailable -> {
+                formError = "互叫闹钟只能选择一位亲友"
                 return
             }
-            !selfSelected && bond == null -> {
-                formError = "这位好友的绑定状态已变化,重新选一下"
+            receiverIds.isEmpty() -> {
+                formError = "至少选择一位接收人"
+                return
+            }
+            receiverIds.size > 20 -> {
+                formError = "最多选择 20 位接收人"
+                return
+            }
+            invalidRecipient -> {
+                formError = "部分亲友关联已失效，请重新选择"
                 return
             }
         }
         scope.launch {
             creating = true
             try {
-                api.createReminder(
-                    CreateReminderRequest(
-                        receiverId = bond?.counterpartId ?: userId,
+                api.createRemindersBatch(
+                    BatchCreateReminderRequest(
+                        receiverIds = receiverIds,
                         title = title.trim(),
                         kind = kind,
                         fireAt = "%sT%02d:%02d:00".format(date, hour, minute),
@@ -437,7 +482,8 @@ fun CreateReminderScreen(
                     ),
                 )
                 onSnack(
-                    if (selfSelected) "已设好惦记,到点咕咕会准时唤你"
+                    if (receiverIds.size > 1) "已为 ${receiverIds.size} 人分别设好惦记"
+                    else if (selfSelected) "已设好惦记,到点咕咕会准时唤你"
                     else "已设好惦记,到点咕咕会准时唤$receiverName",
                 )
                 resetForm()
@@ -489,18 +535,20 @@ fun CreateReminderScreen(
             Modifier
                 .weight(1f)
                 .verticalScroll(scrollState)
-                .padding(horizontal = 20.dp),
+                .padding(horizontal = 20.dp)
+                .padding(bottom = 12.dp),
         ) {
-            // ① 送给谁:「自己」默认选中 + 好友横滑选择;加载/失败/未绑定仅在好友区提示
+            Text("把惦记送给谁", style = MaterialTheme.typography.titleMedium, color = H.Ink)
+            Text("可多选 · 已选 ${selectedRecipientIds.size} 人", style = MaterialTheme.typography.bodySmall, color = H.Ink3)
+            if (invalidRecipient) Text("部分亲友关联已失效，请取消后重新选择", color = H.Rose)
             WhoRow(
                 bonds = activeBonds,
-                selectedBondId = selectedBond?.id ?: 0L,
+                selectedRecipientIds = selectedRecipientIdSet,
                 selfSelected = selfSelected,
                 loading = bondsLoading,
                 failed = bondsError,
-                fallbackName = peerName,
-                onSelectSelf = { pickedBondId = 0L },
-                onSelectBond = { pickedBondId = it },
+                onSelectSelf = { toggleRecipient(userId) },
+                onSelectBond = { toggleRecipient(it) },
                 onGoBind = onOpenFriends,
                 onRetry = onRefreshBonds,
             )
@@ -617,7 +665,7 @@ fun CreateReminderScreen(
                             .padding(horizontal = 16.dp, vertical = 12.dp),
                         verticalAlignment = Alignment.CenterVertically,
                     ) {
-                        CircleIcon(icon = Icons.Rounded.Chat, bg = H.MintTint, tint = H.Mint, size = 32.dp, iconSize = 16.dp)
+                        CircleIcon(icon = Icons.AutoMirrored.Rounded.Chat, bg = H.MintTint, tint = H.Mint, size = 32.dp, iconSize = 16.dp)
                         Spacer(Modifier.width(12.dp))
                         Column(Modifier.weight(1f)) {
                             Row(verticalAlignment = Alignment.CenterVertically) {
@@ -674,9 +722,16 @@ fun CreateReminderScreen(
                 }
             }
 
-            Spacer(Modifier.height(16.dp))
+            Spacer(Modifier.height(12.dp))
+        }
 
-            // ③ 创建:始终在表单尾部,一键落库
+        // ③ 固定操作区:按钮不随表单滚动,键盘出现时随 imePadding 一起上移
+        Column(
+            Modifier
+                .fillMaxWidth()
+                .background(H.Canvas)
+                .padding(horizontal = 20.dp),
+        ) {
             GradientButton(
                 text = when {
                     creating -> "创建中…"
@@ -707,7 +762,7 @@ fun CreateReminderScreen(
                     color = H.Ink3,
                 )
             }
-            Spacer(Modifier.height(16.dp))
+            Spacer(Modifier.height(8.dp))
         }
 
         // ④ 吸底智能条:说话 / 打字 / 粘贴统一入口,imePadding 贴键盘
@@ -917,8 +972,8 @@ fun CreateReminderScreen(
                     selected = kind == "REPEAT",
                     onClick = { selectKind("REPEAT") },
                 )
-                // 互叫闹钟需要双方,送给自己时不出现
-                if (!selfSelected) {
+                // 互叫闹钟只适用于一位亲友
+                if (mutualAlarmAvailable) {
                     KindOption(
                         icon = Icons.Rounded.NotificationsActive,
                         title = "互叫闹钟",
@@ -1077,11 +1132,10 @@ fun CreateReminderScreen(
 @Composable
 private fun WhoRow(
     bonds: List<BondDto>,
-    selectedBondId: Long,
+    selectedRecipientIds: Set<Long>,
     selfSelected: Boolean,
     loading: Boolean,
     failed: Boolean,
-    fallbackName: String,
     onSelectSelf: () -> Unit,
     onSelectBond: (Long) -> Unit,
     onGoBind: () -> Unit,
@@ -1111,12 +1165,12 @@ private fun WhoRow(
                     horizontalArrangement = Arrangement.spacedBy(8.dp),
                 ) {
                     bonds.forEach { bond ->
-                        val name = bond.counterpartNickname?.takeIf { it.isNotBlank() } ?: fallbackName
+                        val name = bond.displayName
                         PersonChip(
                             name = name,
                             avatarText = name.take(1),
-                            selected = !selfSelected && bond.id == selectedBondId,
-                            onClick = { onSelectBond(bond.id) },
+                            selected = bond.counterpartId in selectedRecipientIds,
+                            onClick = { bond.counterpartId?.let(onSelectBond) },
                         )
                     }
                 }
@@ -1168,11 +1222,11 @@ private fun WhoRow(
 private fun PersonChip(name: String, avatarText: String, selected: Boolean, onClick: () -> Unit) {
     Row(
         Modifier
-            .heightIn(min = 40.dp)
+            .heightIn(min = 48.dp)
             .clip(RoundedCornerShape(999.dp))
             .background(if (selected) H.CoralTint else Color.White)
             .border(1.dp, if (selected) H.Coral else H.Hairline, RoundedCornerShape(999.dp))
-            .selectable(selected = selected, role = Role.RadioButton, onClick = onClick)
+            .selectable(selected = selected, role = Role.Checkbox, onClick = onClick)
             .padding(start = 5.dp, end = 13.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {

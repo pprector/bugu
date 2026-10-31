@@ -36,4 +36,14 @@ data class BondDto(
     val createdAt: String,
     /** ISO-8601;未确认为 null */
     val confirmedAt: String?,
+    val remark: String? = null,
+    val counterpartNickname: String? = null,
+    val counterpartAvatarUrl: String? = null,
+    val senderNickname: String? = null,
+    val receiverNickname: String? = null,
+    val senderAvatarUrl: String? = null,
+    val receiverAvatarUrl: String? = null,
 )
+
+@Serializable
+data class UpdateBondRemarkRequest(val remark: String?)

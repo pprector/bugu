@@ -64,6 +64,9 @@ interface GeitaApi {
     /** POST /bond/{id}/unbind:解绑,即时隔离双方提醒。 */
     suspend fun unbind(bondId: Long): BondDto
 
+    /** PUT /bond/{id}/remark:仅当前用户可见的亲友备注。 */
+    suspend fun updateBondRemark(bondId: Long, remark: String?): BondDto
+
     /** POST /bond/elder-mode:子女端标记/取消对方长辈模式,即时生效。 */
     suspend fun setElderMode(peerId: Long, enabled: Boolean): UserDto
 
@@ -74,6 +77,9 @@ interface GeitaApi {
 
     /** POST /reminder:创建提醒,预生成首条 fire。 */
     suspend fun createReminder(request: CreateReminderRequest): ReminderView
+
+    /** POST /reminder/batch:为多个接收人分别创建相同提醒。 */
+    suspend fun createRemindersBatch(request: BatchCreateReminderRequest): List<ReminderView>
 
     /** POST /reminder/parse:一句话解析草稿(降级桩或 LLM),needsManual 回退手动表单。 */
     suspend fun parse(text: String): ParseDraft

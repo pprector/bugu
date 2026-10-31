@@ -20,6 +20,8 @@ class Bond(
     confirmedAt: LocalDateTime?,
     unboundAt: LocalDateTime?,
     relationTag: String?,
+    requesterRemark: String? = null,
+    receiverRemark: String? = null,
     val createdAt: LocalDateTime,
 ) {
 
@@ -43,6 +45,17 @@ class Bond(
 
     var relationTag: String? = relationTag
         private set
+
+    var requesterRemark: String? = requesterRemark
+        private set
+
+    var receiverRemark: String? = receiverRemark
+        private set
+
+    fun updateRemark(actorId: Long, remark: String?) {
+        check(actorId == requesterId || actorId == receiverId) { "非绑定双方不可修改" }
+        if (actorId == requesterId) requesterRemark = remark else receiverRemark = remark
+    }
 
     /** 发起方续发绑定码:仅 PENDING_OUTBOUND 状态可续(过期或首次发起)。 */
     fun reissueBindCode(code: String, expiresAt: LocalDateTime) {

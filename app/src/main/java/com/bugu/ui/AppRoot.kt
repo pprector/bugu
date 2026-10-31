@@ -86,6 +86,7 @@ import com.bugu.ui.common.GradientButton
 import com.bugu.ui.common.GuguBird
 import com.bugu.ui.common.GuguMood
 import com.bugu.ui.screens.CalendarScreen
+import com.bugu.ui.screens.CompanionDetailScreen
 import com.bugu.ui.screens.CompanionScreen
 import com.bugu.ui.screens.CreateReminderScreen
 import com.bugu.ui.screens.DashboardScreen
@@ -106,6 +107,7 @@ sealed interface Screen {
     data object Permissions : Screen
     data object Main : Screen
     data object Friends : Screen
+    data class Companion(val bondId: Long) : Screen
     data object History : Screen
     data object Calendar : Screen
 }
@@ -139,6 +141,14 @@ fun AppRoot() {
     }
     var screen by remember { mutableStateOf<Screen>(Screen.Main) }
     var tab by remember { mutableStateOf(Tab.DASHBOARD) }
+    var preselectedBondId by remember { mutableStateOf<Long?>(null) }
+    var createRequest by remember { mutableStateOf(0) }
+    fun createFor(bondId: Long) {
+        preselectedBondId = bondId
+        createRequest++
+        screen = Screen.Main
+        tab = Tab.CREATE
+    }
     // 大字关怀模式:按字号缩放,而非把看板当成「新用户空态」;持久化后重启仍生效
     var careMode by remember {
         mutableStateOf(
@@ -214,7 +224,11 @@ fun AppRoot() {
 
     /** 绑定状态变化(发起/确认/解绑)后重拉。 */
     fun refreshBonds() {
-        scope.launch { loadBonds() }
+        scope.launch {
+            loadBonds()
+            runCatching { ReminderSync.sync(context, api) }
+                .onFailure { showSnack("关系已刷新，本地提醒同步失败，请稍后重试") }
+        }
     }
 
     Box(Modifier.fillMaxSize().background(H.Canvas)) {
@@ -259,18 +273,28 @@ fun AppRoot() {
                 s == Screen.Friends -> FriendsScreen(
                     api = api,
                     bonds = bonds,
+                    bondsLoading = bondsLoading,
+                    bondsError = bondsError,
                     onRefresh = ::refreshBonds,
                     onBack = { screen = Screen.Main },
                     onSnack = showSnack,
-                    onCreateFor = {
-                        screen = Screen.Main
-                        tab = Tab.CREATE
-                    },
+                    onCreateFor = ::createFor,
+                    onOpenBond = { screen = Screen.Companion(it) },
+                )
+
+                s is Screen.Companion -> CompanionDetailScreen(
+                    api = api,
+                    bondId = s.bondId,
+                    bonds = bonds,
+                    onBack = { screen = Screen.Main },
+                    onRefreshBonds = ::refreshBonds,
+                    onCreateFor = ::createFor,
+                    onSnack = showSnack,
                 )
 
                 s == Screen.History -> HistoryScreen(
                     api = api,
-                    peerName = activePeerName(bonds),
+                    bonds = bonds,
                     onBack = { screen = Screen.Main },
                     onGoCreate = {
                         screen = Screen.Main
@@ -280,7 +304,7 @@ fun AppRoot() {
 
                 s == Screen.Calendar -> CalendarScreen(
                     api = api,
-                    peerName = activePeerName(bonds),
+                    bonds = bonds,
                     onBack = { screen = Screen.Main },
                 )
 
@@ -291,7 +315,6 @@ fun AppRoot() {
                     bonds = bonds,
                     bondsLoading = bondsLoading,
                     bondsError = bondsError,
-                    peerName = activePeerName(bonds),
                     onRefreshBonds = ::refreshBonds,
                     onLogout = ::logout,
                     tab = tab,
@@ -302,6 +325,9 @@ fun AppRoot() {
                     permAsked = permAsked,
                     tabStates = tabStates,
                     onSnack = showSnack,
+                    preselectedBondId = preselectedBondId,
+                    createRequest = createRequest,
+                    onPreselectionConsumed = { preselectedBondId = null },
                 )
             }
         }
@@ -360,12 +386,6 @@ private fun BootRetryScreen(onRetry: () -> Unit) {
     }
 }
 
-/** ACTIVE 绑定的对端称呼;未绑定时回落「家人」。 */
-private fun activePeerName(bonds: List<BondDto>): String =
-    bonds.firstOrNull { it.status == "ACTIVE" }?.counterpartNickname
-        ?: bonds.firstOrNull()?.counterpartNickname
-        ?: "家人"
-
 /** 登录后的主框架(四 Tab)与二级页跳转。 */
 @Composable
 private fun MainHost(
@@ -375,7 +395,6 @@ private fun MainHost(
     bonds: List<BondDto>,
     bondsLoading: Boolean,
     bondsError: Boolean,
-    peerName: String,
     onRefreshBonds: () -> Unit,
     onLogout: () -> Unit,
     tab: Tab,
@@ -386,6 +405,9 @@ private fun MainHost(
     permAsked: Boolean,
     tabStates: SaveableStateHolder,
     onSnack: (String) -> Unit,
+    preselectedBondId: Long?,
+    createRequest: Int,
+    onPreselectionConsumed: () -> Unit,
 ) {
     val baseDensity = LocalDensity.current
     Column(Modifier.fillMaxSize()) {
@@ -410,7 +432,7 @@ private fun MainHost(
                         when (t) {
                             Tab.DASHBOARD -> DashboardScreen(
                                 api = api,
-                                peerName = peerName,
+                                bonds = bonds,
                                 onOpenHistory = { onOpen(Screen.History) },
                                 onOpenCalendar = { onOpen(Screen.Calendar) },
                                 onGoCreate = { onTabChange(Tab.CREATE) },
@@ -418,8 +440,7 @@ private fun MainHost(
 
                             Tab.CREATE -> CreateReminderScreen(
                                 api = api,
-                                userId = user?.id ?: 0L,
-                                peerName = peerName,
+                                userId = user.id,
                                 bonds = bonds,
                                 bondsLoading = bondsLoading,
                                 bondsError = bondsError,
@@ -430,15 +451,18 @@ private fun MainHost(
                                 onRefreshBonds = onRefreshBonds,
                                 onSnack = onSnack,
                                 onCreated = { onTabChange(Tab.DASHBOARD) },
+                                preselectedBondId = preselectedBondId,
+                                createRequest = createRequest,
+                                onPreselectionConsumed = onPreselectionConsumed,
                             )
 
                             Tab.COMPANION -> CompanionScreen(
-                                api = api,
                                 bonds = bonds,
-                                peerName = peerName,
+                                bondsLoading = bondsLoading,
+                                bondsError = bondsError,
                                 onOpenFriends = { onOpen(Screen.Friends) },
+                                onOpenBond = { onOpen(Screen.Companion(it)) },
                                 onRefreshBonds = onRefreshBonds,
-                                onSnack = onSnack,
                             )
 
                             Tab.PROFILE -> ProfileScreen(

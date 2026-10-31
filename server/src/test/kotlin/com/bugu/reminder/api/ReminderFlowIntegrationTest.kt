@@ -47,6 +47,65 @@ class ReminderFlowIntegrationTest @Autowired constructor(
     }
 
     @Test
+    fun `多人创建为每位接收人分别生成提醒`() {
+        val (a, b) = client.boundPair()
+        val c = client.register()
+        client.confirm(c.token, client.initiateAndGetCode(a.token))
+        mockMvc.post("/api/v1/reminder/batch") {
+            header("Authorization", "Bearer ${a.token}")
+            contentType = org.springframework.http.MediaType.APPLICATION_JSON
+            content = """{"receiverIds":[${b.id},${c.id}],"title":"一起喝水","kind":"ONCE","fireAt":"${LocalDateTime.now().plusHours(2).withNano(0)}"}"""
+        }.andExpect { status { isOk() } }
+        assertTrue(reminders.incoming(b.token).contains("一起喝水"))
+        assertTrue(reminders.incoming(c.token).contains("一起喝水"))
+    }
+
+    @Test
+    fun `批量创建不允许空接收人`() {
+        val a = client.register()
+        mockMvc.post("/api/v1/reminder/batch") {
+            header("Authorization", "Bearer ${a.token}")
+            contentType = org.springframework.http.MediaType.APPLICATION_JSON
+            content = """{"receiverIds":[],"title":"空接收人","kind":"ONCE","fireAt":"${LocalDateTime.now().plusHours(2).withNano(0)}"}"""
+        }.andExpect { status { isBadRequest() } }
+    }
+
+    @Test
+    fun `批量创建最多允许二十位接收人`() {
+        val a = client.register()
+        val receiverIds = (1L..21L).joinToString(",")
+        mockMvc.post("/api/v1/reminder/batch") {
+            header("Authorization", "Bearer ${a.token}")
+            contentType = org.springframework.http.MediaType.APPLICATION_JSON
+            content = """{"receiverIds":[$receiverIds],"title":"人数上限","kind":"ONCE","fireAt":"${LocalDateTime.now().plusHours(2).withNano(0)}"}"""
+        }.andExpect { status { isBadRequest() } }
+    }
+
+    @Test
+    fun `批量创建互叫闹钟只允许一位接收人`() {
+        val (a, b) = client.boundPair()
+        val c = client.register()
+        client.confirm(c.token, client.initiateAndGetCode(a.token))
+        mockMvc.post("/api/v1/reminder/batch") {
+            header("Authorization", "Bearer ${a.token}")
+            contentType = org.springframework.http.MediaType.APPLICATION_JSON
+            content = """{"receiverIds":[${b.id},${c.id}],"title":"一起起床","kind":"MUTUAL_ALARM","fireAt":"${LocalDateTime.now().plusHours(2).withNano(0)}"}"""
+        }.andExpect { status { isBadRequest() } }
+    }
+
+    @Test
+    fun `批量创建任一接收人失败时整体回滚`() {
+        val (a, b) = client.boundPair()
+        val c = client.register()
+        mockMvc.post("/api/v1/reminder/batch") {
+            header("Authorization", "Bearer ${a.token}")
+            contentType = org.springframework.http.MediaType.APPLICATION_JSON
+            content = """{"receiverIds":[${b.id},${c.id}],"title":"原子批量","kind":"ONCE","fireAt":"${LocalDateTime.now().plusHours(2).withNano(0)}"}"""
+        }.andExpect { status { isForbidden() } }
+        assertTrue(!reminders.incoming(b.token).contains("原子批量"))
+    }
+
+    @Test
     fun `REPEAT类型带DAILY规则创建成功`() {
         val (a, b) = client.boundPair()
         reminders.create(a.token, b.id, kind = "REPEAT", repeatRule = "DAILY")

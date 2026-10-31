@@ -26,6 +26,10 @@ class ReminderController(private val reminderService: ReminderService) {
     fun create(currentUser: CurrentUser, @RequestBody request: CreateReminderRequest): ApiResponse<ReminderView> =
         ApiResponse.ok(reminderService.create(currentUser.id, request))
 
+    @PostMapping("/batch")
+    fun createBatch(currentUser: CurrentUser, @RequestBody request: BatchCreateReminderRequest): ApiResponse<List<ReminderView>> =
+        ApiResponse.ok(reminderService.createBatch(currentUser.id, request))
+
     @PostMapping("/parse")
     fun parse(currentUser: CurrentUser, @RequestBody request: ParseRequest): ApiResponse<ParseDraft> =
         ApiResponse.ok(reminderService.parse(request))

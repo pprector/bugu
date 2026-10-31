@@ -222,6 +222,9 @@ class KtorGeitaApi(
     override suspend fun unbind(bondId: Long): BondDto =
         callForData(BondDto.serializer(), HttpMethod.Post, listOf("api", "v1", "bond", bondId.toString(), "unbind"))
 
+    override suspend fun updateBondRemark(bondId: Long, remark: String?): BondDto =
+        callForData(BondDto.serializer(), HttpMethod.Put, listOf("api", "v1", "bond", bondId.toString(), "remark"), body = BondRemarkRequest(remark).toJson())
+
     override suspend fun setElderMode(peerId: Long, enabled: Boolean): UserDto =
         callForData(UserDto.serializer(), HttpMethod.Post, listOf("api", "v1", "bond", "elder-mode"), body = ElderModeRequest(peerId, enabled))
 
@@ -235,6 +238,14 @@ class KtorGeitaApi(
 
     override suspend fun createReminder(request: CreateReminderRequest): ReminderView =
         callForData(ReminderView.serializer(), HttpMethod.Post, listOf("api", "v1", "reminder"), body = request)
+
+    override suspend fun createRemindersBatch(request: BatchCreateReminderRequest): List<ReminderView> =
+        callForData(
+            ListSerializer(ReminderView.serializer()),
+            HttpMethod.Post,
+            listOf("api", "v1", "reminder", "batch"),
+            body = request,
+        )
 
     override suspend fun parse(text: String): ParseDraft =
         callForData(ParseDraft.serializer(), HttpMethod.Post, listOf("api", "v1", "reminder", "parse"), body = ParseRequest(text))

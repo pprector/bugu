@@ -34,6 +34,7 @@ class PushService(
     private val reminderRepository: ReminderRepository,
     private val responseStatsQuery: ResponseStatsQuery,
     private val clock: Clock,
+    private val bondRepository: com.bugu.bond.infra.BondRepository,
 ) {
 
     private val log = LoggerFactory.getLogger(javaClass)
@@ -47,6 +48,7 @@ class PushService(
      * @param tone 语气档 GENTLE/NAG/STRICT,用于生成或选模板
      * @param scene 文案场景 CREATE/REPUSH/WAKEUP
      */
+    @org.springframework.transaction.annotation.Transactional
     fun push(fireId: Long, stage: String, action: String, userId: Long, tone: String, scene: String): PushResult {
         val content = composeContent(fireId, stage, tone, scene, null)
         if (content == null) {
@@ -62,6 +64,7 @@ class PushService(
      * (升级链日志有外键指向 fire,创建通知若落库会阻塞 update 删除重建 PENDING fire);
      * 文案生成与降级观测由 ai_gen_log(scene=COPY)承担,推送结果记日志。
      */
+    @org.springframework.transaction.annotation.Transactional(propagation = org.springframework.transaction.annotation.Propagation.REQUIRES_NEW)
     fun pushCreated(fireId: Long, receiverId: Long, title: String, tone: String): PushResult {
         val content = composeContent(fireId, "T0", tone, "CREATE", title)
         if (content == null) {
@@ -104,6 +107,10 @@ class PushService(
 
     /** 逐令牌发送,任一通道 Accepted 即止;无令牌返回 Skipped,不伪造成功。 */
     private fun sendToUser(userId: Long, content: String, fireId: Long, stage: String): PushResult {
+        val fire = reminderFireRepository.findByIdOrNull(fireId) ?: return PushResult.Skipped
+        val reminder = reminderRepository.findByIdOrNull(fire.reminderId) ?: return PushResult.Skipped
+        if (reminder.bondId != null && bondRepository.lockById(reminder.bondId)?.status != "ACTIVE") return PushResult.Skipped
+        if (reminder.status == "CANCELED" || fire.state == "CLOSED") return PushResult.Skipped
         val tokens = deviceTokenRepository.findByUserIdAndPushEnabledTrue(userId)
         if (tokens.isEmpty()) {
             log.warn("no enabled device token for user={}, push skipped", userId)

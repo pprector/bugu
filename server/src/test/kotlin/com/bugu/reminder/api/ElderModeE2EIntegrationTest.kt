@@ -49,7 +49,7 @@ class ElderModeE2EIntegrationTest @Autowired constructor(
 
     @Test
     fun `标记_限流_current_ack_revoke 全链路`() {
-        val (a, b) = client.boundPair()
+        val (a, b) = client.elderPair()
 
         // 1. 子女 a 标记 b 为长辈模式
         setElderMode(a.token, b.id, enabled = true).andExpect {

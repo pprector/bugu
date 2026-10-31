@@ -37,6 +37,9 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import com.bugu.client.api.BondDto
+import com.bugu.client.domain.companionName
+import com.bugu.client.domain.directionLabel
 import com.bugu.client.api.GeitaApi
 import com.bugu.client.api.GeitaApiException
 import com.bugu.client.api.ReminderView
@@ -58,30 +61,31 @@ private data class HistoryEntry(val r: ReminderView, val byMe: Boolean)
 @Composable
 fun HistoryScreen(
     api: GeitaApi,
-    peerName: String,
+    bonds: List<BondDto>,
     onBack: () -> Unit,
     onGoCreate: () -> Unit,
 ) {
     var mine by remember { mutableStateOf<List<ReminderView>?>(null) } // null = 首载中
     var incoming by remember { mutableStateOf<List<ReminderView>?>(null) }
 
-    LaunchedEffect(Unit) {
+    var failed by remember { mutableStateOf(false) }
+    var retry by remember { mutableStateOf(0) }
+    LaunchedEffect(retry) {
+        failed = false
         try {
-            mine = api.myReminders()
-            incoming = api.incomingReminders()
-        } catch (_: GeitaApiException) {
-            mine = emptyList()
-            incoming = emptyList()
-        } catch (_: Exception) {
-            mine = emptyList()
-            incoming = emptyList()
-        }
+            val loadedMine = api.myReminders()
+            val loadedIncoming = api.incomingReminders()
+            mine = loadedMine
+            incoming = loadedIncoming
+        } catch (e: kotlinx.coroutines.CancellationException) { throw e }
+        catch (_: Exception) { failed = true }
     }
 
     val today = LocalDate.now()
     val entries = remember(mine, incoming) {
         (mine.orEmpty().map { HistoryEntry(it, byMe = true) } +
             incoming.orEmpty().map { HistoryEntry(it, byMe = false) })
+            .distinctBy { it.r.id }
             .sortedByDescending { it.r.fireAt }
     }
     // 按触发日分组(LinkedHashMap 保持倒序插入)
@@ -116,7 +120,11 @@ fun HistoryScreen(
             }
         }
 
-        if (mine == null || incoming == null) {
+        if (failed) {
+            item {
+                EmptyState(title = "历史加载失败", subtitle = "检查网络后再试试", actionText = "重试", onAction = { retry++ })
+            }
+        } else if (mine == null || incoming == null) {
             item {
                 Box(Modifier.fillMaxWidth().padding(vertical = 32.dp), contentAlignment = Alignment.Center) {
                     CircularProgressIndicator(color = H.Coral, modifier = Modifier.size(28.dp), strokeWidth = 2.5.dp)
@@ -147,7 +155,7 @@ fun HistoryScreen(
                                 Text("${items.size} 条", style = MaterialTheme.typography.titleSmall, color = H.Ink2)
                             }
                         }
-                        items.forEachIndexed { i, entry -> HistoryCard(entry, peerName) }
+                        items.forEach { entry -> HistoryCard(entry, entry.r.companionName(bonds), entry.r.directionLabel(bonds, entry.byMe)) }
                     }
                 }
             }
@@ -157,7 +165,7 @@ fun HistoryScreen(
 
 /** 单条历史卡:方向头像 + 标题/状态彩标 + 类型与时刻。 */
 @Composable
-private fun HistoryCard(entry: HistoryEntry, peerName: String) {
+private fun HistoryCard(entry: HistoryEntry, peerName: String, direction: String) {
     val r = entry.r
     RiseIn {
         Column(
@@ -172,7 +180,7 @@ private fun HistoryCard(entry: HistoryEntry, peerName: String) {
                     avatar = null,
                     size = 44.dp,
                     ring = if (entry.byMe) H.Coral.copy(alpha = 0.4f) else H.Indigo.copy(alpha = 0.4f),
-                    fallbackText = if (entry.byMe) "我" else peerName.take(1),
+                    fallbackText = if (entry.byMe) "我" else peerName.firstOrNull()?.toString() ?: "?",
                 )
                 Spacer(Modifier.width(12.dp))
                 Column(Modifier.weight(1f)) {
@@ -192,7 +200,7 @@ private fun HistoryCard(entry: HistoryEntry, peerName: String) {
                         TagChip(text = kindLabel(r.kind), tint = if (r.kind == "MUTUAL_ALARM") H.Coral else H.Indigo, icon = Icons.Outlined.NotificationsActive)
                         Spacer(Modifier.width(8.dp))
                         Text(
-                            if (entry.byMe) "我 → $peerName" else "$peerName → 我",
+                            direction,
                             style = MaterialTheme.typography.bodySmall,
                             color = H.Ink3,
                         )
