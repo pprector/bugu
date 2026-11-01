@@ -1,5 +1,8 @@
 package com.bugu.ui
 
+import android.media.AudioAttributes
+import android.media.MediaPlayer
+import android.net.Uri
 import android.os.Bundle
 import android.speech.tts.TextToSpeech
 import androidx.activity.ComponentActivity
@@ -12,9 +15,10 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.lifecycle.lifecycleScope
+import com.bugu.ApiFactory
+import com.bugu.R
 import com.bugu.client.api.AckRequest
 import com.bugu.client.api.GeitaApiException
-import com.bugu.ApiFactory
 import com.bugu.schedule.AlarmScheduler
 import com.bugu.schedule.PrefsStores
 import com.bugu.schedule.PendingReport
@@ -35,6 +39,7 @@ import java.util.Locale
 class RingActivity : ComponentActivity() {
 
     private var tts: TextToSpeech? = null
+    private var bell: MediaPlayer? = null
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -53,6 +58,24 @@ class RingActivity : ComponentActivity() {
         val queue = ReportQueue(stores.reportQueue)
         val copyCache = WakeupCopyCache(stores.wakeupCopy)
         val scope = this.lifecycleScope
+
+        // 到点先响「布谷」两声(raw/bugu_call.wav 内含两次鸣叫),走闹钟声道
+        bell = runCatching {
+            MediaPlayer().apply {
+                setAudioAttributes(
+                    AudioAttributes.Builder()
+                        .setUsage(AudioAttributes.USAGE_ALARM)
+                        .setContentType(AudioAttributes.CONTENT_TYPE_SONIFICATION)
+                        .build(),
+                )
+                setDataSource(
+                    this@RingActivity,
+                    Uri.parse("android.resource://$packageName/${R.raw.bugu_call}"),
+                )
+                prepare()
+                start()
+            }
+        }.getOrNull()
 
         // 防抖:确认/小憩只发一次
         var handled = false
@@ -114,6 +137,8 @@ class RingActivity : ComponentActivity() {
     }
 
     override fun onDestroy() {
+        bell?.release()
+        bell = null
         tts?.shutdown()
         super.onDestroy()
     }

@@ -146,4 +146,39 @@ class AdminAccountIntegrationTest @Autowired constructor(
             jsonPath("$.code") { value("CONFLICT") }
         }
     }
+
+    @Test
+    fun `创建账号参数校验_400`() {
+        val token = superToken()
+
+        val invalidBodies = listOf(
+            """{"username": "ab", "password": "pass-12345", "nickname": "运营", "role": "OPS"}""",
+            """{"username": "short-pass", "password": "1234567", "nickname": "运营", "role": "OPS"}""",
+            """{"username": "blank-nick", "password": "pass-12345", "nickname": "   ", "role": "OPS"}""",
+            """{"username": "bad-role", "password": "pass-12345", "nickname": "运营", "role": "GUEST"}""",
+        )
+        invalidBodies.forEach { body ->
+            mockMvc.post("/api/v1/admin/admin-users") {
+                header("Authorization", "Bearer $token")
+                contentType = MediaType.APPLICATION_JSON
+                content = body
+            }.andExpect {
+                status { isBadRequest() }
+                jsonPath("$.code") { value("INVALID_ARGUMENT") }
+            }
+        }
+    }
+
+    @Test
+    fun `停用不存在账号_404`() {
+        val token = superToken()
+        mockMvc.patch("/api/v1/admin/admin-users/99999999/enabled") {
+            header("Authorization", "Bearer $token")
+            contentType = MediaType.APPLICATION_JSON
+            content = """{"enabled": false}"""
+        }.andExpect {
+            status { isNotFound() }
+            jsonPath("$.code") { value("NOT_FOUND") }
+        }
+    }
 }

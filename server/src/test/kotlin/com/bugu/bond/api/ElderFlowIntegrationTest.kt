@@ -6,9 +6,12 @@ import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.test.context.SpringBootTest
 import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc
 import org.springframework.http.MediaType
+import org.springframework.jdbc.core.JdbcTemplate
 import org.springframework.test.web.servlet.MockMvc
 import org.springframework.test.web.servlet.get
 import org.springframework.test.web.servlet.post
+import java.sql.Timestamp
+import java.time.LocalDateTime
 
 /**
  * 长辈免注册接入全链路:设备注册(幂等)→ 直建 ACTIVE bond → 代填资料 → 绑手机号升级,
@@ -19,6 +22,7 @@ import org.springframework.test.web.servlet.post
 class ElderFlowIntegrationTest @Autowired constructor(
     private val mockMvc: MockMvc,
     smsSender: ConsoleSmsSender,
+    private val jdbc: JdbcTemplate,
 ) {
 
     private val client = AuthTestClient(mockMvc, smsSender)
@@ -133,6 +137,32 @@ class ElderFlowIntegrationTest @Autowired constructor(
         elderProfile(stranger.token, other.id, "妈妈", null).andExpect {
             status { isForbidden() }
             jsonPath("$.code") { value("FORBIDDEN") }
+        }
+    }
+
+    @Test
+    fun `邀请码过期_长辈注册400`() {
+        val child = client.register()
+        val inviteCode = client.initiateAndGetCode(child.token)
+
+        jdbc.update(
+            "UPDATE bond SET code_expires_at = ? WHERE bind_code = ?",
+            Timestamp.valueOf(LocalDateTime.now().minusMinutes(1)),
+            inviteCode,
+        )
+
+        elderRegister("device-expired-${client.randomPhone()}", "Model-Z", inviteCode).andExpect {
+            status { isBadRequest() }
+            jsonPath("$.code") { value("BOND_INVALID") }
+        }
+    }
+
+    @Test
+    fun `代填自己400`() {
+        val child = client.register()
+        elderProfile(child.token, child.id, "自己", null).andExpect {
+            status { isBadRequest() }
+            jsonPath("$.code") { value("BOND_INVALID") }
         }
     }
 }

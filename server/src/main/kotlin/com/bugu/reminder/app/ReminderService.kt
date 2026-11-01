@@ -27,6 +27,7 @@ import com.bugu.reminder.domain.RepeatRulePolicy
 import com.bugu.reminder.domain.ToneLevel
 import com.bugu.reminder.infra.AckRepository
 import com.bugu.reminder.infra.AckRow
+import com.bugu.reminder.infra.EscalationLogRepository
 import com.bugu.reminder.infra.MuteSettingRepository
 import com.bugu.reminder.infra.MuteSettingRow
 import com.bugu.reminder.infra.ReminderFireRepository
@@ -62,6 +63,7 @@ class ReminderService(
     private val aiGenLogRepository: AiGenLogRepository,
     private val muteSettingRepository: MuteSettingRepository,
     private val ackRepository: AckRepository,
+    private val escalationLogRepository: EscalationLogRepository,
     private val wakeupCopyService: WakeupCopyService,
     private val clock: Clock,
     private val transactionTemplate: TransactionTemplate,
@@ -217,6 +219,11 @@ class ReminderService(
             if (newFireAt != null) {
                 val pendingFires = reminderFireRepository.findByReminderIdOrderByFireAt(reminderId)
                     .filter { it.state == "PENDING" }
+                // escalation_log 外键指向 fire:旧 fire 已被升级链记录时必须先删日志再删 fire,否则改时间 500
+                val pendingFireIds = pendingFires.mapNotNull { it.id }
+                if (pendingFireIds.isNotEmpty()) {
+                    escalationLogRepository.deleteByFireIdIn(pendingFireIds)
+                }
                 reminderFireRepository.deleteAll(pendingFires)
                 saveFires(reminderId, domain.kind, saved.fireAt, domain.creatorId, domain.receiverId)
             }

@@ -1,6 +1,7 @@
 package com.bugu.admin.api
 
 import com.bugu.admin.infra.AdminAuditLogRepository
+import com.bugu.admin.app.AdminAiService
 import com.bugu.ai.infra.AiGenLogRepository
 import com.bugu.ai.infra.AiGenLogRow
 import com.bugu.push.infra.CopyTemplateRepository
@@ -29,6 +30,7 @@ class AdminAiIntegrationTest @Autowired constructor(
     private val copyTemplateRepository: CopyTemplateRepository,
     private val genLogRepository: AiGenLogRepository,
     private val auditRepository: AdminAuditLogRepository,
+    private val adminAiService: AdminAiService,
     private val jdbc: JdbcTemplate,
 ) {
 
@@ -142,5 +144,36 @@ class AdminAiIntegrationTest @Autowired constructor(
             status { isOk() }
             jsonPath("$.data") { exists() }
         }
+    }
+
+    @Test
+    fun `模板更新参数错误与不存在404`() {
+        val token = superToken()
+
+        // 无可更新字段
+        mockMvc.put("/api/v1/admin/ai/copy-templates/99999999") {
+            header("Authorization", "Bearer $token")
+            contentType = MediaType.APPLICATION_JSON
+            content = """{}"""
+        }.andExpect {
+            status { isBadRequest() }
+            jsonPath("$.code") { value("INVALID_ARGUMENT") }
+        }
+
+        // 模板不存在
+        mockMvc.put("/api/v1/admin/ai/copy-templates/99999999") {
+            header("Authorization", "Bearer $token")
+            contentType = MediaType.APPLICATION_JSON
+            content = """{"content": "新文案"}"""
+        }.andExpect {
+            status { isNotFound() }
+            jsonPath("$.code") { value("NOT_FOUND") }
+        }
+    }
+
+    @Test
+    fun `启用模板内容按档位场景返回`() {
+        val contents = adminAiService.enabledTemplateContents("GENTLE", "CREATE")
+        assertTrue(contents.isNotEmpty(), "种子模板应存在 GENTLE/CREATE 文案")
     }
 }

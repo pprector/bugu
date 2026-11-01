@@ -27,8 +27,8 @@ class SharedPrefsTokenStore(context: Context) : TokenStore {
 
 object ApiFactory {
 
-    /** 本地联验临时值(验证完还原生产 https://www.yzhzhaohao.cn);接口路径自带 api/v1 前缀。 */
-    const val BASE_URL = "http://10.0.2.2:8081"
+    /** 生产接口地址(发布包固定指向官网域名;接口路径自带 api/v1 前缀)。 */
+    const val BASE_URL = "https://www.yzhzhaohao.cn"
 
     /** 与 [create] 共用同一实例:登录成功后由 UI 写入 JWT,后续请求经 tokenProvider 取出。 */
     fun tokenStore(context: Context): TokenStore = SharedPrefsTokenStore(context)

@@ -297,6 +297,53 @@ class BondFlowIntegrationTest @Autowired constructor(
         }
     }
 
+    @Test
+    fun `非法解绑与备注_404与403`() {
+        val (_, aToken) = register()
+        val (_, bToken) = register()
+        val (_, outsiderToken) = register()
+
+        // 不存在的绑定
+        mockMvc.post("/api/v1/bond/99999999/unbind") {
+            header("Authorization", "Bearer $aToken")
+        }.andExpect {
+            status { isNotFound() }
+            jsonPath("$.code") { value("NOT_FOUND") }
+        }
+
+        // 非参与人解绑
+        val bondId = confirm(bToken, initiateAndExtractCode(aToken)).andExpect { status { isOk() } }
+            .andReturn().response.contentAsString.let {
+                Regex(""""id"\s*:\s*(\d+)""").find(it)!!.groupValues[1]
+            }
+        mockMvc.post("/api/v1/bond/$bondId/unbind") {
+            header("Authorization", "Bearer $outsiderToken")
+        }.andExpect {
+            status { isForbidden() }
+            jsonPath("$.code") { value("FORBIDDEN") }
+        }
+
+        // 备注超长优先报 400
+        mockMvc.put("/api/v1/bond/99999999/remark") {
+            header("Authorization", "Bearer $aToken")
+            contentType = MediaType.APPLICATION_JSON
+            content = """{"remark":"${"长".repeat(31)}"}"""
+        }.andExpect {
+            status { isBadRequest() }
+            jsonPath("$.code") { value("INVALID_ARGUMENT") }
+        }
+
+        // 合法备注但不存在的绑定
+        mockMvc.put("/api/v1/bond/99999999/remark") {
+            header("Authorization", "Bearer $aToken")
+            contentType = MediaType.APPLICATION_JSON
+            content = """{"remark":"正常备注"}"""
+        }.andExpect {
+            status { isNotFound() }
+            jsonPath("$.code") { value("NOT_FOUND") }
+        }
+    }
+
     private fun initiateAndExtractCode(token: String): String {
         val body = initiate(token).andExpect { status { isOk() } }
             .andReturn().response.contentAsString

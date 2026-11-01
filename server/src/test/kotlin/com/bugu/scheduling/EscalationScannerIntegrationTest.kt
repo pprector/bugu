@@ -231,6 +231,58 @@ class EscalationScannerIntegrationTest @Autowired constructor(
         assertEquals(1, second)
     }
 
+    /**
+     * 回归:提醒已进 T1 升级链后用户改时间,旧 fire 的 escalation_log 有外键,
+     * 必须先清理日志再删 fire,否则修改接口 500。
+     */
+    @Test
+    fun `T1后修改提醒_清理升级链日志并重建fire`() {
+        val (a, b) = client.boundPair()
+        val reminderId = reminders.createAndGetId(a.token, b.id)
+        val fire = reminderFireRepository.findByReminderIdOrderByFireAt(reminderId).first()
+        val fireId = fire.id!!
+        reminderFireRepository.save(fire.copy(fireAt = java.time.LocalDateTime.now(clock).minusMinutes(16)))
+
+        scanner.doScan()
+        assertTrue(escalationLogRepository.findByFireIdOrderByCreatedAt(fireId).isNotEmpty(), "应先落 T1 日志")
+
+        val newFireAt = java.time.LocalDateTime.now(clock).plusHours(2).withNano(0).toString()
+        reminders.patch(a.token, reminderId, """{"fireAt": "$newFireAt"}""")
+            .andExpect { status { isOk() } }
+
+        assertTrue(
+            escalationLogRepository.findByFireIdOrderByCreatedAt(fireId).isEmpty(),
+            "旧 fire 的升级链日志应随 fire 一并清理",
+        )
+        assertEquals(1, reminderFireRepository.findByReminderIdOrderByFireAt(reminderId).size)
+    }
+
+    @Test
+    fun `解绑后扫描不升级`() {
+        val (a, b) = client.boundPair()
+        val reminderId = reminders.createAndGetId(a.token, b.id)
+        val bondId = jdbc.queryForObject(
+            "SELECT id FROM bond WHERE requester_id = ? AND receiver_id = ? AND status = 'ACTIVE' ORDER BY id DESC LIMIT 1",
+            Long::class.java,
+            a.id,
+            b.id,
+        )!!
+        mockMvc.perform(
+            org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post("/api/v1/bond/$bondId/unbind")
+                .header("Authorization", "Bearer ${a.token}"),
+        ).andExpect(org.springframework.test.web.servlet.result.MockMvcResultMatchers.status().isOk)
+
+        val fire = reminderFireRepository.findByReminderIdOrderByFireAt(reminderId).first()
+        val fireId = fire.id!!
+        reminderFireRepository.save(fire.copy(fireAt = java.time.LocalDateTime.now(clock).minusMinutes(16)))
+
+        scanner.doScan()
+
+        assertTrue(escalationLogRepository.findByFireIdOrderByCreatedAt(fireId).isEmpty())
+        // 解绑会取消该 bond 下待触发提醒(BondLifecycle),扫描器不再升级
+        assertEquals("CANCELED", reminderRepository.findById(reminderId).get().status)
+    }
+
     @TestConfiguration
     class ClockConfig {
         @Bean

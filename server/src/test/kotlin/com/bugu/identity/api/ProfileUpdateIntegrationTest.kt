@@ -7,6 +7,7 @@ import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.test.context.SpringBootTest
 import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc
 import org.springframework.http.MediaType
+import org.springframework.jdbc.core.JdbcTemplate
 import org.springframework.test.web.servlet.MockMvc
 import org.springframework.test.web.servlet.get
 import org.springframework.test.web.servlet.patch
@@ -19,6 +20,7 @@ import org.springframework.test.web.servlet.patch
 class ProfileUpdateIntegrationTest @Autowired constructor(
     private val mockMvc: MockMvc,
     private val smsSender: ConsoleSmsSender,
+    private val jdbc: JdbcTemplate,
 ) {
 
     private val client by lazy { AuthTestClient(mockMvc, smsSender) }
@@ -70,6 +72,28 @@ class ProfileUpdateIntegrationTest @Autowired constructor(
         }.andExpect {
             status { isBadRequest() }
             jsonPath("$.code") { value("INVALID_ARGUMENT") }
+        }
+    }
+
+    @Test
+    fun `已注销用户_me401_更新404`() {
+        val user = client.register()
+        jdbc.update("DELETE FROM app_user WHERE id = ?", user.id)
+
+        mockMvc.get("/api/v1/auth/me") {
+            header("Authorization", "Bearer ${user.token}")
+        }.andExpect {
+            status { isUnauthorized() }
+            jsonPath("$.code") { value("UNAUTHORIZED") }
+        }
+
+        mockMvc.patch("/api/v1/auth/me") {
+            header("Authorization", "Bearer ${user.token}")
+            contentType = MediaType.APPLICATION_JSON
+            content = """{"nickname": "已注销"}"""
+        }.andExpect {
+            status { isNotFound() }
+            jsonPath("$.code") { value("NOT_FOUND") }
         }
     }
 }

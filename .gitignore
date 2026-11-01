@@ -25,6 +25,10 @@ dist/
 *.iml
 .vscode/
 
+# 本地 IDE / agent skill 配置(含部署凭据,不入库)
+.trae/
+.trae-html-share-packages/
+
 # 系统与日志
 .DS_Store
 *.log

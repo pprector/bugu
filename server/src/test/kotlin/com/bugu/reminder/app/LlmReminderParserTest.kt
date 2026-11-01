@@ -96,4 +96,24 @@ class LlmReminderParserTest {
         assertFalse(parsed.draft.needsManual)
         assertEquals("我妈吃降压药", parsed.draft.title)
     }
+
+    @Test
+    fun `llm返回未知kind降级正则`() {
+        val content = """{"title":"吃药","fireAt":"2026-10-27T20:30:00","kind":"ONCE_ALARM"}"""
+        val parser = LlmReminderParser(providerOf(FakeGateway { LlmCopyResult(content) }), fallback)
+        val parsed = parser.parse("明早九点提醒我妈吃降压药", now)
+        assertTrue(parsed.degraded)
+        assertEquals("我妈吃降压药", parsed.draft.title)
+    }
+
+    @Test
+    fun `llm返回非法时间按字段缺失处理`() {
+        val content = """{"title":"吃药","fireAt":"明天八点","kind":"ONCE"}"""
+        val parser = LlmReminderParser(providerOf(FakeGateway { LlmCopyResult(content) }), fallback)
+        val parsed = parser.parse("明早九点提醒我妈吃降压药", now)
+        assertFalse(parsed.degraded)
+        assertTrue(parsed.draft.needsManual)
+        assertNull(parsed.draft.fireAt)
+        assertEquals("吃药", parsed.draft.title)
+    }
 }

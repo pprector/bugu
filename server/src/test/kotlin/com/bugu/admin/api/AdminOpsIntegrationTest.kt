@@ -5,6 +5,8 @@ import com.bugu.admin.infra.AdminPasswordHasher
 import com.bugu.bond.api.AuthTestClient
 import com.bugu.identity.infra.ConsoleSmsSender
 import com.bugu.reminder.api.ReminderTestClient
+import com.bugu.reminder.infra.EscalationLogRepository
+import com.bugu.reminder.infra.EscalationLogRow
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
 import org.springframework.beans.factory.annotation.Autowired
@@ -28,6 +30,7 @@ class AdminOpsIntegrationTest @Autowired constructor(
     private val mockMvc: MockMvc,
     private val smsSender: ConsoleSmsSender,
     private val auditRepository: AdminAuditLogRepository,
+    private val escalationLogRepository: EscalationLogRepository,
     private val jdbc: JdbcTemplate,
 ) {
 
@@ -170,5 +173,137 @@ class AdminOpsIntegrationTest @Autowired constructor(
             contentType = MediaType.APPLICATION_JSON
             content = """{"enabled": false}"""
         }.andExpect { status { isOk() } }
+    }
+
+    @Test
+    fun `审计日志_全量与按管理员过滤`() {
+        val token = superToken()
+        val superId = superId()
+
+        // 全量:登录本身已落 LOGIN 审计
+        val all = mockMvc.get("/api/v1/admin/audit-logs") {
+            header("Authorization", "Bearer $token")
+        }.andExpect {
+            status { isOk() }
+            jsonPath("$.data.length()") { value(org.hamcrest.Matchers.greaterThan(0)) }
+            jsonPath("$.data[0].action") { exists() }
+            jsonPath("$.data[0].createdAt") { exists() }
+        }.andReturn().response.contentAsString
+
+        // 按管理员过滤:全部归属该管理员
+        val filtered = mockMvc.get("/api/v1/admin/audit-logs") {
+            header("Authorization", "Bearer $token")
+            param("adminUserId", superId.toString())
+        }.andExpect { status { isOk() } }.andReturn().response.contentAsString
+        val adminIds = Regex(""""adminUserId"\s*:\s*(\d+)""").findAll(filtered)
+            .map { it.groupValues[1].toLong() }.toList()
+        assertTrue(adminIds.isNotEmpty() && adminIds.all { it == superId }, "过滤结果应只含该管理员")
+
+        // 不存在的管理员:空列表
+        mockMvc.get("/api/v1/admin/audit-logs") {
+            header("Authorization", "Bearer $token")
+            param("adminUserId", "99999999")
+        }.andExpect {
+            status { isOk() }
+            jsonPath("$.data.length()") { value(0) }
+        }
+        assertTrue(all.isNotEmpty())
+    }
+
+    @Test
+    fun `运营处理_不存在资源_404`() {
+        val token = superToken()
+
+        mockMvc.patch("/api/v1/admin/users/99999999/elder-mode") {
+            header("Authorization", "Bearer $token")
+            contentType = MediaType.APPLICATION_JSON
+            content = """{"enabled": true}"""
+        }.andExpect {
+            status { isNotFound() }
+            jsonPath("$.code") { value("NOT_FOUND") }
+        }
+
+        mockMvc.post("/api/v1/admin/bonds/99999999/unbind") {
+            header("Authorization", "Bearer $token")
+        }.andExpect {
+            status { isNotFound() }
+            jsonPath("$.code") { value("NOT_FOUND") }
+        }
+
+        mockMvc.get("/api/v1/admin/reminders/99999999/escalations") {
+            header("Authorization", "Bearer $token")
+        }.andExpect {
+            status { isNotFound() }
+            jsonPath("$.code") { value("NOT_FOUND") }
+        }
+    }
+
+    @Test
+    fun `提醒列表按状态筛选`() {
+        val (a, b) = client.boundPair()
+        val token = superToken()
+        val reminderId = reminders.createAndGetId(a.token, b.id, "状态筛选提醒")
+
+        mockMvc.get("/api/v1/admin/reminders") {
+            header("Authorization", "Bearer $token")
+            param("status", "PENDING")
+            param("query", "状态筛选提醒")
+        }.andExpect {
+            status { isOk() }
+            jsonPath("$.data[0].id") { value(reminderId) }
+            jsonPath("$.data[0].status") { value("PENDING") }
+        }
+
+        reminders.cancel(a.token, reminderId).andExpect { status { isOk() } }
+
+        mockMvc.get("/api/v1/admin/reminders") {
+            header("Authorization", "Bearer $token")
+            param("status", "CANCELED")
+            param("query", "状态筛选提醒")
+        }.andExpect {
+            status { isOk() }
+            jsonPath("$.data[0].id") { value(reminderId) }
+            jsonPath("$.data[0].status") { value("CANCELED") }
+        }
+
+        mockMvc.get("/api/v1/admin/reminders") {
+            header("Authorization", "Bearer $token")
+            param("status", "ACKED")
+            param("query", "状态筛选提醒")
+        }.andExpect {
+            status { isOk() }
+            jsonPath("$.data.length()") { value(0) }
+        }
+    }
+
+    @Test
+    fun `升级链动作明细`() {
+        val (a, b) = client.boundPair()
+        val token = superToken()
+        val reminderId = reminders.createAndGetId(a.token, b.id, "升级链提醒")
+        val fireId = jdbc.queryForObject(
+            "SELECT id FROM reminder_fire WHERE reminder_id = ? ORDER BY id LIMIT 1",
+            Long::class.java,
+            reminderId,
+        )!!
+        escalationLogRepository.save(
+            EscalationLogRow(
+                fireId = fireId,
+                stage = "T1",
+                action = "REPUSH_RECEIVER",
+                pushResult = "ACCEPTED",
+                createdAt = LocalDateTime.now(),
+            ),
+        )
+
+        mockMvc.get("/api/v1/admin/reminders/$reminderId/escalations") {
+            header("Authorization", "Bearer $token")
+        }.andExpect {
+            status { isOk() }
+            jsonPath("$.data[0].fireId") { value(fireId) }
+            jsonPath("$.data[0].actions[0].stage") { value("T1") }
+            jsonPath("$.data[0].actions[0].action") { value("REPUSH_RECEIVER") }
+            jsonPath("$.data[0].actions[0].createdAt") { exists() }
+        }
     }
 }
