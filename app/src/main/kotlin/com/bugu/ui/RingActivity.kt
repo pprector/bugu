@@ -104,7 +104,7 @@ class RingActivity : ComponentActivity() {
                     peerName = "惦记你的人",
                     title = title,
                     copyLine = copyLine,
-                    kindLabel = "到点提醒 · 穿透唤醒",
+                    kindLabel = "布谷来叫你啦",
                     elderMode = false,
                     onConfirmed = { ack("DONE") },
                     onSnoozed = { ack("SNOOZE", snoozeMinutes = 15) },

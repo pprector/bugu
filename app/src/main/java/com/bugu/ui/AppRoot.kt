@@ -24,6 +24,7 @@ import androidx.compose.animation.slideInHorizontally
 import androidx.compose.animation.slideInVertically
 import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.interaction.collectIsPressedAsState
@@ -42,6 +43,7 @@ import androidx.compose.foundation.layout.navigationBars
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
@@ -364,11 +366,28 @@ fun AppRoot() {
                 .align(Alignment.BottomCenter)
                 .padding(bottom = 96.dp),
         ) { data ->
-            Snackbar(
-                containerColor = H.Ink,
-                contentColor = Color.White,
-                shape = RoundedCornerShape(16.dp),
-            ) { Text(data.visuals.message) }
+            Row(
+                Modifier
+                    .fillMaxWidth()
+                    .clip(RoundedCornerShape(18.dp))
+                    .background(Color.White)
+                    .border(1.dp, H.Hairline, RoundedCornerShape(18.dp))
+                    .padding(horizontal = 14.dp, vertical = 12.dp),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                GuguBird(
+                    mood = GuguMood.CHEER,
+                    modifier = Modifier.size(28.dp),
+                    onTap = null,
+                    pokeLines = emptyList(),
+                )
+                Spacer(Modifier.width(10.dp))
+                Text(
+                    data.visuals.message,
+                    style = MaterialTheme.typography.bodySmall,
+                    color = H.Ink,
+                )
+            }
         }
     }
 }
@@ -523,6 +542,12 @@ private fun BottomBar(current: Tab, onSelect: (Tab) -> Unit) {
             .background(Color(0xF7FAF8F5))
             .padding(bottom = navPadding.calculateBottomPadding()),
     ) {
+        Box(
+            Modifier
+                .fillMaxWidth()
+                .height(1.dp)
+                .background(H.Hairline),
+        )
         Row(
             Modifier
                 .fillMaxWidth()

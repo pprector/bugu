@@ -38,6 +38,9 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.selected
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
@@ -145,7 +148,7 @@ fun CalendarScreen(api: GeitaApi, bonds: List<BondDto>, onBack: () -> Unit) {
                     )
                     Spacer(Modifier.weight(1f))
                     Text(
-                        "${month.year}年${month.monthValue}月 · ${if (inMonth) "共${monthEntries.size}天有安排" else "暂无安排"}",
+                        "${month.year}年${month.monthValue}月 · ${if (inMonth) "共${monthEntries.size}天有惦记" else "暂无惦记"}",
                         style = MaterialTheme.typography.titleMedium,
                         color = H.Ink,
                     )
@@ -222,7 +225,7 @@ fun CalendarScreen(api: GeitaApi, bonds: List<BondDto>, onBack: () -> Unit) {
                     }
                     Spacer(Modifier.weight(1f))
                     Text(
-                        if (count == 0) "无安排" else "$count 项安排",
+                        if (count == 0) "没有惦记" else "$count 份惦记",
                         style = MaterialTheme.typography.titleSmall,
                         color = if (count == 0) H.Ink3Strong else H.CoralInk,
                     )
@@ -316,6 +319,10 @@ private fun DayCell(day: Int, count: Int, isToday: Boolean, selected: Boolean, o
                     },
                     CircleShape,
                 )
+                .semantics {
+                    contentDescription = "$day 日${if (count > 0) "，$count 份惦记" else ""}"
+                    this.selected = selected
+                }
                 .clickable(onClick = onClick),
             contentAlignment = Alignment.Center,
         ) {

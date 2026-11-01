@@ -157,7 +157,7 @@ fun AlarmScreen(
                 Icon(Icons.Outlined.Bolt, null, Modifier.size(14.dp), tint = H.Coral)
                 Spacer(Modifier.width(5.dp))
                 Text(
-                    "穿透静音生效中 · 00:%02d".format(countdown),
+                    "咕咕正在叫你 · 00:%02d".format(countdown),
                     style = MaterialTheme.typography.titleSmall,
                     color = H.Coral,
                 )
