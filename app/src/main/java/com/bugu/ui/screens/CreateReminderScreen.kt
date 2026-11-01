@@ -103,6 +103,7 @@ import com.bugu.client.api.displayName
 import com.bugu.client.api.BatchCreateReminderRequest
 import com.bugu.client.api.GeitaApi
 import com.bugu.client.api.GeitaApiException
+import com.bugu.schedule.ReminderSync
 import com.bugu.ui.common.AvatarBubble
 import com.bugu.ui.common.BrandSwitch
 import com.bugu.ui.common.BuguCard
@@ -563,6 +564,8 @@ fun CreateReminderScreen(
                         note = note.trim().takeIf { it.isNotEmpty() },
                     ),
                 )
+                // 创建成功即同步并注册精确闹钟:否则新提醒只出现在列表,到点不会响/不会全屏
+                runCatching { ReminderSync.sync(context, api) }
                 onSnack(
                     if (receiverIds.size > 1) "已为 ${receiverIds.size} 人分别设好惦记"
                     else if (selfSelected) "已设好惦记,到点咕咕会准时唤你"
