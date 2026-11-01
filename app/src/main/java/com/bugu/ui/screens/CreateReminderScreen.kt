@@ -624,6 +624,15 @@ fun CreateReminderScreen(
                     Icon(Icons.Rounded.Warning, null, Modifier.size(16.dp), tint = H.Rose)
                     Spacer(Modifier.width(8.dp))
                     Text(msg, style = MaterialTheme.typography.bodySmall, color = H.Rose, modifier = Modifier.weight(1f))
+                    Box(
+                        Modifier
+                            .heightIn(min = 44.dp)
+                            .clickable { phraseError = ""; formError = "" }
+                            .padding(start = 8.dp),
+                        contentAlignment = Alignment.Center,
+                    ) {
+                        Text("知道了", style = MaterialTheme.typography.titleSmall, color = H.Ink2)
+                    }
                 }
             }
         }
@@ -862,14 +871,15 @@ fun CreateReminderScreen(
                 .align(Alignment.BottomEnd)
                 .padding(end = 20.dp, bottom = 14.dp)
                 .clip(RoundedCornerShape(999.dp))
-                .background(H.Coral)
+                .background(Color.White)
+                .border(1.dp, H.Coral.copy(alpha = 0.45f), RoundedCornerShape(999.dp))
                 .clickable { assistError = ""; showAssist = true }
                 .padding(horizontal = 14.dp, vertical = 10.dp),
             verticalAlignment = Alignment.CenterVertically,
         ) {
-            Icon(Icons.Rounded.AutoAwesome, "咕咕帮填", Modifier.size(17.dp), tint = Color.White)
+            Icon(Icons.Rounded.AutoAwesome, "咕咕帮填", Modifier.size(17.dp), tint = H.CoralInk)
             Spacer(Modifier.width(6.dp))
-            Text("咕咕帮填", style = MaterialTheme.typography.titleSmall, color = Color.White)
+            Text("咕咕帮填", style = MaterialTheme.typography.titleSmall, color = H.CoralInk)
         }
         }
 
