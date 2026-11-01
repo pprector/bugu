@@ -45,11 +45,9 @@ import androidx.compose.material.icons.outlined.Bolt
 import androidx.compose.material.icons.outlined.Check
 import androidx.compose.material.icons.outlined.Notifications
 import androidx.compose.material.icons.outlined.Shield
-import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
@@ -80,7 +78,6 @@ import androidx.compose.ui.text.input.TextFieldValue
 import androidx.compose.ui.text.TextRange
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.window.Dialog
 import androidx.core.content.ContextCompat
 import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.lifecycle.Lifecycle
@@ -90,6 +87,8 @@ import com.bugu.client.api.UserDto
 import com.bugu.ApiFactory
 import com.bugu.SharedPrefsTokenStore
 import com.bugu.ui.common.BackIconButton
+import com.bugu.ui.common.BuguDialog
+import com.bugu.ui.common.BuguDialogActions
 import com.bugu.ui.common.FieldError
 import com.bugu.ui.common.GradientButton
 import com.bugu.ui.common.GuguBird
@@ -499,25 +498,52 @@ fun LoginScreen(onLoggedIn: (UserDto) -> Unit) {
 
     // 协议确认(未勾选时拦截发码/登录,确认后自动勾选并继续原动作)
     pendingAction?.let { action ->
-        AlertDialog(
+        BuguDialog(
+            title = "需要你的同意",
             onDismissRequest = { pendingAction = null },
-            title = { Text("需要你的同意", style = MaterialTheme.typography.titleLarge) },
-            text = {
-                Text(
-                    "继续之前请先同意《用户协议》与《隐私政策》(点击协议名可查看全文);同意后布谷才能为你发送短信验证码。",
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = H.Ink2,
+            mood = GuguMood.SLEEP,
+            subtitle = "同意后，布谷才能为你发送验证码",
+            content = {
+                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    Text(
+                        "继续之前，请先同意下面的协议。它们很短，也不会收集用不到的信息。",
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = H.Ink3Strong,
+                    )
+                    Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
+                        Box(
+                            Modifier
+                                .heightIn(min = 44.dp)
+                                .clickable { viewingAgreement = "user" }
+                                .padding(horizontal = 4.dp),
+                            contentAlignment = Alignment.Center,
+                        ) {
+                            Text("《用户协议》", style = MaterialTheme.typography.bodyMedium, color = H.CoralInk)
+                        }
+                        Text("和", style = MaterialTheme.typography.bodyMedium, color = H.Ink3Strong)
+                        Box(
+                            Modifier
+                                .heightIn(min = 44.dp)
+                                .clickable { viewingAgreement = "privacy" }
+                                .padding(horizontal = 4.dp),
+                            contentAlignment = Alignment.Center,
+                        ) {
+                            Text("《隐私政策》", style = MaterialTheme.typography.bodyMedium, color = H.CoralInk)
+                        }
+                    }
+                }
+            },
+            actions = {
+                BuguDialogActions(
+                    confirmText = "同意并继续",
+                    onConfirm = {
+                        pendingAction = null
+                        agreeNow()
+                        action()
+                    },
+                    dismissText = "暂不",
+                    onDismiss = { pendingAction = null },
                 )
-            },
-            confirmButton = {
-                TextButton(onClick = {
-                    pendingAction = null
-                    agreeNow()
-                    action()
-                }) { Text("同意并继续", color = H.Coral, fontWeight = FontWeight.SemiBold) }
-            },
-            dismissButton = {
-                TextButton(onClick = { pendingAction = null }) { Text("暂不", color = H.Ink3Strong) }
             },
         )
     }
@@ -643,19 +669,12 @@ private fun AgreementRow(agreed: Boolean, onAgreedChange: (Boolean) -> Unit, onV
 // 协议全文:应用内弹窗查看(合规要求协议可读)
 @Composable
 internal fun AgreementDialog(which: String, onDismiss: () -> Unit) {
-    Dialog(onDismissRequest = onDismiss) {
-        Column(
-            Modifier
-                .clip(RoundedCornerShape(24.dp))
-                .background(Color.White)
-                .padding(22.dp),
-        ) {
-            Text(
-                if (which == "user") "用户协议" else "隐私政策",
-                style = MaterialTheme.typography.titleLarge,
-                color = H.Ink,
-            )
-            Spacer(Modifier.height(10.dp))
+    BuguDialog(
+        title = if (which == "user") "用户协议" else "隐私政策",
+        onDismissRequest = onDismiss,
+        mood = GuguMood.SLEEP,
+        subtitle = if (which == "user") "开始使用前，我们先把话说清楚" else "你的信息会被这样使用和保护",
+        content = {
             Text(
                 if (which == "user") USER_AGREEMENT_TEXT else PRIVACY_POLICY_TEXT,
                 style = MaterialTheme.typography.bodySmall,
@@ -664,15 +683,14 @@ internal fun AgreementDialog(which: String, onDismiss: () -> Unit) {
                     .heightIn(max = 420.dp)
                     .verticalScroll(rememberScrollState()),
             )
-            Spacer(Modifier.height(16.dp))
-            GradientButton(
-                text = "我知道了",
-                onClick = onDismiss,
-                height = 46.dp,
-                modifier = Modifier.fillMaxWidth(),
+        },
+        actions = {
+            BuguDialogActions(
+                confirmText = "我知道了",
+                onConfirm = onDismiss,
             )
-        }
-    }
+        },
+    )
 }
 
 private val USER_AGREEMENT_TEXT = """

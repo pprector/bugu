@@ -18,6 +18,9 @@ import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.ui.unit.dp
 import com.bugu.client.api.*
 import com.bugu.ui.common.BackIconButton
+import com.bugu.ui.common.BuguDialog
+import com.bugu.ui.common.BuguDialogActions
+import com.bugu.ui.common.GuguMood
 import com.bugu.ui.common.GradientButton
 import com.bugu.ui.common.parseIsoTime
 import com.bugu.ui.theme.H
@@ -114,22 +117,48 @@ fun FriendsScreen(
         }
     }
     invitation?.let { inv ->
-        AlertDialog(onDismissRequest = { if (!busy) invitation = null },
-            title = { Text("确认关联") },
-            text = { Text("确认接受用户 ${inv.requesterId} 的邀请？关联后你们可以互相发送提醒，各自设置私人备注。") },
-            confirmButton = { TextButton(enabled = !busy, onClick = {
-                scope.launch {
-                    busy = true
-                    try {
-                        api.confirmBond(inv.bindCode)
-                        invitation = null
-                        code = ""
-                        onRefresh()
-                        onSnack("关联成功，可继续添加亲友")
-                    } catch (e: Exception) { onSnack(e.message ?: "关联失败，请重试") }
-                    finally { busy = false }
+        BuguDialog(
+            title = "确认关联",
+            onDismissRequest = { if (!busy) invitation = null },
+            mood = GuguMood.CHEER,
+            subtitle = "有人想和你互相惦记",
+            tag = "新的互伴",
+            dismissible = !busy,
+            content = {
+                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    Text(
+                        "对方邀请码 · ${inv.bindCode}",
+                        style = MaterialTheme.typography.titleMedium,
+                        color = H.CoralInk,
+                    )
+                    Text(
+                        "确认后你们可以互相发惦记，也可以各自设置只有自己能看见的私人备注。",
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = H.Ink3Strong,
+                    )
                 }
-            }) { Text("确认关联") } },
-            dismissButton = { TextButton(enabled = !busy, onClick = { invitation = null }) { Text("取消") } })
+            },
+            actions = {
+                BuguDialogActions(
+                    confirmText = "确认关联",
+                    onConfirm = {
+                        scope.launch {
+                            busy = true
+                            try {
+                                api.confirmBond(inv.bindCode)
+                                invitation = null
+                                code = ""
+                                onRefresh()
+                                onSnack("关联成功，可继续添加亲友")
+                            } catch (e: Exception) { onSnack(e.message ?: "关联失败，请重试") }
+                            finally { busy = false }
+                        }
+                    },
+                    dismissText = "取消",
+                    onDismiss = { invitation = null },
+                    loading = busy,
+                )
+            },
+        )
     }
 }

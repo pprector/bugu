@@ -28,6 +28,7 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ColumnScope
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.WindowInsets
@@ -55,8 +56,6 @@ import androidx.compose.material.icons.rounded.AutoAwesome
 import androidx.compose.material.icons.rounded.Check
 import androidx.compose.material.icons.automirrored.rounded.Chat
 import androidx.compose.material.icons.rounded.CheckCircle
-import androidx.compose.material.icons.rounded.Close
-import androidx.compose.material.icons.rounded.Edit
 import androidx.compose.material.icons.rounded.Drafts
 import androidx.compose.material.icons.rounded.EditNote
 import androidx.compose.material.icons.rounded.EventRepeat
@@ -65,17 +64,12 @@ import androidx.compose.material.icons.rounded.Mic
 import androidx.compose.material.icons.rounded.NotificationsActive
 import androidx.compose.material.icons.rounded.Schedule
 import androidx.compose.material.icons.rounded.Warning
-import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.DatePicker
-import androidx.compose.material3.DatePickerDialog
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.SelectableDates
-import androidx.compose.material3.SheetValue
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
 import androidx.compose.material3.TimePicker
 import androidx.compose.material3.rememberDatePickerState
 import androidx.compose.material3.rememberModalBottomSheetState
@@ -111,6 +105,10 @@ import com.bugu.client.api.GeitaApi
 import com.bugu.client.api.GeitaApiException
 import com.bugu.ui.common.AvatarBubble
 import com.bugu.ui.common.BrandSwitch
+import com.bugu.ui.common.BuguCard
+import com.bugu.ui.common.BuguDialog
+import com.bugu.ui.common.BuguDialogActions
+import com.bugu.ui.common.BuguSheet
 import com.bugu.ui.common.FieldError
 import com.bugu.ui.common.GradientButton
 import com.bugu.ui.common.GuguMood
@@ -936,136 +934,93 @@ fun CreateReminderScreen(
     // 时间弹层:大号时间 + 日期 chips + Material3 表盘
     if (showTimeSheet) {
         val timeState = rememberTimePickerState(initialHour = hour, initialMinute = minute, is24Hour = true)
-        ModalBottomSheet(
+        BuguSheet(
             onDismissRequest = { showTimeSheet = false },
+            title = "选择时间",
+            subtitle = "咕咕会准时叫你",
+            mood = GuguMood.RING,
             sheetState = rememberModalBottomSheetState(
                 skipPartiallyExpanded = true,
-                // 滚轮需要自由上下滑动,禁止把下拉手势当成关闭
-                confirmValueChange = { it != SheetValue.Hidden },
             ),
-            containerColor = H.Canvas,
-            shape = RoundedCornerShape(topStart = 24.dp, topEnd = 24.dp),
         ) {
-            Column(
-                Modifier
-                    .fillMaxWidth()
-                    // 拦截垂直拖拽:手指轻移时弹层不再跟随滑动,避免表盘内容位移造成点偏
-                    .pointerInput(Unit) {
-                        detectVerticalDragGestures { change, _ -> change.consume() }
-                    }
-                    .padding(horizontal = 20.dp)
-                    .padding(bottom = 28.dp),
+            Text(
+                "%02d:%02d".format(timeState.hour, timeState.minute),
+                style = MaterialTheme.typography.displayMedium,
+                color = H.Ink,
+                modifier = Modifier.fillMaxWidth(),
+                textAlign = TextAlign.Center,
+            )
+            Text(
+                dayLabelOf(date),
+                style = MaterialTheme.typography.titleSmall,
+                color = H.Ink3Strong,
+                modifier = Modifier.fillMaxWidth(),
+                textAlign = TextAlign.Center,
+            )
+            Spacer(Modifier.height(10.dp))
+            Row(
+                Modifier.horizontalScroll(rememberScrollState()),
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
             ) {
-                Row(
-                    Modifier.fillMaxWidth(),
-                    verticalAlignment = Alignment.CenterVertically,
-                ) {
-                    Text(
-                        "选择时间",
-                        style = MaterialTheme.typography.titleLarge,
-                        color = H.Ink,
-                        modifier = Modifier.weight(1f),
-                    )
-                    HeaderIconButton(
-                        icon = Icons.Rounded.Close,
-                        contentDescription = "关闭",
-                        onClick = { showTimeSheet = false },
-                    )
-                }
-                Spacer(Modifier.height(10.dp))
-                Text(
-                    "%02d:%02d".format(timeState.hour, timeState.minute),
-                    style = MaterialTheme.typography.displayMedium,
-                    color = H.Ink,
-                    modifier = Modifier.fillMaxWidth(),
-                    textAlign = TextAlign.Center,
-                )
-                Text(
-                    dayLabelOf(date),
-                    style = MaterialTheme.typography.titleSmall,
-                    color = H.Ink3Strong,
-                    modifier = Modifier.fillMaxWidth(),
-                    textAlign = TextAlign.Center,
-                )
-                Spacer(Modifier.height(10.dp))
-                Row(
-                    Modifier.horizontalScroll(rememberScrollState()),
-                    horizontalArrangement = Arrangement.spacedBy(8.dp),
-                ) {
-                    val today = LocalDate.now()
-                    (0..2).forEach { offset ->
-                        val d = today.plusDays(offset.toLong())
-                        ChoiceChip(
-                            text = listOf("今天", "明天", "后天")[offset],
-                            selected = d == date,
-                            onClick = {
-                                dateEpochDay = d.toEpochDay()
-                                formError = ""
-                            },
-                        )
-                    }
+                val today = LocalDate.now()
+                (0..2).forEach { offset ->
+                    val d = today.plusDays(offset.toLong())
                     ChoiceChip(
-                        text = "其他日期…",
-                        selected = date.toEpochDay() !in today.toEpochDay()..today.plusDays(2).toEpochDay(),
-                        onClick = { showDatePicker = true },
+                        text = listOf("今天", "明天", "后天")[offset],
+                        selected = d == date,
+                        onClick = {
+                            dateEpochDay = d.toEpochDay()
+                            formError = ""
+                        },
                     )
                 }
-                Spacer(Modifier.height(10.dp))
-                // 给足高度让表盘保持正圆:被压扁成椭圆时,视觉位置与圆形触摸几何不一致会点偏
-                Box(Modifier.fillMaxWidth(), contentAlignment = Alignment.Center) {
-                    TimePicker(
-                        state = timeState,
-                        modifier = Modifier.size(width = 320.dp, height = 400.dp),
-                    )
-                }
-                Spacer(Modifier.height(14.dp))
-                GradientButton(
-                    text = "就这个",
-                    onClick = {
-                        hour = timeState.hour
-                        minute = timeState.minute
-                        formError = ""
-                        showTimeSheet = false
-                    },
-                    modifier = Modifier.fillMaxWidth(),
-                    height = 48.dp,
+                ChoiceChip(
+                    text = "其他日期…",
+                    selected = date.toEpochDay() !in today.toEpochDay()..today.plusDays(2).toEpochDay(),
+                    onClick = { showDatePicker = true },
                 )
             }
+            Spacer(Modifier.height(10.dp))
+            // 给足高度让表盘保持正圆:被压扁成椭圆时,视觉位置与圆形触摸几何不一致会点偏
+            Box(
+                Modifier
+                    .fillMaxWidth()
+                    // 只拦截表盘区域的拖拽,避免调整时间时误把整个浮层下滑关闭
+                    .pointerInput(Unit) {
+                        detectVerticalDragGestures { change, _ -> change.consume() }
+                    },
+                contentAlignment = Alignment.Center,
+            ) {
+                TimePicker(
+                    state = timeState,
+                    modifier = Modifier.size(width = 320.dp, height = 400.dp),
+                )
+            }
+            Spacer(Modifier.height(14.dp))
+            GradientButton(
+                text = "就这个",
+                onClick = {
+                    hour = timeState.hour
+                    minute = timeState.minute
+                    formError = ""
+                    showTimeSheet = false
+                },
+                modifier = Modifier.fillMaxWidth(),
+                height = 48.dp,
+            )
         }
     }
 
     // 方式弹层:单次 / 循环 / 互叫 + 循环规则 + 语气 + 语音开关
     if (showModeSheet) {
-        ModalBottomSheet(
+        BuguSheet(
             onDismissRequest = { showModeSheet = false },
+            title = "选择方式",
+            subtitle = "选一种舒服的提醒节奏",
+            mood = GuguMood.CHEER,
             sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true),
-            containerColor = H.Canvas,
-            shape = RoundedCornerShape(topStart = 24.dp, topEnd = 24.dp),
+            contentModifier = Modifier.verticalScroll(rememberScrollState()),
         ) {
-            Column(
-                Modifier
-                    .fillMaxWidth()
-                    .verticalScroll(rememberScrollState())
-                    .padding(horizontal = 20.dp)
-                    .padding(bottom = 28.dp),
-            ) {
-                Row(
-                    Modifier.fillMaxWidth(),
-                    verticalAlignment = Alignment.CenterVertically,
-                ) {
-                    Text(
-                        "选择方式",
-                        style = MaterialTheme.typography.titleLarge,
-                        color = H.Ink,
-                        modifier = Modifier.weight(1f),
-                    )
-                    HeaderIconButton(
-                        icon = Icons.Rounded.Close,
-                        contentDescription = "关闭",
-                        onClick = { showModeSheet = false },
-                    )
-                }
-                Spacer(Modifier.height(16.dp))
                 KindOption(
                     icon = Icons.Rounded.Alarm,
                     title = "单次",
@@ -1166,7 +1121,6 @@ fun CreateReminderScreen(
                     modifier = Modifier.fillMaxWidth(),
                     height = 48.dp,
                 )
-            }
         }
     }
 
@@ -1174,44 +1128,16 @@ fun CreateReminderScreen(
     if (showAssist) {
         // 解析成功后自动收起浮层
         LaunchedEffect(parsedOk) { if (parsedOk) showAssist = false }
-        ModalBottomSheet(
+        BuguSheet(
             onDismissRequest = { showAssist = false },
+            title = "咕咕帮你填",
+            subtitle = "说一句或写一句，确认后填表",
+            mood = GuguMood.VOICE,
             sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true),
-            containerColor = H.Canvas,
-            shape = RoundedCornerShape(topStart = 24.dp, topEnd = 24.dp),
         ) {
-            Column(
-                Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 20.dp)
-                    .padding(bottom = 24.dp),
-            ) {
-                Row(
-                    Modifier.fillMaxWidth(),
-                    verticalAlignment = Alignment.CenterVertically,
-                ) {
-                    Column(Modifier.weight(1f)) {
-                        Text("咕咕帮你填", style = MaterialTheme.typography.titleLarge, color = H.Ink)
-                        Text(
-                            "说一句或写一句,识别结果先放在下面,确认后填表",
-                            style = MaterialTheme.typography.bodySmall,
-                            color = H.Ink3Strong,
-                        )
-                    }
-                    HeaderIconButton(
-                        icon = Icons.Rounded.Close,
-                        contentDescription = "关闭",
-                        onClick = { showAssist = false },
-                    )
-                }
-                Spacer(Modifier.height(14.dp))
-                Column(
-                    Modifier
-                        .fillMaxWidth()
-                        .clip(RoundedCornerShape(16.dp))
-                        .background(Color.White)
-                        .border(1.dp, H.Hairline, RoundedCornerShape(16.dp))
-                        .padding(horizontal = 12.dp, vertical = 10.dp),
+                BuguCard(
+                    shape = RoundedCornerShape(16.dp),
+                    contentPadding = PaddingValues(horizontal = 12.dp, vertical = 10.dp),
                 ) {
                     BasicTextField(
                         value = smartText,
@@ -1287,7 +1213,6 @@ fun CreateReminderScreen(
                         height = 48.dp,
                     )
                 }
-            }
         }
     }
 
@@ -1304,39 +1229,59 @@ fun CreateReminderScreen(
             initialSelectedDateMillis = dateEpochDay * 86_400_000L,
             selectableDates = selectableDates,
         )
-        DatePickerDialog(
+        BuguSheet(
             onDismissRequest = { showDatePicker = false },
-            confirmButton = {
-                TextButton(
-                    enabled = state.selectedDateMillis != null,
-                    onClick = {
-                        state.selectedDateMillis?.let {
-                            dateEpochDay = Instant.ofEpochMilli(it).atZone(ZoneOffset.UTC).toLocalDate().toEpochDay()
-                        }
-                        formError = ""
-                        showDatePicker = false
-                    },
-                ) { Text("确定", color = H.CoralInk) }
-            },
-            dismissButton = {
-                TextButton(onClick = { showDatePicker = false }) { Text("取消", color = H.Ink2) }
-            },
+            title = "挑个日子",
+            subtitle = "只允许今天及以后",
+            mood = GuguMood.CHEER,
+            sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true),
+            contentModifier = Modifier.verticalScroll(rememberScrollState()),
         ) {
-            DatePicker(state = state)
+            DatePicker(
+                state = state,
+                title = null,
+                headline = null,
+                showModeToggle = false,
+                modifier = Modifier.fillMaxWidth(),
+            )
+            Spacer(Modifier.height(12.dp))
+            GradientButton(
+                text = "确定",
+                onClick = {
+                    state.selectedDateMillis?.let {
+                        dateEpochDay = Instant.ofEpochMilli(it).atZone(ZoneOffset.UTC).toLocalDate().toEpochDay()
+                    }
+                    formError = ""
+                    showDatePicker = false
+                },
+                enabled = state.selectedDateMillis != null,
+                modifier = Modifier.fillMaxWidth(),
+                height = 48.dp,
+            )
         }
     }
 
     // 草稿恢复确认对话框
     if (showDraftDialog) {
-        AlertDialog(
+        BuguDialog(
+            title = "恢复草稿?",
             onDismissRequest = { showDraftDialog = false },
-            title = { Text("恢复草稿?", color = H.Ink) },
-            text = { Text("将用上次保存的草稿覆盖当前填写内容。", color = H.Ink3Strong) },
-            confirmButton = {
-                TextButton(onClick = { restoreDraft() }) { Text("恢复", color = H.CoralInk) }
+            mood = GuguMood.SLEEP,
+            subtitle = "上次保存的内容会覆盖当前填写",
+            content = {
+                Text(
+                    "恢复后，当前正在填写的内容会被草稿替换。",
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = H.Ink3Strong,
+                )
             },
-            dismissButton = {
-                TextButton(onClick = { showDraftDialog = false }) { Text("取消", color = H.Ink2) }
+            actions = {
+                BuguDialogActions(
+                    confirmText = "恢复",
+                    onConfirm = { restoreDraft() },
+                    dismissText = "取消",
+                    onDismiss = { showDraftDialog = false },
+                )
             },
         )
     }

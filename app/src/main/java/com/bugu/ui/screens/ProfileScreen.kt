@@ -36,8 +36,6 @@ import androidx.compose.material.icons.outlined.TextFields
 import androidx.compose.material.icons.outlined.HelpOutline
 import androidx.compose.material.icons.outlined.Info
 import androidx.compose.material.icons.outlined.Notifications
-import androidx.compose.material3.AlertDialog
-import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
@@ -69,6 +67,10 @@ import com.bugu.client.api.BondDto
 import com.bugu.client.api.GeitaApi
 import com.bugu.client.api.UserDto
 import com.bugu.ui.common.BrandSwitch
+import com.bugu.ui.common.BuguDialog
+import com.bugu.ui.common.BuguDialogActions
+import com.bugu.ui.common.BuguTextField
+import com.bugu.ui.common.GuguMood
 import com.bugu.ui.common.parseIsoTime
 import com.bugu.ui.common.RiseIn
 import com.bugu.ui.common.TagChip
@@ -167,32 +169,43 @@ fun ProfileScreen(
         return
     }
     if (editingNickname) {
-        AlertDialog(
+        BuguDialog(
+            title = "修改昵称",
             onDismissRequest = { if (!savingNickname) editingNickname = false },
-            title = { Text("修改昵称") },
-            text = {
-                Column {
-                    OutlinedTextField(value = nickname, onValueChange = { nickname = it; nicknameError = null },
-                        enabled = !savingNickname, singleLine = true, label = { Text("昵称（1至32个字符）") },
-                        isError = nickname.trim().length !in 1..32)
-                    nicknameError?.let { Text(it, color = H.Rose) }
-                }
+            mood = GuguMood.CHEER,
+            subtitle = "让咕咕叫得更亲切一点",
+            dismissible = !savingNickname,
+            content = {
+                BuguTextField(
+                    value = nickname,
+                    onValueChange = { nickname = it; nicknameError = null },
+                    label = "昵称（1至32个字符）",
+                    enabled = !savingNickname,
+                    isError = nicknameError != null || nickname.trim().length !in 1..32,
+                    supportingText = nicknameError ?: "最多 32 个字符",
+                )
             },
-            confirmButton = {
-                TextButton(enabled = !savingNickname && nickname.trim().length in 1..32, onClick = {
-                    scope.launch {
-                        savingNickname = true
-                        try {
-                            onUserUpdated(api.updateNickname(nickname.trim()))
-                            editingNickname = false
-                            onSnack("昵称已更新")
-                        } catch (e: kotlinx.coroutines.CancellationException) { throw e }
-                        catch (_: Exception) { nicknameError = "昵称保存失败，请重试" }
-                        finally { savingNickname = false }
-                    }
-                }) { Text(if (savingNickname) "保存中…" else "保存") }
+            actions = {
+                BuguDialogActions(
+                    confirmText = if (savingNickname) "保存中…" else "保存",
+                    onConfirm = {
+                        scope.launch {
+                            savingNickname = true
+                            try {
+                                onUserUpdated(api.updateNickname(nickname.trim()))
+                                editingNickname = false
+                                onSnack("昵称已更新")
+                            } catch (e: kotlinx.coroutines.CancellationException) { throw e }
+                            catch (_: Exception) { nicknameError = "昵称保存失败，请重试" }
+                            finally { savingNickname = false }
+                        }
+                    },
+                    dismissText = "取消",
+                    onDismiss = { editingNickname = false },
+                    confirmEnabled = nickname.trim().length in 1..32,
+                    loading = savingNickname,
+                )
             },
-            dismissButton = { TextButton(enabled = !savingNickname, onClick = { editingNickname = false }) { Text("取消") } },
         )
     }
 

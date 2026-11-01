@@ -370,63 +370,85 @@ fun CompanionDetailScreen(
         }
         Spacer(Modifier.height(24.dp))
     }
-    if (editRemark) AlertDialog(
+    if (editRemark) BuguDialog(
+        title = "设置私人备注",
         onDismissRequest = { if (!busy) editRemark = false },
-        title = { Text("设置私人备注") },
-        text = {
-            Column {
-                Text("仅自己可见,留空显示对方昵称(最多 30 字)")
-                OutlinedTextField(
-                    value = remark,
-                    onValueChange = { remark = it.take(30) },
-                    label = { Text("私人备注") },
-                    singleLine = true,
-                    enabled = !busy,
-                )
-            }
+        mood = GuguMood.CHEER,
+        subtitle = "只有你能看见这句备注",
+        dismissible = !busy,
+        content = {
+            BuguTextField(
+                value = remark,
+                onValueChange = { remark = it.take(30) },
+                label = "私人备注",
+                enabled = !busy,
+                supportingText = "${remark.length}/30 · 留空显示对方昵称",
+            )
         },
-        confirmButton = {
-            TextButton(enabled = !busy, onClick = {
-                scope.launch {
-                    busy = true
-                    try {
-                        api.updateBondRemark(bondId, remark.trim().takeIf { it.isNotEmpty() })
-                        editRemark = false
-                        onRefreshBonds()
-                        onSnack("私人备注已保存,仅自己可见")
-                    } catch (_: Exception) {
-                        onSnack("备注保存失败,请重试")
-                    } finally {
-                        busy = false
+        actions = {
+            BuguDialogActions(
+                confirmText = if (busy) "保存中…" else "保存",
+                onConfirm = {
+                    scope.launch {
+                        busy = true
+                        try {
+                            api.updateBondRemark(bondId, remark.trim().takeIf { it.isNotEmpty() })
+                            editRemark = false
+                            onRefreshBonds()
+                            onSnack("私人备注已保存,仅自己可见")
+                        } catch (_: Exception) {
+                            onSnack("备注保存失败,请重试")
+                        } finally {
+                            busy = false
+                        }
                     }
-                }
-            }) { Text("保存") }
+                },
+                dismissText = "取消",
+                onDismiss = { editRemark = false },
+                loading = busy,
+            )
         },
-        dismissButton = { TextButton(enabled = !busy, onClick = { editRemark = false }) { Text("取消") } },
     )
-    if (confirmUnbind) AlertDialog(
+    if (confirmUnbind) BuguDialog(
+        title = "解除关联?",
         onDismissRequest = { if (!busy) confirmUnbind = false },
-        title = { Text("解除关联?") },
-        text = { Text("解除后无法继续互发提醒,此关联未完成的提醒将停止触发。") },
-        confirmButton = {
-            TextButton(enabled = !busy, onClick = {
-                scope.launch {
-                    busy = true
-                    try {
-                        api.unbind(bondId)
-                        com.bugu.schedule.ReminderSync.removeBond(context, bondId)
-                        confirmUnbind = false
-                        onRefreshBonds()
-                        onBack()
-                        onSnack("已解除关联")
-                    } catch (_: Exception) {
-                        onSnack("解除关联失败,请重试")
-                    } finally {
-                        busy = false
-                    }
-                }
-            }) { Text("确认解除", color = H.Rose) }
+        mood = GuguMood.SLEEP,
+        tag = "需要确认",
+        tagTint = H.Rose,
+        subtitle = "解除后就不能再互相惦记了",
+        dismissible = !busy,
+        content = {
+            Text(
+                "这段关联里还没完成的惦记会停下，之后也无法再互发惦记。",
+                style = MaterialTheme.typography.bodyMedium,
+                color = H.Ink3Strong,
+            )
         },
-        dismissButton = { TextButton(enabled = !busy, onClick = { confirmUnbind = false }) { Text("保留关联") } },
+        actions = {
+            BuguDialogActions(
+                confirmText = "确认解除",
+                onConfirm = {
+                    scope.launch {
+                        busy = true
+                        try {
+                            api.unbind(bondId)
+                            com.bugu.schedule.ReminderSync.removeBond(context, bondId)
+                            confirmUnbind = false
+                            onRefreshBonds()
+                            onBack()
+                            onSnack("已解除关联")
+                        } catch (_: Exception) {
+                            onSnack("解除关联失败,请重试")
+                        } finally {
+                            busy = false
+                        }
+                    }
+                },
+                dismissText = "保留关联",
+                onDismiss = { confirmUnbind = false },
+                confirmStyle = BuguButtonStyle.Danger,
+                loading = busy,
+            )
+        },
     )
 }

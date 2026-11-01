@@ -1,7 +1,9 @@
 package com.bugu.ui.theme
 
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.ColorScheme
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Shapes
 import androidx.compose.material3.Typography
 import androidx.compose.material3.lightColorScheme
 import androidx.compose.runtime.Composable
@@ -11,6 +13,7 @@ import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.Font
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.bugu.R
 
@@ -75,6 +78,15 @@ val AppTypography = Typography(
         fontSize = 44.sp, lineHeight = 52.sp, letterSpacing = (-1).sp,
         fontFeatureSettings = "tnum",
     ),
+    displaySmall = TextStyle(
+        fontFamily = Grotesk, fontWeight = FontWeight.Bold,
+        fontSize = 36.sp, lineHeight = 44.sp, letterSpacing = (-0.8).sp,
+        fontFeatureSettings = "tnum",
+    ),
+    headlineLarge = TextStyle(
+        fontFamily = Jakarta, fontWeight = FontWeight.Bold,
+        fontSize = 28.sp, lineHeight = 36.sp, letterSpacing = (-0.5).sp,
+    ),
     headlineMedium = TextStyle(
         fontFamily = Jakarta, fontWeight = FontWeight.Bold,
         fontSize = 24.sp, lineHeight = 32.sp, letterSpacing = (-0.4).sp,
@@ -112,6 +124,23 @@ val AppTypography = Typography(
         fontSize = 11.sp, lineHeight = 15.sp, letterSpacing = 0.5.sp,
         fontFeatureSettings = "tnum",
     ),
+    labelMedium = TextStyle(
+        fontFamily = Grotesk, fontWeight = FontWeight.Medium,
+        fontSize = 13.sp, lineHeight = 17.sp, letterSpacing = 0.4.sp,
+        fontFeatureSettings = "tnum",
+    ),
+    labelLarge = TextStyle(
+        fontFamily = Jakarta, fontWeight = FontWeight.Medium,
+        fontSize = 15.sp, lineHeight = 20.sp, letterSpacing = 0.1.sp,
+    ),
+)
+
+val AppShapes = Shapes(
+    extraSmall = RoundedCornerShape(10.dp),
+    small = RoundedCornerShape(12.dp),
+    medium = RoundedCornerShape(16.dp),
+    large = RoundedCornerShape(20.dp),
+    extraLarge = RoundedCornerShape(24.dp),
 )
 
 private val AppColorScheme: ColorScheme = lightColorScheme(
@@ -137,6 +166,19 @@ private val AppColorScheme: ColorScheme = lightColorScheme(
     onSurfaceVariant = H.Ink2,
     outline = Color(0xFF8E7069),
     outlineVariant = H.Hairline,
+    // 补齐 Material 3 容器/反色角色：原生弹窗、日期/时间选择器、Snackbar 不再回落到基线冷紫灰。
+    surfaceTint = H.Coral,
+    surfaceDim = H.Track,
+    surfaceBright = Color.White,
+    surfaceContainerLowest = Color.White,
+    surfaceContainerLow = Color.White,
+    surfaceContainer = H.Canvas,
+    surfaceContainerHigh = Color.White,
+    surfaceContainerHighest = H.WarmFill,
+    inverseSurface = H.Ink,
+    inverseOnSurface = Color.White,
+    inversePrimary = H.CoralLight,
+    scrim = H.Ink,
 )
 
 @Composable
@@ -144,6 +186,7 @@ fun BuguTheme(content: @Composable () -> Unit) {
     MaterialTheme(
         colorScheme = AppColorScheme,
         typography = AppTypography,
+        shapes = AppShapes,
         content = content,
     )
 }
