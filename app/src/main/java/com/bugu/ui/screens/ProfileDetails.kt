@@ -28,6 +28,7 @@ import androidx.lifecycle.compose.LocalLifecycleOwner
 import com.bugu.BuildConfig
 import com.bugu.client.api.*
 import com.bugu.diagnostics.LocalNotificationTest
+import com.bugu.ui.common.BackIconButton
 import com.bugu.ui.theme.H
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.launch
@@ -37,7 +38,7 @@ internal fun ProfileDetailPage(page: String, api: GeitaApi, onBack: () -> Unit, 
     BackHandler(onBack = onBack)
     Column(Modifier.fillMaxSize().background(H.Canvas).statusBarsPadding().navigationBarsPadding().imePadding()
         .verticalScroll(rememberScrollState()).padding(20.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
-        TextButton(onClick = onBack) { Text("返回我的", color = H.CoralInk) }
+        BackIconButton(onClick = onBack)
         Text(page, style = MaterialTheme.typography.headlineSmall, color = H.Ink)
         when (page) {
             "权限与提醒诊断" -> PermissionDiagnostics(onSnack)

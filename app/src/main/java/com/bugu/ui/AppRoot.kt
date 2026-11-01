@@ -1,6 +1,8 @@
 package com.bugu.ui
 
+import android.app.Activity
 import android.content.Context
+import androidx.activity.compose.BackHandler
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.animateColorAsState
@@ -96,6 +98,7 @@ import com.bugu.ui.screens.LoginScreen
 import com.bugu.ui.screens.PermissionsScreen
 import com.bugu.ui.screens.ProfileScreen
 import com.bugu.ui.theme.H
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 
 /** 大字关怀模式的内容字号倍率(不放大 dp,避免底部导航与固定尺寸组件被挤压)。 */
@@ -169,6 +172,26 @@ fun AppRoot() {
     val snackbar = remember { SnackbarHostState() }
     val scope = rememberCoroutineScope()
     val showSnack: (String) -> Unit = { msg -> scope.launch { snackbar.showSnackbar(msg) } }
+
+    // 系统返回(对齐主流安卓应用):子页面 → 主界面;非看板 Tab → 看板;看板再按一次才退出
+    var exitArmed by remember { mutableStateOf(false) }
+    LaunchedEffect(exitArmed) {
+        if (exitArmed) {
+            delay(2000)
+            exitArmed = false
+        }
+    }
+    BackHandler {
+        when {
+            screen != Screen.Main -> screen = Screen.Main
+            tab != Tab.DASHBOARD -> tab = Tab.DASHBOARD
+            exitArmed -> (context as? Activity)?.finish()
+            else -> {
+                exitArmed = true
+                showSnack("再按一次退出布谷")
+            }
+        }
+    }
 
     // 启动恢复登录态:有 token 校验 me();401 清 token 走登录,网络故障保留 token 给重试页
     suspend fun restoreSession() {
@@ -441,6 +464,8 @@ private fun MainHost(
                             Tab.CREATE -> CreateReminderScreen(
                                 api = api,
                                 userId = user.id,
+                                selfAvatarUrl = user.avatarUrl,
+                                selfNickname = user.nickname,
                                 bonds = bonds,
                                 bondsLoading = bondsLoading,
                                 bondsError = bondsError,

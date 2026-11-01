@@ -1024,14 +1024,12 @@ fun CreateReminderScreen(
                     )
                 }
                 Spacer(Modifier.height(10.dp))
-                // 固定尺寸容器,避免表盘在弹层里被拉伸导致触摸命中偏移
-                Box(
-                    Modifier
-                        .fillMaxWidth()
-                        .height(340.dp),
-                    contentAlignment = Alignment.Center,
-                ) {
-                    TimePicker(state = timeState)
+                // 给足高度让表盘保持正圆:被压扁成椭圆时,视觉位置与圆形触摸几何不一致会点偏
+                Box(Modifier.fillMaxWidth(), contentAlignment = Alignment.Center) {
+                    TimePicker(
+                        state = timeState,
+                        modifier = Modifier.size(width = 320.dp, height = 400.dp),
+                    )
                 }
                 Spacer(Modifier.height(14.dp))
                 GradientButton(
