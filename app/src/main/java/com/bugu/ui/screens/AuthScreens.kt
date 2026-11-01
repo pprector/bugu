@@ -13,6 +13,7 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
@@ -20,6 +21,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.imePadding
+import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
@@ -87,12 +89,18 @@ import com.bugu.client.api.UserDto
 import com.bugu.ApiFactory
 import com.bugu.SharedPrefsTokenStore
 import com.bugu.ui.common.BackIconButton
+import com.bugu.ui.common.BuguButton
+import com.bugu.ui.common.BuguButtonStyle
+import com.bugu.ui.common.BuguCard
 import com.bugu.ui.common.BuguDialog
 import com.bugu.ui.common.BuguDialogActions
 import com.bugu.ui.common.FieldError
 import com.bugu.ui.common.GradientButton
 import com.bugu.ui.common.GuguBird
 import com.bugu.ui.common.GuguMood
+import com.bugu.ui.common.RiseIn
+import com.bugu.ui.common.TagChip
+import com.bugu.ui.common.TopBar
 import com.bugu.ui.common.Waveform
 import com.bugu.ui.theme.H
 import kotlinx.coroutines.delay
@@ -337,6 +345,7 @@ fun LoginScreen(onLoggedIn: (UserDto) -> Unit) {
                     .fillMaxWidth()
                     .clip(RoundedCornerShape(24.dp))
                     .background(Color.White)
+                    .border(1.dp, H.Hairline, RoundedCornerShape(24.dp))
                     .padding(18.dp),
             ) {
                 Text("手机号码", style = MaterialTheme.typography.titleMedium, color = H.Ink)
@@ -811,183 +820,148 @@ fun PermissionsScreen(onBack: () -> Unit, onDone: (Boolean) -> Unit) {
         Modifier
             .fillMaxSize()
             .background(H.Canvas)
-            .statusBarsPadding()
-            .verticalScroll(rememberScrollState())
-            .padding(horizontal = 20.dp),
+            .navigationBarsPadding(),
     ) {
-        Row(
+        TopBar(
+            title = "核心守护权限",
+            onBack = onBack,
+            guguMood = GuguMood.RING,
+        )
+        Column(
             Modifier
-                .fillMaxWidth()
-                .height(56.dp),
-            verticalAlignment = Alignment.CenterVertically,
+                .fillMaxSize()
+                .verticalScroll(rememberScrollState())
+                .padding(horizontal = 20.dp)
+                .padding(bottom = 24.dp),
         ) {
-            BackIconButton(onClick = onBack)
-            Text(
-                "核心守护权限",
-                style = MaterialTheme.typography.headlineSmall,
-                color = H.Ink,
-                modifier = Modifier.weight(1f),
-                textAlign = TextAlign.Center,
-            )
-            Spacer(Modifier.size(44.dp))
-            Text(
-                "跳过",
-                style = MaterialTheme.typography.titleMedium,
-                color = H.Ink2,
-                modifier = Modifier.clickable { onDone(false) }.padding(6.dp),
-            )
-        }
+            Spacer(Modifier.height(8.dp))
 
-        Spacer(Modifier.height(18.dp))
-
-        // 插画
-        Box(Modifier.fillMaxWidth().height(120.dp), contentAlignment = Alignment.Center) {
-            Box(
-                Modifier
-                    .size(96.dp)
-                    .clip(CircleShape)
-                    .background(Color(0xFFFFE3DA)),
-                contentAlignment = Alignment.Center,
-            ) {
-                Icon(Icons.Filled.Favorite, null, Modifier.size(40.dp), tint = H.Coral)
-            }
-            Box(
-                Modifier
-                    .align(Alignment.TopEnd)
-                    .padding(end = 90.dp)
-                    .size(30.dp)
-                    .clip(CircleShape)
-                    .background(H.CoralLight),
-            )
-        }
-
-        Text(
-            "为了让每声呼唤准时到达",
-            style = MaterialTheme.typography.headlineMedium,
-            color = H.Ink,
-            modifier = Modifier.fillMaxWidth(),
-            textAlign = TextAlign.Center,
-        )
-        Spacer(Modifier.height(8.dp))
-        Text(
-            "开启 2 项核心守护权限,惦记才不会错过",
-            style = MaterialTheme.typography.bodyMedium,
-            color = H.Ink2,
-            modifier = Modifier.fillMaxWidth(),
-            textAlign = TextAlign.Center,
-        )
-
-        Spacer(Modifier.height(24.dp))
-
-        val items = listOf(
-            PermissionItem(
-                icon = Icons.Outlined.Notifications,
-                title = "温和通知权限",
-                desc = "日常备忘与轻量问候,在屏幕顶部温和呈现",
-                granted = notificationsGranted,
-                onClick = { requestNotifications() },
-            ),
-            PermissionItem(
-                icon = Icons.Outlined.Alarm,
-                title = "准时闹钟权限",
-                desc = "静音或勿扰模式下仍可准点全屏唤醒,防止睡过与漏服",
-                granted = exactAlarmGranted,
-                keyBadge = true,
-                onClick = { requestExactAlarm() },
-            ),
-        )
-        items.forEach { item ->
-            Row(
-                Modifier
-                    .fillMaxWidth()
-                    .clip(RoundedCornerShape(22.dp))
-                    .background(Color.White)
-                    .clickable(onClick = item.onClick)
-                    .padding(16.dp),
-                verticalAlignment = Alignment.CenterVertically,
-            ) {
+            // 品牌插画：咕咕是唯一 IP
+            Box(Modifier.fillMaxWidth().height(130.dp), contentAlignment = Alignment.Center) {
                 Box(
                     Modifier
-                        .size(46.dp)
-                        .clip(RoundedCornerShape(16.dp))
+                        .size(108.dp)
+                        .clip(CircleShape)
                         .background(H.CoralTint),
                     contentAlignment = Alignment.Center,
                 ) {
-                    Icon(item.icon, null, Modifier.size(22.dp), tint = H.Coral)
-                }
-                Spacer(Modifier.width(14.dp))
-                Column(Modifier.weight(1f)) {
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        Text(item.title, style = MaterialTheme.typography.titleMedium, color = H.Ink)
-                        if (item.keyBadge) {
-                            Spacer(Modifier.width(6.dp))
-                            Box(
-                                Modifier
-                                    .clip(RoundedCornerShape(999.dp))
-                                    .background(H.RoseTint)
-                                    .padding(horizontal = 8.dp, vertical = 2.dp),
-                            ) {
-                                Text("关键", style = MaterialTheme.typography.titleSmall, color = H.Rose)
-                            }
-                        }
-                    }
-                    Spacer(Modifier.height(3.dp))
-                    Text(item.desc, style = MaterialTheme.typography.bodySmall, color = H.Ink3Strong)
-                }
-                Spacer(Modifier.width(10.dp))
-                Box(
-                    Modifier
-                        .size(30.dp)
-                        .clip(CircleShape)
-                        .background(if (item.granted) H.Mint else H.Track),
-                    contentAlignment = Alignment.Center,
-                ) {
-                    if (item.granted) {
-                        Icon(Icons.Outlined.Check, null, Modifier.size(18.dp), tint = Color.White)
-                    } else {
-                        Icon(Icons.Outlined.Bolt, null, Modifier.size(16.dp), tint = Color.White)
-                    }
+                    GuguBird(
+                        mood = GuguMood.RING,
+                        modifier = Modifier.size(96.dp),
+                        onTap = null,
+                        pokeLines = emptyList(),
+                    )
                 }
             }
-            Spacer(Modifier.height(12.dp))
-        }
 
-        Spacer(Modifier.height(4.dp))
-        Row(
-            Modifier
-                .fillMaxWidth()
-                .clip(RoundedCornerShape(20.dp))
-                .background(H.GreyTint)
-                .padding(16.dp),
-            verticalAlignment = Alignment.CenterVertically,
-        ) {
-            Icon(Icons.Outlined.Shield, null, Modifier.size(20.dp), tint = H.Ink3)
-            Spacer(Modifier.width(10.dp))
             Text(
-                "权限仅用于准时送达惦记;没有授权也能先用,随时可回到本页开启",
-                style = MaterialTheme.typography.bodySmall,
-                color = H.Ink2,
+                "为了让每声呼唤准时到达",
+                style = MaterialTheme.typography.headlineMedium,
+                color = H.Ink,
+                modifier = Modifier.fillMaxWidth(),
+                textAlign = TextAlign.Center,
             )
-        }
+            Spacer(Modifier.height(8.dp))
+            Text(
+                "开启 2 项核心守护权限，惦记才不会错过",
+                style = MaterialTheme.typography.bodyMedium,
+                color = H.Ink3Strong,
+                modifier = Modifier.fillMaxWidth(),
+                textAlign = TextAlign.Center,
+            )
 
-        Spacer(Modifier.height(24.dp))
-        GradientButton(
-            text = "开启并进入布谷",
-            onClick = { onDone(notificationsGranted && exactAlarmGranted) },
-            modifier = Modifier.fillMaxWidth(),
-        )
-        Spacer(Modifier.height(12.dp))
-        Text(
-            "暂不开启,先去逛逛",
-            style = MaterialTheme.typography.titleMedium,
-            color = H.Ink2,
-            modifier = Modifier
-                .fillMaxWidth()
-                .clickable { onDone(false) }
-                .padding(vertical = 10.dp),
-            textAlign = TextAlign.Center,
-        )
-        Spacer(Modifier.height(24.dp))
+            Spacer(Modifier.height(24.dp))
+
+            val items = listOf(
+                PermissionItem(
+                    icon = Icons.Outlined.Notifications,
+                    title = "温和通知权限",
+                    desc = "日常备忘与轻量问候，在屏幕顶部温和呈现",
+                    granted = notificationsGranted,
+                    onClick = { requestNotifications() },
+                ),
+                PermissionItem(
+                    icon = Icons.Outlined.Alarm,
+                    title = "准时闹钟权限",
+                    desc = "静音或勿扰模式下仍可准点全屏唤醒，防止睡过与漏服",
+                    granted = exactAlarmGranted,
+                    keyBadge = true,
+                    onClick = { requestExactAlarm() },
+                ),
+            )
+            items.forEachIndexed { index, item ->
+                RiseIn(delayMs = index * 40) {
+                    BuguCard(
+                        shape = MaterialTheme.shapes.extraLarge,
+                        contentPadding = PaddingValues(16.dp),
+                        onClick = item.onClick,
+                    ) {
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Box(
+                                Modifier
+                                    .size(46.dp)
+                                    .clip(RoundedCornerShape(16.dp))
+                                    .background(H.CoralTint),
+                                contentAlignment = Alignment.Center,
+                            ) {
+                                Icon(item.icon, null, Modifier.size(22.dp), tint = H.Coral)
+                            }
+                            Spacer(Modifier.width(14.dp))
+                            Column(Modifier.weight(1f)) {
+                                Row(verticalAlignment = Alignment.CenterVertically) {
+                                    Text(item.title, style = MaterialTheme.typography.titleMedium, color = H.Ink)
+                                    if (item.keyBadge) {
+                                        Spacer(Modifier.width(6.dp))
+                                        TagChip(text = "关键", tint = H.Coral)
+                                    }
+                                }
+                                Spacer(Modifier.height(3.dp))
+                                Text(item.desc, style = MaterialTheme.typography.bodySmall, color = H.Ink3Strong)
+                            }
+                            Spacer(Modifier.width(8.dp))
+                            TagChip(
+                                text = if (item.granted) "已开启" else "待开启",
+                                tint = if (item.granted) H.Mint else H.Coral,
+                            )
+                        }
+                    }
+                }
+                Spacer(Modifier.height(12.dp))
+            }
+
+            BuguCard(
+                containerColor = H.WarmFill,
+                borderColor = H.Hairline,
+                contentPadding = PaddingValues(16.dp),
+            ) {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Icon(Icons.Outlined.Shield, null, Modifier.size(20.dp), tint = H.Ink3)
+                    Spacer(Modifier.width(10.dp))
+                    Text(
+                        "权限仅用于准时送达惦记；没有授权也能先用，随时可回到本页开启",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = H.Ink3Strong,
+                    )
+                }
+            }
+
+            Spacer(Modifier.height(24.dp))
+            BuguButton(
+                text = "开启并进入布谷",
+                onClick = { onDone(notificationsGranted && exactAlarmGranted) },
+                modifier = Modifier.fillMaxWidth(),
+                height = 52.dp,
+            )
+            Spacer(Modifier.height(10.dp))
+            BuguButton(
+                text = "暂不开启，先去逛逛",
+                onClick = { onDone(false) },
+                modifier = Modifier.fillMaxWidth(),
+                style = BuguButtonStyle.Secondary,
+                height = 46.dp,
+            )
+            Spacer(Modifier.height(24.dp))
+        }
     }
 }
 

@@ -1,6 +1,7 @@
 package com.bugu.ui.screens
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -46,7 +47,9 @@ import com.bugu.client.api.ReminderView
 import com.bugu.ui.common.BackIconButton
 import com.bugu.ui.common.CircleIcon
 import com.bugu.ui.common.EmptyState
+import com.bugu.ui.common.GuguMood
 import com.bugu.ui.common.RiseIn
+import com.bugu.ui.common.TopBar
 import com.bugu.ui.common.StatusAvatar
 import com.bugu.ui.common.TagChip
 import com.bugu.ui.common.kindLabel
@@ -100,26 +103,29 @@ fun HistoryScreen(
         entries.groupBy { parseIsoTime(it.r.fireAt)?.toLocalDate() ?: today }
     }
 
-    LazyColumn(
+    Column(
         Modifier
             .fillMaxSize()
             .background(H.Canvas)
-            .statusBarsPadding()
             .navigationBarsPadding(),
-        contentPadding = PaddingValues(start = 20.dp, end = 20.dp, top = 10.dp, bottom = 24.dp),
-        verticalArrangement = Arrangement.spacedBy(14.dp),
     ) {
-        item {
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                BackIconButton(onClick = onBack)
-                Spacer(Modifier.width(12.dp))
-                Column(Modifier.weight(1f)) {
-                    Text("惦记历史回执", style = MaterialTheme.typography.headlineSmall, color = H.Ink)
-                    Text("每一次惦记,都有回音", style = MaterialTheme.typography.bodySmall, color = H.Ink3Strong)
+        TopBar(
+            title = "惦记历史回执",
+            onBack = onBack,
+            guguMood = GuguMood.CHEER,
+        )
+        LazyColumn(
+            Modifier.fillMaxSize(),
+            contentPadding = PaddingValues(start = 20.dp, end = 20.dp, top = 4.dp, bottom = 24.dp),
+            verticalArrangement = Arrangement.spacedBy(14.dp),
+        ) {
+            item {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Text("每一次惦记，都有回音", style = MaterialTheme.typography.bodySmall, color = H.Ink3Strong)
+                    Spacer(Modifier.weight(1f))
+                    TagChip(text = "共 ${entries.size} 条", tint = H.Ink2)
                 }
-                TagChip(text = "共 ${entries.size} 条", tint = H.Ink2)
             }
-        }
 
         if (failed) {
             item {
@@ -161,6 +167,7 @@ fun HistoryScreen(
                 }
             }
         }
+        }
     }
 }
 
@@ -172,8 +179,9 @@ private fun HistoryCard(entry: HistoryEntry, peerName: String, direction: String
         Column(
             Modifier
                 .fillMaxWidth()
-                .clip(RoundedCornerShape(26.dp))
+                .clip(RoundedCornerShape(20.dp))
                 .background(Color.White)
+                .border(1.dp, H.Hairline, RoundedCornerShape(20.dp))
                 .padding(16.dp),
         ) {
             Row(verticalAlignment = Alignment.CenterVertically) {
@@ -224,9 +232,9 @@ private fun HistoryCard(entry: HistoryEntry, peerName: String, direction: String
                 Spacer(Modifier.height(10.dp))
                 Text(
                     when (r.status) {
-                        "SNOOZED" -> "💤 TA 选择稍后,咕咕会再叫一次"
-                        "DECLINED" -> "🙏 TA 说这会儿不方便,回个关心吧"
-                        else -> "⏰ 24 小时内没有回应,已收口为错过"
+                        "SNOOZED" -> "TA 选择稍后，咕咕会再叫一次"
+                        "DECLINED" -> "TA 说这会儿不方便，回个关心吧"
+                        else -> "24 小时内没有回应，已收口为错过"
                     },
                     style = MaterialTheme.typography.bodySmall,
                     color = H.Ink2,

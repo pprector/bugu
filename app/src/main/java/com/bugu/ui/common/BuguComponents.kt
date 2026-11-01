@@ -54,6 +54,8 @@ fun BuguCard(
     containerColor: Color = Color.White,
     borderColor: Color = H.Hairline,
     contentPadding: PaddingValues = PaddingValues(16.dp),
+    verticalArrangement: Arrangement.Vertical = Arrangement.Top,
+    horizontalAlignment: Alignment.Horizontal = Alignment.Start,
     onClick: (() -> Unit)? = null,
     content: @Composable ColumnScope.() -> Unit,
 ) {
@@ -69,6 +71,8 @@ fun BuguCard(
             .border(1.dp, borderColor, shape)
             .then(clickModifier)
             .padding(contentPadding),
+        verticalArrangement = verticalArrangement,
+        horizontalAlignment = horizontalAlignment,
         content = content,
     )
 }
@@ -336,7 +340,8 @@ fun BuguTextField(
     singleLine: Boolean = true,
     isError: Boolean = false,
     supportingText: String? = null,
-    maxLines: Int = if (singleLine) 1 else 4,
+    minLines: Int = if (singleLine) 1 else 3,
+    maxLines: Int = if (singleLine) 1 else 6,
     keyboardOptions: KeyboardOptions = KeyboardOptions.Default,
     keyboardActions: KeyboardActions = KeyboardActions.Default,
 ) {
@@ -347,6 +352,7 @@ fun BuguTextField(
         enabled = enabled,
         singleLine = singleLine,
         isError = isError,
+        minLines = minLines,
         maxLines = maxLines,
         label = { Text(label, style = MaterialTheme.typography.titleSmall) },
         supportingText = supportingText?.let {

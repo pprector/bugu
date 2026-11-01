@@ -47,11 +47,13 @@ import com.bugu.client.domain.directionLabel
 import com.bugu.client.api.GeitaApi
 import com.bugu.client.api.GeitaApiException
 import com.bugu.client.api.ReminderView
-import com.bugu.ui.common.BackIconButton
 import com.bugu.ui.common.EmptyState
 import com.bugu.ui.common.GuguBird
 import com.bugu.ui.common.GuguMood
+import com.bugu.ui.common.HeaderIconButton
+import com.bugu.ui.common.RiseIn
 import com.bugu.ui.common.TagChip
+import com.bugu.ui.common.TopBar
 import com.bugu.ui.common.parseIsoTime
 import com.bugu.ui.common.repeatLabel
 import com.bugu.ui.common.statusColor
@@ -105,22 +107,13 @@ fun CalendarScreen(api: GeitaApi, bonds: List<BondDto>, onBack: () -> Unit) {
         Modifier
             .fillMaxSize()
             .background(H.Canvas)
-            .statusBarsPadding()
             .navigationBarsPadding(),
     ) {
-        // 顶栏
-        Row(
-            Modifier
-                .fillMaxWidth()
-                .padding(horizontal = 20.dp, vertical = 10.dp),
-            verticalAlignment = Alignment.CenterVertically,
-        ) {
-            BackIconButton(onClick = onBack)
-            Spacer(Modifier.weight(1f))
-            Text("日历", style = MaterialTheme.typography.titleLarge, color = H.Ink)
-            Spacer(Modifier.weight(1f))
-            Spacer(Modifier.size(44.dp))
-        }
+        TopBar(
+            title = "日历",
+            onBack = onBack,
+            guguMood = GuguMood.CHEER,
+        )
 
         Column(
             Modifier
@@ -142,19 +135,14 @@ fun CalendarScreen(api: GeitaApi, bonds: List<BondDto>, onBack: () -> Unit) {
                     Modifier.fillMaxWidth(),
                     verticalAlignment = Alignment.CenterVertically,
                 ) {
-                    Box(
-                        Modifier
-                            .size(32.dp)
-                            .clip(CircleShape)
-                            .background(Color.White)
-                            .clickable {
-                                month = month.minusMonths(1)
-                                selectedDay = today.takeIf { YearMonth.from(it) == month } ?: month.atDay(1)
-                            },
-                        contentAlignment = Alignment.Center,
-                    ) {
-                        Icon(Icons.Outlined.ChevronLeft, null, Modifier.size(18.dp), tint = H.Ink2)
-                    }
+                    HeaderIconButton(
+                        icon = Icons.Outlined.ChevronLeft,
+                        contentDescription = "上个月",
+                        onClick = {
+                            month = month.minusMonths(1)
+                            selectedDay = today.takeIf { YearMonth.from(it) == month } ?: month.atDay(1)
+                        },
+                    )
                     Spacer(Modifier.weight(1f))
                     Text(
                         "${month.year}年${month.monthValue}月 · ${if (inMonth) "共${monthEntries.size}天有安排" else "暂无安排"}",
@@ -162,19 +150,14 @@ fun CalendarScreen(api: GeitaApi, bonds: List<BondDto>, onBack: () -> Unit) {
                         color = H.Ink,
                     )
                     Spacer(Modifier.weight(1f))
-                    Box(
-                        Modifier
-                            .size(32.dp)
-                            .clip(CircleShape)
-                            .background(Color.White)
-                            .clickable {
-                                month = month.plusMonths(1)
-                                selectedDay = today.takeIf { YearMonth.from(it) == month } ?: month.atDay(1)
-                            },
-                        contentAlignment = Alignment.Center,
-                    ) {
-                        Icon(Icons.Outlined.ChevronRight, null, Modifier.size(18.dp), tint = H.Ink2)
-                    }
+                    HeaderIconButton(
+                        icon = Icons.Outlined.ChevronRight,
+                        contentDescription = "下个月",
+                        onClick = {
+                            month = month.plusMonths(1)
+                            selectedDay = today.takeIf { YearMonth.from(it) == month } ?: month.atDay(1)
+                        },
+                    )
                 }
                 Spacer(Modifier.height(12.dp))
 
@@ -182,8 +165,9 @@ fun CalendarScreen(api: GeitaApi, bonds: List<BondDto>, onBack: () -> Unit) {
                 Column(
                     Modifier
                         .fillMaxWidth()
-                        .clip(RoundedCornerShape(26.dp))
+                        .clip(RoundedCornerShape(24.dp))
                         .background(Color.White)
+                        .border(1.dp, H.Hairline, RoundedCornerShape(24.dp))
                         .padding(horizontal = 10.dp, vertical = 16.dp),
                 ) {
                     Row(Modifier.fillMaxWidth()) {
@@ -240,7 +224,7 @@ fun CalendarScreen(api: GeitaApi, bonds: List<BondDto>, onBack: () -> Unit) {
                     Text(
                         if (count == 0) "无安排" else "$count 项安排",
                         style = MaterialTheme.typography.titleSmall,
-                        color = if (count == 0) H.Ink3 else H.Coral,
+                        color = if (count == 0) H.Ink3Strong else H.CoralInk,
                     )
                 }
                 Spacer(Modifier.height(10.dp))
@@ -250,8 +234,9 @@ fun CalendarScreen(api: GeitaApi, bonds: List<BondDto>, onBack: () -> Unit) {
                     Column(
                         Modifier
                             .fillMaxWidth()
-                            .clip(RoundedCornerShape(26.dp))
+                            .clip(RoundedCornerShape(20.dp))
                             .background(Color.White)
+                            .border(1.dp, H.Hairline, RoundedCornerShape(20.dp))
                             .padding(vertical = 26.dp),
                         horizontalAlignment = Alignment.CenterHorizontally,
                     ) {
@@ -263,12 +248,14 @@ fun CalendarScreen(api: GeitaApi, bonds: List<BondDto>, onBack: () -> Unit) {
                 } else {
                     selectedList.forEachIndexed { i, e ->
                         val fire = parseIsoTime(e.r.fireAt)
+                        RiseIn(delayMs = i * 30) {
                         Row(
                             Modifier
                                 .fillMaxWidth()
                                 .padding(bottom = 10.dp)
-                                .clip(RoundedCornerShape(22.dp))
+                                .clip(RoundedCornerShape(20.dp))
                                 .background(Color.White)
+                                .border(1.dp, H.Hairline, RoundedCornerShape(20.dp))
                                 .padding(horizontal = 18.dp, vertical = 16.dp),
                             verticalAlignment = Alignment.CenterVertically,
                         ) {
@@ -298,6 +285,7 @@ fun CalendarScreen(api: GeitaApi, bonds: List<BondDto>, onBack: () -> Unit) {
                             }
                             TagChip(text = statusLabel(e.r.status), tint = statusColor(e.r.status))
                         }
+                        }
                     }
                 }
                 Spacer(Modifier.height(20.dp))
@@ -312,7 +300,7 @@ private fun DayCell(day: Int, count: Int, isToday: Boolean, selected: Boolean, o
         Box(
             Modifier
                 .padding(top = 4.dp)
-                .size(38.dp)
+                .size(44.dp)
                 .clip(CircleShape)
                 .background(when {
                     isToday -> H.Coral

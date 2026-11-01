@@ -225,22 +225,30 @@ fun CompanionDetailScreen(
         Modifier
             .fillMaxSize()
             .background(H.Canvas)
-            .statusBarsPadding()
-            .navigationBarsPadding()
-            .verticalScroll(rememberScrollState())
-            .padding(horizontal = 20.dp),
+            .navigationBarsPadding(),
     ) {
-        Spacer(Modifier.height(12.dp))
-        BackIconButton(onClick = onBack)
-        Spacer(Modifier.height(8.dp))
+        TopBar(
+            title = bond?.displayName ?: "陪伴详情",
+            onBack = onBack,
+            guguMood = GuguMood.CHEER,
+        )
+        Column(
+            Modifier
+                .fillMaxSize()
+                .verticalScroll(rememberScrollState())
+                .padding(horizontal = 20.dp),
+        ) {
         if (bond == null) {
-            Text("此关联已失效", color = H.Ink, style = MaterialTheme.typography.titleMedium)
+            Text("这段陪伴已经结束", color = H.Ink, style = MaterialTheme.typography.titleMedium)
             TextButton(onClick = onRefreshBonds) { Text("刷新关系", color = H.CoralInk) }
             return@Column
         }
         val name = bond.displayName
-        Text(name, style = MaterialTheme.typography.headlineSmall, color = H.Ink)
-        Text("对方昵称:${bond.counterpartNickname ?: "未设置"}", color = H.Ink3Strong, style = MaterialTheme.typography.bodySmall)
+        Text(
+            "对方昵称：${bond.counterpartNickname ?: "还没设置"}",
+            color = H.Ink3Strong,
+            style = MaterialTheme.typography.bodySmall,
+        )
         Spacer(Modifier.height(16.dp))
 
         // 发提醒入口:包进白卡,对齐看板卡片规范
@@ -360,15 +368,47 @@ fun CompanionDetailScreen(
             }
         }
         Spacer(Modifier.height(12.dp))
-        TextButton(onClick = { editRemark = true }, enabled = !busy) {
-            Text("设置私人备注 · ${bond.remark ?: "未设置"}", color = H.CoralInk)
+        BuguCard(
+            shape = RoundedCornerShape(20.dp),
+            contentPadding = androidx.compose.foundation.layout.PaddingValues(0.dp),
+        ) {
+            Row(
+                Modifier
+                    .fillMaxWidth()
+                    .clickable(enabled = !busy) { editRemark = true }
+                    .padding(16.dp),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                Column(Modifier.weight(1f)) {
+                    Text("私人备注", style = MaterialTheme.typography.titleMedium, color = H.Ink)
+                    Text(
+                        bond.remark ?: "还没设置 · 仅自己可见",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = H.Ink3Strong,
+                    )
+                }
+                Icon(Icons.AutoMirrored.Filled.KeyboardArrowRight, null, Modifier.size(18.dp), tint = H.Ink3)
+            }
+            HorizontalDivider(color = H.Hairline, thickness = 1.dp)
+            Row(
+                Modifier
+                    .fillMaxWidth()
+                    .clickable(enabled = !busy) { confirmUnbind = true }
+                    .padding(16.dp),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                Text("解除关联", style = MaterialTheme.typography.titleMedium, color = H.RoseInk)
+                Spacer(Modifier.weight(1f))
+                Icon(Icons.AutoMirrored.Filled.KeyboardArrowRight, null, Modifier.size(18.dp), tint = H.Rose)
+            }
         }
-        Text("仅自己可见,留空后显示对方昵称,最多 30 字。", color = H.Ink3Strong, style = MaterialTheme.typography.bodySmall)
-        Spacer(Modifier.height(8.dp))
-        TextButton(onClick = { confirmUnbind = true }, enabled = !busy) {
-            Text("解除关联", color = H.Rose)
-        }
+        Text(
+            "备注仅自己可见，留空后显示对方昵称，最多 30 字。",
+            color = H.Ink3Strong,
+            style = MaterialTheme.typography.bodySmall,
+        )
         Spacer(Modifier.height(24.dp))
+        }
     }
     if (editRemark) BuguDialog(
         title = "设置私人备注",

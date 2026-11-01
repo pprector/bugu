@@ -67,9 +67,12 @@ import com.bugu.client.api.BondDto
 import com.bugu.client.api.GeitaApi
 import com.bugu.client.api.UserDto
 import com.bugu.ui.common.BrandSwitch
+import com.bugu.ui.common.BuguButton
+import com.bugu.ui.common.BuguButtonStyle
 import com.bugu.ui.common.BuguDialog
 import com.bugu.ui.common.BuguDialogActions
 import com.bugu.ui.common.BuguTextField
+import com.bugu.ui.common.GuguBird
 import com.bugu.ui.common.GuguMood
 import com.bugu.ui.common.parseIsoTime
 import com.bugu.ui.common.RiseIn
@@ -109,6 +112,7 @@ fun ProfileScreen(
     var nickname by androidx.compose.runtime.saveable.rememberSaveable(user.id) { mutableStateOf(user.nickname) }
     var savingNickname by remember { mutableStateOf(false) }
     var nicknameError by remember { mutableStateOf<String?>(null) }
+    var confirmLogout by remember { mutableStateOf(false) }
 
     // 惦记统计:发出/收到/本月已完成,页面自包含拉取
     var statMine by remember { mutableStateOf<Int?>(null) }
@@ -218,11 +222,35 @@ fun ProfileScreen(
             .verticalScroll(rememberScrollState())
             .padding(horizontal = 20.dp),
     ) {
+        // 页头品牌锚点：与看板/陪伴/新建保持同一只咕咕
+        Row(
+            Modifier
+                .fillMaxWidth()
+                .padding(top = 12.dp),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            GuguBird(
+                mood = GuguMood.CHEER,
+                modifier = Modifier.size(40.dp),
+                onTap = null,
+                pokeLines = emptyList(),
+            )
+            Spacer(Modifier.width(10.dp))
+            Column(Modifier.weight(1f)) {
+                Text("我的", style = MaterialTheme.typography.headlineSmall, color = H.Ink)
+                Text(
+                    "布谷布谷，有人惦记你",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = H.Ink3Strong,
+                )
+            }
+        }
+
         // 头部:头像 + 昵称 + 手机号
         Row(
             Modifier
                 .fillMaxWidth()
-                .padding(top = 20.dp),
+                .padding(top = 16.dp),
             verticalAlignment = Alignment.CenterVertically,
         ) {
             EditableAvatar(
@@ -237,7 +265,13 @@ fun ProfileScreen(
             Column(Modifier.weight(1f)) {
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Text(user.nickname, modifier = Modifier.weight(1f), style = MaterialTheme.typography.titleLarge, color = H.Ink)
-                    TextButton(onClick = { nickname = user.nickname; editingNickname = true }) { Text("修改昵称", color = H.CoralInk) }
+                    BuguButton(
+                        text = "修改昵称",
+                        onClick = { nickname = user.nickname; editingNickname = true },
+                        modifier = Modifier.width(96.dp),
+                        style = BuguButtonStyle.Secondary,
+                        height = 44.dp,
+                    )
                 }
                 Spacer(Modifier.height(4.dp))
                 Row(verticalAlignment = Alignment.CenterVertically) {
@@ -264,6 +298,7 @@ fun ProfileScreen(
                     .fillMaxWidth()
                     .clip(RoundedCornerShape(22.dp))
                     .background(Color.White)
+                    .border(1.dp, H.Hairline, RoundedCornerShape(22.dp))
                     .clickable(onClick = onOpenFriends)
                     .padding(16.dp),
                 verticalAlignment = Alignment.CenterVertically,
@@ -318,7 +353,13 @@ fun ProfileScreen(
         Spacer(Modifier.height(10.dp))
 
         // 我的惦记(历史回执)
-        MenuRow(icon = Icons.Outlined.Alarm, title = "我的惦记", subtitle = "发出与收到的历史回执", onClick = onOpenHistory)
+        MenuRow(
+            icon = Icons.Outlined.Alarm,
+            title = "我的惦记",
+            subtitle = "发出与收到的历史回执",
+            tint = H.Mint,
+            onClick = onOpenHistory,
+        )
 
         // 大字关怀模式:纯本地视觉开关(字体与布局放大)
         Row(
@@ -326,6 +367,7 @@ fun ProfileScreen(
                 .fillMaxWidth()
                 .clip(RoundedCornerShape(22.dp))
                 .background(Color.White)
+                .border(1.dp, H.Hairline, RoundedCornerShape(22.dp))
                 .padding(horizontal = 16.dp, vertical = 14.dp),
             verticalAlignment = Alignment.CenterVertically,
         ) {
@@ -339,11 +381,26 @@ fun ProfileScreen(
         }
 
         Spacer(Modifier.height(12.dp))
-        MenuRow(Icons.Outlined.Notifications, "权限与提醒诊断", "检查系统权限，发送本机测试通知") { detail = "权限与提醒诊断" }
+        MenuRow(
+            Icons.Outlined.Notifications,
+            "权限与送达诊断",
+            "检查系统权限，发送本机测试通知",
+            tint = H.Coral,
+        ) { detail = "权限与送达诊断" }
         Spacer(Modifier.height(12.dp))
-        MenuRow(Icons.Outlined.HelpOutline, "帮助与反馈", "常见问题、反馈进度与回复") { detail = "帮助与反馈" }
+        MenuRow(
+            Icons.Outlined.HelpOutline,
+            "帮助与反馈",
+            "常见问题、反馈进度与回复",
+            tint = H.Indigo,
+        ) { detail = "帮助与反馈" }
         Spacer(Modifier.height(12.dp))
-        MenuRow(Icons.Outlined.Info, "关于布谷", "版本、用户协议与隐私政策") { detail = "关于布谷" }
+        MenuRow(
+            Icons.Outlined.Info,
+            "关于布谷",
+            "版本、用户协议与隐私政策",
+            tint = H.Ink2,
+        ) { detail = "关于布谷" }
         Spacer(Modifier.height(12.dp))
 
         // 退出登录
@@ -352,7 +409,8 @@ fun ProfileScreen(
                 .fillMaxWidth()
                 .clip(RoundedCornerShape(22.dp))
                 .background(Color.White)
-                .clickable(onClick = onLogout)
+                .border(1.dp, H.Hairline, RoundedCornerShape(22.dp))
+                .clickable { confirmLogout = true }
                 .padding(16.dp),
             verticalAlignment = Alignment.CenterVertically,
         ) {
@@ -373,21 +431,56 @@ fun ProfileScreen(
         )
         Spacer(Modifier.height(24.dp))
     }
+
+    if (confirmLogout) {
+        BuguDialog(
+            title = "退出登录?",
+            onDismissRequest = { confirmLogout = false },
+            mood = GuguMood.SLEEP,
+            subtitle = "下次回来，需要重新验证手机号",
+            content = {
+                Text(
+                    "退出后，这台设备不会再收到呼唤；你的惦记和资料都还在。",
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = H.Ink3Strong,
+                )
+            },
+            actions = {
+                BuguDialogActions(
+                    confirmText = "退出登录",
+                    onConfirm = {
+                        confirmLogout = false
+                        onLogout()
+                    },
+                    dismissText = "再想想",
+                    onDismiss = { confirmLogout = false },
+                    confirmStyle = BuguButtonStyle.Danger,
+                )
+            },
+        )
+    }
 }
 
 /** 菜单行:白卡 + 图标 + 标题/副标题 + 右箭头。 */
 @Composable
-private fun MenuRow(icon: ImageVector, title: String, subtitle: String, onClick: () -> Unit) {
+private fun MenuRow(
+    icon: ImageVector,
+    title: String,
+    subtitle: String,
+    tint: Color = H.Coral,
+    onClick: () -> Unit,
+) {
     Row(
         Modifier
             .fillMaxWidth()
             .clip(RoundedCornerShape(22.dp))
             .background(Color.White)
+            .border(1.dp, H.Hairline, RoundedCornerShape(22.dp))
             .clickable(onClick = onClick)
             .padding(16.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
-        Icon(icon, null, Modifier.size(20.dp), tint = H.Coral)
+        Icon(icon, null, Modifier.size(20.dp), tint = tint)
         Spacer(Modifier.width(12.dp))
         Column(Modifier.weight(1f)) {
             Text(title, style = MaterialTheme.typography.titleMedium, color = H.Ink)

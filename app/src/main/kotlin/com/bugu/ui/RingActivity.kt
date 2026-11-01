@@ -2,7 +2,6 @@ package com.bugu.ui
 
 import android.os.Bundle
 import android.speech.tts.TextToSpeech
-import android.widget.Toast
 import androidx.activity.ComponentActivity
 import androidx.activity.SystemBarStyle
 import androidx.activity.compose.setContent
@@ -102,16 +101,13 @@ class RingActivity : ComponentActivity() {
                 }
 
                 AlarmScreen(
-                    peerName = "家人",
+                    peerName = "惦记你的人",
                     title = title,
                     copyLine = copyLine,
                     kindLabel = "到点提醒 · 穿透唤醒",
                     elderMode = false,
                     onConfirmed = { ack("DONE") },
                     onSnoozed = { ack("SNOOZE", snoozeMinutes = 15) },
-                    onSnack = { message ->
-                        Toast.makeText(this@RingActivity, message, Toast.LENGTH_SHORT).show()
-                    },
                 )
             }
         }
