@@ -1,6 +1,7 @@
 package com.bugu.ui.screens
 
 import android.graphics.BitmapFactory
+import android.util.Log
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.PickVisualMediaRequest
 import androidx.activity.result.contract.ActivityResultContracts
@@ -68,6 +69,7 @@ import com.bugu.client.api.BondDto
 import com.bugu.client.api.GeitaApi
 import com.bugu.client.api.UserDto
 import com.bugu.ui.common.BrandSwitch
+import com.bugu.ui.common.parseIsoTime
 import com.bugu.ui.common.RiseIn
 import com.bugu.ui.common.TagChip
 import com.bugu.ui.theme.H
@@ -105,6 +107,26 @@ fun ProfileScreen(
     var nickname by androidx.compose.runtime.saveable.rememberSaveable(user.id) { mutableStateOf(user.nickname) }
     var savingNickname by remember { mutableStateOf(false) }
     var nicknameError by remember { mutableStateOf<String?>(null) }
+
+    // 惦记统计:发出/收到/本月已完成,页面自包含拉取
+    var statMine by remember { mutableStateOf<Int?>(null) }
+    var statIncoming by remember { mutableStateOf<Int?>(null) }
+    var statDoneThisMonth by remember { mutableStateOf<Int?>(null) }
+    LaunchedEffect(Unit) {
+        runCatching {
+            val mine = api.myReminders()
+            val incoming = api.incomingReminders()
+            val now = java.time.LocalDate.now()
+            val doneThisMonth = (mine + incoming).count { r ->
+                r.status == "ACKED" && parseIsoTime(r.fireAt)?.let {
+                    it.year == now.year && it.monthValue == now.monthValue
+                } == true
+            }
+            statMine = mine.size
+            statIncoming = incoming.size
+            statDoneThisMonth = doneThisMonth
+        }.onFailure { Log.w("Profile", "stats load failed", it) }
+    }
 
     // 服务端已有头像(重启后本地无缓存)时拉取展示;上传成功后本地位图优先生效
     LaunchedEffect(user.avatarUrl) {
@@ -246,14 +268,35 @@ fun ProfileScreen(
                 Column(Modifier.weight(1f)) {
                     if (active.isNotEmpty()) {
                         Text("与 ${active.size} 位亲友互伴中", style = MaterialTheme.typography.titleMedium, color = H.Ink)
-                        Text(names + if (active.size > 3) "等 · 管理亲友" else " · 管理亲友", style = MaterialTheme.typography.bodySmall, color = H.Ink3)
+                        Text(names + if (active.size > 3) "等 · 管理亲友" else " · 管理亲友", style = MaterialTheme.typography.bodySmall, color = H.Ink3Strong)
                     } else {
                         Text("还没有互伴", style = MaterialTheme.typography.titleMedium, color = H.Ink)
-                        Text("绑定家人朋友,开始互相惦记", style = MaterialTheme.typography.bodySmall, color = H.Ink3)
+                        Text("绑定家人朋友,开始互相惦记", style = MaterialTheme.typography.bodySmall, color = H.Ink3Strong)
                     }
                 }
                 TagChip(text = if (active.isNotEmpty()) "管理" else "添加亲友", tint = H.Coral)
                 Icon(Icons.AutoMirrored.Filled.KeyboardArrowRight, null, Modifier.size(18.dp), tint = H.Ink3)
+            }
+        }
+
+        Spacer(Modifier.height(18.dp))
+
+        // 惦记统计卡:发出/收到/本月已完成,数据反馈给用户
+        RiseIn {
+            Row(
+                Modifier
+                    .fillMaxWidth()
+                    .clip(RoundedCornerShape(22.dp))
+                    .background(Color.White)
+                    .border(1.dp, H.Hairline, RoundedCornerShape(22.dp))
+                    .padding(horizontal = 16.dp, vertical = 18.dp),
+                horizontalArrangement = Arrangement.SpaceEvenly,
+            ) {
+                StatColumn(label = "发出", value = statMine, tint = H.CoralInk)
+                Box(Modifier.width(1.dp).height(36.dp).background(H.Hairline))
+                StatColumn(label = "收到", value = statIncoming, tint = H.IndigoInk)
+                Box(Modifier.width(1.dp).height(36.dp).background(H.Hairline))
+                StatColumn(label = "本月完成", value = statDoneThisMonth, tint = H.MintInk)
             }
         }
 
@@ -277,7 +320,7 @@ fun ProfileScreen(
             Spacer(Modifier.width(12.dp))
             Column(Modifier.weight(1f)) {
                 Text("大字关怀模式", style = MaterialTheme.typography.titleMedium, color = H.Ink)
-                Text("更大的字号与按钮,看着更省心", style = MaterialTheme.typography.bodySmall, color = H.Ink3)
+                Text("更大的字号与按钮,看着更省心", style = MaterialTheme.typography.bodySmall, color = H.Ink3Strong)
             }
             BrandSwitch(checked = careMode, onCheckedChange = onCareModeChange)
         }
@@ -311,7 +354,7 @@ fun ProfileScreen(
         Text(
             "布谷 · 让每一份惦记都有回音",
             style = MaterialTheme.typography.titleSmall,
-            color = H.Ink3,
+            color = H.Ink3Strong,
             modifier = Modifier.fillMaxWidth(),
             textAlign = TextAlign.Center,
         )
@@ -335,9 +378,23 @@ private fun MenuRow(icon: ImageVector, title: String, subtitle: String, onClick:
         Spacer(Modifier.width(12.dp))
         Column(Modifier.weight(1f)) {
             Text(title, style = MaterialTheme.typography.titleMedium, color = H.Ink)
-            Text(subtitle, style = MaterialTheme.typography.bodySmall, color = H.Ink3)
+            Text(subtitle, style = MaterialTheme.typography.bodySmall, color = H.Ink3Strong)
         }
         Icon(Icons.AutoMirrored.Filled.KeyboardArrowRight, null, Modifier.size(18.dp), tint = H.Ink3)
+    }
+}
+
+/** 统计列:大号数字 + 标签,加载中显示"—"。 */
+@Composable
+private fun StatColumn(label: String, value: Int?, tint: Color) {
+    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+        Text(
+            value?.toString() ?: "—",
+            style = MaterialTheme.typography.headlineSmall.copy(fontFeatureSettings = "tnum"),
+            color = tint,
+        )
+        Spacer(Modifier.height(2.dp))
+        Text(label, style = MaterialTheme.typography.bodySmall, color = H.Ink3Strong)
     }
 }
 

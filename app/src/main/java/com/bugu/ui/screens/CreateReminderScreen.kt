@@ -3,6 +3,8 @@
 package com.bugu.ui.screens
 
 import android.content.Intent
+import android.content.Context
+import android.graphics.BitmapFactory
 import android.speech.RecognizerIntent
 import android.speech.SpeechRecognizer
 import androidx.activity.compose.BackHandler
@@ -17,6 +19,7 @@ import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.gestures.detectVerticalDragGestures
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -42,19 +45,21 @@ import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.rounded.ArrowBack
-import androidx.compose.material.icons.automirrored.rounded.Send
 import androidx.compose.material.icons.rounded.Alarm
+import androidx.compose.material.icons.rounded.AutoAwesome
+import androidx.compose.material.icons.rounded.Check
 import androidx.compose.material.icons.automirrored.rounded.Chat
 import androidx.compose.material.icons.rounded.CheckCircle
+import androidx.compose.material.icons.rounded.Close
 import androidx.compose.material.icons.rounded.Edit
+import androidx.compose.material.icons.rounded.Drafts
 import androidx.compose.material.icons.rounded.EditNote
 import androidx.compose.material.icons.rounded.EventRepeat
 import androidx.compose.material.icons.rounded.Mic
 import androidx.compose.material.icons.rounded.NotificationsActive
 import androidx.compose.material.icons.rounded.Schedule
 import androidx.compose.material.icons.rounded.Warning
-import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.DatePicker
 import androidx.compose.material3.DatePickerDialog
 import androidx.compose.material3.HorizontalDivider
@@ -62,6 +67,7 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.SelectableDates
+import androidx.compose.material3.SheetValue
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TimePicker
@@ -81,7 +87,10 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.ImageBitmap
+import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.semantics.Role
@@ -89,16 +98,20 @@ import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.window.Dialog
 import com.bugu.client.api.BondDto
 import com.bugu.client.api.displayName
 import com.bugu.client.api.BatchCreateReminderRequest
 import com.bugu.client.api.GeitaApi
 import com.bugu.client.api.GeitaApiException
+import com.bugu.ui.common.AvatarBubble
 import com.bugu.ui.common.BrandSwitch
-import com.bugu.ui.common.CircleIcon
 import com.bugu.ui.common.FieldError
 import com.bugu.ui.common.GradientButton
+import com.bugu.ui.common.GuguMood
+import com.bugu.ui.common.HeaderIconButton
+import com.bugu.ui.common.RiseIn
+import com.bugu.ui.common.TopBar
+import com.bugu.ui.common.parseIsoTime
 import com.bugu.ui.theme.H
 import java.time.Instant
 import java.time.LocalDate
@@ -107,6 +120,7 @@ import java.time.LocalTime
 import java.time.ZoneOffset
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
+import org.json.JSONObject
 
 /** 与服务端 Reminder.MAX_TITLE / MAX_NOTE / MAX_PARSE_TEXT 严格对齐,避免本地放行后被 400 拒。 */
 private const val MAX_TITLE = 20
@@ -117,32 +131,13 @@ private val DAY_CODES = listOf("MON", "TUE", "WED", "THU", "FRI", "SAT", "SUN")
 private val DAY_CN = listOf("一", "二", "三", "四", "五", "六", "日")
 private const val WORKDAY_CSV = "MON,TUE,WED,THU,FRI"
 
-/** 快捷时刻网格(5 列);之外的钟点走「自定义时间…」时钟弹层。 */
-private val TIME_PRESETS = listOf(
-    "06:30", "07:00", "07:30", "08:00", "09:00",
-    "10:00", "12:00", "13:00", "14:00", "15:00",
-    "17:00", "18:00", "19:00", "20:00", "21:00",
-)
 
-/** 打字实时识别:检测到时间相关词即提示「点发送自动填表」。 */
-private val TIME_HINT_REGEX = Regex(
-    """\d{1,2}[:：]\d{2}|\d{1,2}点(半)?|今天|今晚|今早|明天|明早|明晚|后天|早上|早晨|上午|中午|下午|晚上|傍晚|每天|天天""",
-)
-
-/**
- * 新建惦记(v4 范式:常驻表单 + AI 自动填写)。
- *
- * 布局:表单常驻在屏上半部(手动零成本),智能条吸底在拇指区——
- * 说话 / 打字 / 粘贴通知文本任一输入都汇入 api.parse,解析结果逐字段
- * 自动填入表单(珊瑚闪光),哪里不对改哪里;未来新增输入源只动智能条。
- *
- * 表单状态全部 rememberSaveable,配合 AppRoot 的 SaveableStateHolder:
- * 切 Tab、去权限页再返回、进程回收后回来都能继续填。
- */
 @Composable
 fun CreateReminderScreen(
     api: GeitaApi,
     userId: Long,
+    selfAvatarUrl: String? = null,
+    selfNickname: String? = null,
     bonds: List<BondDto>,
     bondsLoading: Boolean,
     bondsError: Boolean,
@@ -188,7 +183,9 @@ fun CreateReminderScreen(
     val receiverName = receiverNames.joinToString("、").ifEmpty { "亲友" }
 
     // ---- 可保存的表单状态(切页面/进程回收不丢) ----
-    var title by rememberSaveable { mutableStateOf("") }
+    var title by rememberSaveable { mutableStateOf("提醒自己") }
+    // 用户是否手动改过标题:未改时随接收人联动默认文案
+    var titleDirty by rememberSaveable { mutableStateOf(false) }
     var note by rememberSaveable { mutableStateOf("") }
     var dateEpochDay by rememberSaveable { mutableStateOf(LocalDate.now().plusDays(1).toEpochDay()) }
     var hour by rememberSaveable { mutableStateOf(8) }
@@ -200,6 +197,16 @@ fun CreateReminderScreen(
     var customDaysCsv by rememberSaveable { mutableStateOf(WORKDAY_CSV) }
     var voiceEnabled by rememberSaveable { mutableStateOf(false) }
 
+    // 标题默认:未手动编辑时按接收人联动,给出可读的初始标题
+    val defaultTitle = when {
+        selectedRecipientIds.size == 1 && selfSelected -> "提醒自己"
+        selectedRecipientIds.size == 1 -> "提醒" + (selectedBonds.firstOrNull()?.displayName ?: "亲友")
+        else -> "提醒 ${selectedRecipientIds.size} 人"
+    }
+    LaunchedEffect(defaultTitle) {
+        if (!titleDirty) title = defaultTitle
+    }
+
     // 智能条与解析结果
     var smartText by rememberSaveable { mutableStateOf("") }
     var parsedOk by rememberSaveable { mutableStateOf(false) }
@@ -208,11 +215,69 @@ fun CreateReminderScreen(
     var titleError by rememberSaveable { mutableStateOf("") }
     var formError by rememberSaveable { mutableStateOf("") }
 
+    fun clearErrors() {
+        phraseError = ""
+        titleError = ""
+        formError = ""
+    }
+
+    // 草稿:本地 SharedPreferences 持久化,保存/恢复表单快照
+    var showDraftDialog by remember { mutableStateOf(false) }
+    val prefs = remember { context.getSharedPreferences("bugu_main", Context.MODE_PRIVATE) }
+    // 用状态镜像草稿是否存在:保存后立即出现恢复入口,且避免每次重组同步读盘
+    var draftExists by remember { mutableStateOf(prefs.getString("draft_reminder", null)?.isNotBlank() == true) }
+    fun saveDraft() {
+        val json = JSONObject().apply {
+            put("title", title)
+            put("note", note)
+            put("dateEpochDay", dateEpochDay)
+            put("hour", hour)
+            put("minute", minute)
+            put("kind", kind)
+            put("tone", tone)
+            put("repeatMode", repeatMode)
+            put("customDaysCsv", customDaysCsv)
+            put("voiceEnabled", voiceEnabled)
+            put("selectedRecipientIds", selectedRecipientIds.joinToString(","))
+        }
+        prefs.edit().putString("draft_reminder", json.toString()).apply()
+        draftExists = true
+        onSnack("草稿已保存")
+    }
+    fun restoreDraft() {
+        val raw = prefs.getString("draft_reminder", null) ?: return
+        try {
+            val o = JSONObject(raw)
+            val savedTitle = o.optString("title", "").take(MAX_TITLE)
+            titleDirty = savedTitle.isNotBlank()
+            title = savedTitle.ifBlank { defaultTitle }
+            note = o.optString("note", "")
+            dateEpochDay = o.optLong("dateEpochDay", LocalDate.now().plusDays(1).toEpochDay())
+            hour = o.optInt("hour", 8)
+            minute = o.optInt("minute", 0)
+            kind = o.optString("kind", "ONCE")
+            tone = o.optString("tone", "GENTLE")
+            repeatMode = o.optString("repeatMode", "DAILY")
+            customDaysCsv = o.optString("customDaysCsv", WORKDAY_CSV)
+            voiceEnabled = o.optBoolean("voiceEnabled", false)
+            val ids = o.optString("selectedRecipientIds", "")
+            selectedRecipientIds = if (ids.isBlank()) listOf(userId) else ids.split(",").mapNotNull { it.trim().toLongOrNull() }
+            clearErrors()
+        } catch (_: Exception) {
+            prefs.edit().remove("draft_reminder").apply()
+            draftExists = false
+        }
+        showDraftDialog = false
+    }
+
     // 瞬时状态(不跨进程)
     var parsing by remember { mutableStateOf(false) }
     var creating by remember { mutableStateOf(false) }
-    var showSheet by remember { mutableStateOf(false) }
-    var showTimePicker by remember { mutableStateOf(false) }
+    var showTimeSheet by remember { mutableStateOf(false) }
+    var showModeSheet by remember { mutableStateOf(false) }
+    var showAssist by remember { mutableStateOf(false) }
+    // 浮层内错误:不随顶部提示条 3.5s 自动清除,保证用户在浮层里看得到
+    var assistError by remember { mutableStateOf("") }
     var showDatePicker by remember { mutableStateOf(false) }
     // 逐字段填入闪光触发器(>0 触发一次闪光动画)
     var titleTick by remember { mutableStateOf(0) }
@@ -244,12 +309,6 @@ fun CreateReminderScreen(
 
     // 系统返回键:回看板而不是退出 App(与左上角箭头一致)
     BackHandler { onBack() }
-
-    fun clearErrors() {
-        phraseError = ""
-        titleError = ""
-        formError = ""
-    }
 
     /** 选择提醒类型:非互叫类型必须关掉语音;多人或自己参与时不能使用互叫闹钟。 */
     fun selectKind(next: String) {
@@ -302,6 +361,7 @@ fun CreateReminderScreen(
         val text = smartText.trim()
         if (text.isEmpty() || parsing) return
         focusManager.clearFocus()
+        assistError = ""
         scope.launch {
             parsing = true
             try {
@@ -309,17 +369,21 @@ fun CreateReminderScreen(
                 if (draft.needsManual) {
                     parsedOk = false
                     degradedParse = draft.degraded
-                    if (title.isBlank()) {
+                    if (title.isBlank() || !titleDirty) {
                         title = text.take(MAX_TITLE)
+                        titleDirty = true
                         titleTick++
                     }
-                    phraseError = "咕咕没太听懂,标题和时间帮它补一下"
+                    assistError = "咕咕没太听懂,标题和时间帮它补一下"
+                    phraseError = assistError
                 } else {
                     smartText = ""
                     phraseError = ""
+                    assistError = ""
                     // 逐字段填入:标题 → 时刻·方式 → 便签,每步珊瑚闪光,像咕咕逐项落笔
                     draft.title?.takeIf { it.isNotBlank() && it != title.trim() }?.let {
                         title = it.take(MAX_TITLE)
+                        titleDirty = true
                         titleError = ""
                         titleTick++
                         delay(170)
@@ -353,25 +417,29 @@ fun CreateReminderScreen(
                 }
             } catch (e: GeitaApiException) {
                 parsedOk = false
-                if (title.isBlank()) {
+                if (!titleDirty) {
                     title = text.take(MAX_TITLE)
+                    titleDirty = true
                     titleTick++
                 }
                 phraseError = e.message ?: "解析失败,手动填一下就好"
+                assistError = phraseError
             } catch (_: Exception) {
                 parsedOk = false
-                if (title.isBlank()) {
+                if (!titleDirty) {
                     title = text.take(MAX_TITLE)
+                    titleDirty = true
                     titleTick++
                 }
                 phraseError = "网络不佳,先手动填一下吧"
+                assistError = phraseError
             } finally {
                 parsing = false
             }
         }
     }
 
-    // 语音识别结果回填智能条并自动解析
+    // 语音识别结果只填进 AI 浮层的文本框,是否填表由用户点「帮我填表」决定
     val voiceLauncher = rememberLauncherForActivityResult(ActivityResultContracts.StartActivityForResult()) { result ->
         val recognized = result.data
             ?.getStringArrayListExtra(RecognizerIntent.EXTRA_RESULTS)
@@ -380,7 +448,7 @@ fun CreateReminderScreen(
             phraseError = "没听清,再试一次或直接打字"
         } else {
             smartText = recognized.take(MAX_PHRASE)
-            doParse()
+            showAssist = true
         }
     }
 
@@ -407,7 +475,8 @@ fun CreateReminderScreen(
     }
 
     fun resetForm() {
-        title = ""
+        title = defaultTitle
+        titleDirty = false
         note = ""
         smartText = ""
         parsedOk = false
@@ -423,11 +492,14 @@ fun CreateReminderScreen(
         minute = 0
     }
 
-    /** 创建:先做本地校验(与 Server validate 对齐),再直连 API。 */
-    fun doCreate() {
+    /** 创建:先做本地校验(与 Server validate 对齐),再直连 API。overrideDate 用于「改到明天再创建」立即提交。 */
+    fun doCreate(overrideDate: LocalDate? = null) {
         if (creating) return
         clearErrors()
         val receiverIds = selectedRecipientIds.toList()
+        val fireDate = overrideDate ?: date
+        val fireAtValue = LocalDateTime.of(fireDate, LocalTime.of(hour, minute))
+        val past = !fireAtValue.isAfter(LocalDateTime.now())
         when {
             title.isBlank() -> {
                 titleError = "给惦记起个名字吧"
@@ -441,7 +513,7 @@ fun CreateReminderScreen(
                 formError = "便签不超过 $MAX_NOTE 字"
                 return
             }
-            isPast -> {
+            past -> {
                 formError = "这个时刻已经过去了,换个更晚的时间吧"
                 return
             }
@@ -474,7 +546,7 @@ fun CreateReminderScreen(
                         receiverIds = receiverIds,
                         title = title.trim(),
                         kind = kind,
-                        fireAt = "%sT%02d:%02d:00".format(date, hour, minute),
+                        fireAt = "%sT%02d:%02d:00".format(fireDate, hour, minute),
                         repeatRule = repeatRule,
                         tone = tone,
                         voiceEnabled = voiceEnabled,
@@ -498,64 +570,107 @@ fun CreateReminderScreen(
         }
     }
 
-    // 页面骨架:常驻表单在上,吸底智能条贴键盘;本屏嵌在底部导航之上的内容区,导航栏内边距由外层负责
-    Column(
+    // 页面骨架:顶部栏 + 可滚动表单 + 固定底部操作区;AI 入口为右下悬浮 FAB
+    Box(
         Modifier
             .fillMaxSize()
-            .background(H.Canvas)
-            .statusBarsPadding()
-            .imePadding(),
+            .background(H.Canvas),
     ) {
-        Row(
-            Modifier
-                .fillMaxWidth()
-                .height(56.dp)
-                .padding(horizontal = 16.dp),
-            verticalAlignment = Alignment.CenterVertically,
-        ) {
-            CircleIcon(
-                icon = Icons.AutoMirrored.Rounded.ArrowBack,
-                bg = Color.White,
-                tint = H.Ink,
-                border = H.Hairline,
-                size = 44.dp,
-                modifier = Modifier.clickable(onClick = onBack),
-            )
-            Text(
-                "新建惦记",
-                style = MaterialTheme.typography.titleLarge,
-                color = H.Ink,
-                modifier = Modifier.weight(1f),
-                textAlign = TextAlign.Center,
-            )
-            Spacer(Modifier.width(44.dp))
+    Column(Modifier.fillMaxSize()) {
+        TopBar(
+            title = "新建惦记",
+            onBack = onBack,
+            guguMood = GuguMood.CHEER,
+            actions = {
+                if (draftExists) {
+                    HeaderIconButton(
+                        icon = Icons.Rounded.EditNote,
+                        contentDescription = "恢复草稿",
+                        onClick = { showDraftDialog = true },
+                    )
+                }
+                HeaderIconButton(
+                    icon = Icons.Rounded.Drafts,
+                    contentDescription = "保存草稿",
+                    onClick = { saveDraft() },
+                )
+            },
+        )
+
+        // 顶部错误提示条:解析失败/创建失败,3.5s 自动消失(对齐看板)
+        val topError = phraseError.takeIf { it.isNotEmpty() } ?: formError.takeIf { it.isNotEmpty() }
+        AnimatedVisibility(visible = topError != null) {
+            topError?.let { msg ->
+                LaunchedEffect(msg) { delay(3500); phraseError = ""; formError = "" }
+                Row(
+                    Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 20.dp)
+                        .clip(RoundedCornerShape(12.dp))
+                        .background(H.RoseTint)
+                        .padding(horizontal = 12.dp, vertical = 10.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    Icon(Icons.Rounded.Warning, null, Modifier.size(16.dp), tint = H.Rose)
+                    Spacer(Modifier.width(8.dp))
+                    Text(msg, style = MaterialTheme.typography.bodySmall, color = H.Rose, modifier = Modifier.weight(1f))
+                }
+            }
         }
 
+        Box(Modifier.weight(1f)) {
         Column(
             Modifier
-                .weight(1f)
+                .fillMaxSize()
                 .verticalScroll(scrollState)
+                .imePadding()
                 .padding(horizontal = 20.dp)
                 .padding(bottom = 12.dp),
         ) {
-            Text("把惦记送给谁", style = MaterialTheme.typography.titleMedium, color = H.Ink)
-            Text("可多选 · 已选 ${selectedRecipientIds.size} 人", style = MaterialTheme.typography.bodySmall, color = H.Ink3)
-            if (invalidRecipient) Text("部分亲友关联已失效，请取消后重新选择", color = H.Rose)
-            WhoRow(
-                bonds = activeBonds,
-                selectedRecipientIds = selectedRecipientIdSet,
-                selfSelected = selfSelected,
-                loading = bondsLoading,
-                failed = bondsError,
-                onSelectSelf = { toggleRecipient(userId) },
-                onSelectBond = { toggleRecipient(it) },
-                onGoBind = onOpenFriends,
-                onRetry = onRefreshBonds,
-            )
+            RiseIn {
+                Column(
+                    Modifier
+                        .fillMaxWidth()
+                        .clip(RoundedCornerShape(20.dp))
+                        .background(Color.White)
+                        .border(1.dp, H.Hairline, RoundedCornerShape(20.dp))
+                        .padding(16.dp),
+                ) {
+                    Row(
+                        Modifier.fillMaxWidth(),
+                        verticalAlignment = Alignment.CenterVertically,
+                    ) {
+                        Column(Modifier.weight(1f)) {
+                            Text("把惦记送给谁", style = MaterialTheme.typography.titleMedium, color = H.Ink)
+                            Text("可多选 · 已选 ${selectedRecipientIds.size} 人", style = MaterialTheme.typography.bodySmall, color = H.Ink3Strong)
+                        }
+                    }
+                    if (invalidRecipient) {
+                        Spacer(Modifier.height(6.dp))
+                        Text("部分亲友关联已失效，请取消后重新选择", style = MaterialTheme.typography.bodySmall, color = H.Rose)
+                    }
+                    Spacer(Modifier.height(10.dp))
+                    WhoRow(
+                        api = api,
+                        selfAvatarUrl = selfAvatarUrl,
+                        selfNickname = selfNickname,
+                        bonds = activeBonds,
+                        selectedRecipientIds = selectedRecipientIdSet,
+                        selfSelected = selfSelected,
+                        loading = bondsLoading,
+                        failed = bondsError,
+                        onSelectSelf = { toggleRecipient(userId) },
+                        onSelectBond = { toggleRecipient(it) },
+                        onGoBind = onOpenFriends,
+                        onRetry = onRefreshBonds,
+                    )
+                }
+            }
 
             Spacer(Modifier.height(12.dp))
 
             // ② 常驻表单:标题 / 时刻·方式 / 捎句话 / 语气
+            RiseIn(delayMs = 60) {
             Column(
                 Modifier
                     .fillMaxWidth()
@@ -569,22 +684,23 @@ fun CreateReminderScreen(
                             .padding(horizontal = 16.dp, vertical = 12.dp),
                         verticalAlignment = Alignment.CenterVertically,
                     ) {
-                        CircleIcon(icon = Icons.Rounded.EditNote, bg = H.CoralTint, tint = H.Coral, size = 32.dp, iconSize = 16.dp)
+                        Icon(Icons.Rounded.EditNote, null, Modifier.size(20.dp), tint = H.Ink3)
                         Spacer(Modifier.width(12.dp))
                         Column(Modifier.weight(1f)) {
                             Row(verticalAlignment = Alignment.CenterVertically) {
-                                Text("惦记标题", style = MaterialTheme.typography.titleSmall, color = H.Ink3)
+                                Text("惦记标题", style = MaterialTheme.typography.titleSmall, color = H.Ink3Strong)
                                 Spacer(Modifier.weight(1f))
                                 Text(
                                     "${title.length}/$MAX_TITLE",
                                     style = MaterialTheme.typography.titleSmall,
-                                    color = if (title.length >= MAX_TITLE) H.Rose else H.Ink3,
+                                    color = if (title.length >= MAX_TITLE) H.Rose else H.Ink3Strong,
                                 )
                             }
                             BasicTextField(
                                 value = title,
                                 onValueChange = {
                                     title = it.take(MAX_TITLE)
+                                    titleDirty = true
                                     titleError = ""
                                     formError = ""
                                 },
@@ -596,7 +712,7 @@ fun CreateReminderScreen(
                             ) { inner ->
                                 Box {
                                     if (title.isEmpty()) {
-                                        Text("如:吃降压药 / 早安叫醒", style = MaterialTheme.typography.titleMedium, color = H.Ink3)
+                                        Text("如:吃降压药 / 早安叫醒", style = MaterialTheme.typography.titleMedium, color = H.Ink3Strong)
                                     }
                                     inner()
                                 }
@@ -613,17 +729,17 @@ fun CreateReminderScreen(
                         Modifier
                             .fillMaxWidth()
                             .clip(RoundedCornerShape(16.dp))
-                            .clickable { showSheet = true }
+                            .clickable { showTimeSheet = true }
                             .padding(horizontal = 16.dp, vertical = 12.dp),
                     ) {
                         Row(verticalAlignment = Alignment.CenterVertically) {
-                            CircleIcon(icon = Icons.Rounded.Schedule, bg = H.CoralTint, tint = H.Coral, size = 32.dp, iconSize = 16.dp)
+                            Icon(Icons.Rounded.Schedule, null, Modifier.size(20.dp), tint = H.Ink3)
                             Spacer(Modifier.width(12.dp))
                             Column(Modifier.weight(1f)) {
-                                Text("时刻 · 方式", style = MaterialTheme.typography.titleSmall, color = H.Ink3)
+                                Text("时间", style = MaterialTheme.typography.titleSmall, color = H.Ink3Strong)
                                 Spacer(Modifier.height(1.dp))
                                 Text(
-                                    timeValueLabel(date, hour, minute, kind, repeatMode, customDaysCsv, tone),
+                                    timeLabelOf(date, hour, minute),
                                     style = MaterialTheme.typography.titleMedium,
                                     color = H.CoralInk,
                                     maxLines = 1,
@@ -658,6 +774,35 @@ fun CreateReminderScreen(
 
                 HorizontalDivider(color = H.Hairline, thickness = 1.dp)
 
+                FlashRow(tick = 0) {
+                    Column(
+                        Modifier
+                            .fillMaxWidth()
+                            .clip(RoundedCornerShape(16.dp))
+                            .clickable { showModeSheet = true }
+                            .padding(horizontal = 16.dp, vertical = 12.dp),
+                    ) {
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Icon(Icons.Rounded.EventRepeat, null, Modifier.size(20.dp), tint = H.Ink3)
+                            Spacer(Modifier.width(12.dp))
+                            Column(Modifier.weight(1f)) {
+                                Text("方式", style = MaterialTheme.typography.titleSmall, color = H.Ink3Strong)
+                                Spacer(Modifier.height(1.dp))
+                                Text(
+                                    modeLabelOf(kind, repeatMode, customDaysCsv, tone),
+                                    style = MaterialTheme.typography.titleMedium,
+                                    color = H.CoralInk,
+                                    maxLines = 1,
+                                    overflow = TextOverflow.Ellipsis,
+                                )
+                            }
+                            Icon(Icons.Rounded.Edit, null, Modifier.size(13.dp), tint = H.Ink3)
+                        }
+                    }
+                }
+
+                HorizontalDivider(color = H.Hairline, thickness = 1.dp)
+
                 FlashRow(tick = noteTick) {
                     Row(
                         Modifier
@@ -665,16 +810,16 @@ fun CreateReminderScreen(
                             .padding(horizontal = 16.dp, vertical = 12.dp),
                         verticalAlignment = Alignment.CenterVertically,
                     ) {
-                        CircleIcon(icon = Icons.AutoMirrored.Rounded.Chat, bg = H.MintTint, tint = H.Mint, size = 32.dp, iconSize = 16.dp)
+                        Icon(Icons.AutoMirrored.Rounded.Chat, null, Modifier.size(20.dp), tint = H.Ink3)
                         Spacer(Modifier.width(12.dp))
                         Column(Modifier.weight(1f)) {
                             Row(verticalAlignment = Alignment.CenterVertically) {
-                                Text("捎句话(可选)", style = MaterialTheme.typography.titleSmall, color = H.Ink3)
+                                Text("捎句话(可选)", style = MaterialTheme.typography.titleSmall, color = H.Ink3Strong)
                                 Spacer(Modifier.weight(1f))
                                 Text(
                                     "${note.length}/$MAX_NOTE",
                                     style = MaterialTheme.typography.titleSmall,
-                                    color = if (note.length >= MAX_NOTE) H.Rose else H.Ink3,
+                                    color = if (note.length >= MAX_NOTE) H.Rose else H.Ink3Strong,
                                 )
                             }
                             BasicTextField(
@@ -691,7 +836,7 @@ fun CreateReminderScreen(
                             ) { inner ->
                                 Box {
                                     if (note.isEmpty()) {
-                                        Text("写一句暖心的惦记…", style = MaterialTheme.typography.titleMedium, color = H.Ink3)
+                                        Text("写一句暖心的惦记…", style = MaterialTheme.typography.titleMedium, color = H.Ink3Strong)
                                     }
                                     inner()
                                 }
@@ -701,6 +846,7 @@ fun CreateReminderScreen(
                 }
 
                 HorizontalDivider(color = H.Hairline, thickness = 1.dp)
+            }
             }
 
             // AI 填好提示:解析成功后出现在表单下方(如实区分降级)
@@ -722,154 +868,191 @@ fun CreateReminderScreen(
                 }
             }
 
-            Spacer(Modifier.height(12.dp))
+            Spacer(Modifier.height(96.dp))
         }
 
-        // ③ 固定操作区:按钮不随表单滚动,键盘出现时随 imePadding 一起上移
-        Column(
+        // AI 悬浮入口:右下常驻,点开半屏浮层
+        Row(
             Modifier
-                .fillMaxWidth()
-                .background(H.Canvas)
-                .padding(horizontal = 20.dp),
+                .align(Alignment.BottomEnd)
+                .padding(end = 20.dp, bottom = 14.dp)
+                .clip(RoundedCornerShape(999.dp))
+                .background(H.Coral)
+                .clickable { assistError = ""; showAssist = true }
+                .padding(horizontal = 14.dp, vertical = 10.dp),
+            verticalAlignment = Alignment.CenterVertically,
         ) {
-            GradientButton(
-                text = when {
-                    creating -> "创建中…"
-                    needsPermission -> "开启提醒权限并创建"
-                    title.isBlank() -> "填写标题后创建"
-                    else -> "创建惦记"
-                },
-                onClick = { if (needsPermission) onRequestPermission() else doCreate() },
-                enabled = canSubmit,
-                loading = creating,
-                modifier = Modifier.fillMaxWidth(),
-            )
-            Spacer(Modifier.height(8.dp))
-            Row(
-                Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.Center,
-                verticalAlignment = Alignment.CenterVertically,
+            Icon(Icons.Rounded.AutoAwesome, "咕咕帮填", Modifier.size(17.dp), tint = Color.White)
+            Spacer(Modifier.width(6.dp))
+            Text("咕咕帮填", style = MaterialTheme.typography.titleSmall, color = Color.White)
+        }
+        }
+
+        // ③ 固定操作区:按钮不随表单滚动,也不随键盘上移
+        RiseIn(delayMs = 120) {
+            Column(
+                Modifier
+                    .fillMaxWidth()
+                    .background(H.Canvas)
+                    .padding(horizontal = 20.dp),
             ) {
-                Icon(Icons.Rounded.Alarm, null, Modifier.size(13.dp), tint = H.Ink3)
-                Spacer(Modifier.width(4.dp))
-                Text(
-                    when {
-                        selfSelected -> "送给自己,到点提醒你自己"
-                        needsPermission -> "首次创建需开启提醒权限,仅需一次"
-                        else -> "创建后可在看板随时撤销"
+                GradientButton(
+                    text = when {
+                        creating -> "创建中…"
+                        needsPermission -> "开启提醒权限并创建"
+                        title.isBlank() -> "填写标题后创建"
+                        isPast -> "改到明天再创建"
+                        else -> "创建惦记"
                     },
-                    style = MaterialTheme.typography.titleSmall,
-                    color = H.Ink3,
+                    onClick = {
+                        when {
+                            needsPermission -> onRequestPermission()
+                            isPast -> {
+                                val tomorrow = LocalDate.now().plusDays(1)
+                                dateEpochDay = tomorrow.toEpochDay()
+                                formError = ""
+                                doCreate(tomorrow)
+                            }
+                            else -> doCreate()
+                        }
+                    },
+                    enabled = canSubmit,
+                    loading = creating,
+                    modifier = Modifier.fillMaxWidth(),
                 )
-            }
-            Spacer(Modifier.height(8.dp))
-        }
-
-        // ④ 吸底智能条:说话 / 打字 / 粘贴统一入口,imePadding 贴键盘
-        Column(
-            Modifier
-                .fillMaxWidth()
-                .background(H.Canvas)
-                .padding(horizontal = 16.dp),
-        ) {
-            if (parsing) {
+                Spacer(Modifier.height(8.dp))
                 Row(
-                    Modifier.padding(start = 6.dp, top = 8.dp, bottom = 8.dp),
+                    Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.Center,
                     verticalAlignment = Alignment.CenterVertically,
                 ) {
-                    CircularProgressIndicator(color = H.Coral, strokeWidth = 2.dp, modifier = Modifier.size(13.dp))
-                    Spacer(Modifier.width(6.dp))
-                    Text("咕咕在想…", style = MaterialTheme.typography.titleSmall, color = H.CoralInk)
+                    Icon(Icons.Rounded.Alarm, null, Modifier.size(13.dp), tint = H.Ink3)
+                    Spacer(Modifier.width(4.dp))
+                    Text(
+                        when {
+                            selfSelected -> "送给自己,到点提醒你自己"
+                            needsPermission -> "首次创建需开启提醒权限,仅需一次"
+                            else -> "创建后可在看板随时撤销"
+                        },
+                        style = MaterialTheme.typography.titleSmall,
+                        color = H.Ink3Strong,
+                    )
                 }
-            } else if (smartText.trim().length > 3 && TIME_HINT_REGEX.containsMatchIn(smartText)) {
+                Spacer(Modifier.height(8.dp))
+            }
+        }
+
+        // ④ 智能输入已收进右下「咕咕帮填」浮层
+    }
+    }
+
+    // 时间弹层:大号时间 + 日期 chips + Material3 表盘
+    if (showTimeSheet) {
+        val timeState = rememberTimePickerState(initialHour = hour, initialMinute = minute, is24Hour = true)
+        ModalBottomSheet(
+            onDismissRequest = { showTimeSheet = false },
+            sheetState = rememberModalBottomSheetState(
+                skipPartiallyExpanded = true,
+                // 滚轮需要自由上下滑动,禁止把下拉手势当成关闭
+                confirmValueChange = { it != SheetValue.Hidden },
+            ),
+            containerColor = H.Canvas,
+            shape = RoundedCornerShape(topStart = 24.dp, topEnd = 24.dp),
+        ) {
+            Column(
+                Modifier
+                    .fillMaxWidth()
+                    // 拦截垂直拖拽:手指轻移时弹层不再跟随滑动,避免表盘内容位移造成点偏
+                    .pointerInput(Unit) {
+                        detectVerticalDragGestures { change, _ -> change.consume() }
+                    }
+                    .padding(horizontal = 20.dp)
+                    .padding(bottom = 28.dp),
+            ) {
                 Row(
-                    Modifier
-                        .padding(top = 8.dp, bottom = 8.dp)
-                        .fillMaxWidth()
-                        .clip(RoundedCornerShape(11.dp))
-                        .background(H.CoralTint)
-                        .padding(horizontal = 10.dp, vertical = 7.dp),
+                    Modifier.fillMaxWidth(),
                     verticalAlignment = Alignment.CenterVertically,
                 ) {
                     Text(
-                        "✨ 识别到时间,点发送帮你自动填表",
-                        style = MaterialTheme.typography.titleSmall,
-                        color = H.CoralInk,
+                        "选择时间",
+                        style = MaterialTheme.typography.titleLarge,
+                        color = H.Ink,
+                        modifier = Modifier.weight(1f),
+                    )
+                    HeaderIconButton(
+                        icon = Icons.Rounded.Close,
+                        contentDescription = "关闭",
+                        onClick = { showTimeSheet = false },
                     )
                 }
-            }
-            FieldError(phraseError.takeIf { it.isNotEmpty() }, Modifier.padding(top = 6.dp))
-            Row(
-                Modifier
-                    .fillMaxWidth()
-                    .padding(vertical = 8.dp)
-                    .clip(RoundedCornerShape(999.dp))
-                    .background(Color.White)
-                    .border(1.dp, H.Hairline, RoundedCornerShape(999.dp))
-                    .padding(horizontal = 6.dp, vertical = 6.dp),
-                verticalAlignment = Alignment.CenterVertically,
-            ) {
-                // 话筒:系统语音识别,识别结果回填并自动解析;无语音服务的设备点击给明确反馈
-                Box(
-                    Modifier
-                        .size(44.dp)
-                        .clip(CircleShape)
-                        .background(
-                            Brush.linearGradient(
-                                if (voiceAvailable) listOf(H.CoralLight, H.Coral)
-                                else listOf(H.GreyTint, H.GreyTint),
-                            ),
+                Spacer(Modifier.height(10.dp))
+                Text(
+                    "%02d:%02d".format(timeState.hour, timeState.minute),
+                    style = MaterialTheme.typography.displayMedium,
+                    color = H.Ink,
+                    modifier = Modifier.fillMaxWidth(),
+                    textAlign = TextAlign.Center,
+                )
+                Text(
+                    dayLabelOf(date),
+                    style = MaterialTheme.typography.titleSmall,
+                    color = H.Ink3Strong,
+                    modifier = Modifier.fillMaxWidth(),
+                    textAlign = TextAlign.Center,
+                )
+                Spacer(Modifier.height(10.dp))
+                Row(
+                    Modifier.horizontalScroll(rememberScrollState()),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                ) {
+                    val today = LocalDate.now()
+                    (0..2).forEach { offset ->
+                        val d = today.plusDays(offset.toLong())
+                        ChoiceChip(
+                            text = listOf("今天", "明天", "后天")[offset],
+                            selected = d == date,
+                            onClick = {
+                                dateEpochDay = d.toEpochDay()
+                                formError = ""
+                            },
                         )
-                        .clickable { startVoice() },
-                    contentAlignment = Alignment.Center,
-                ) {
-                    Icon(Icons.Rounded.Mic, "说话", Modifier.size(19.dp), tint = Color.White)
-                }
-                BasicTextField(
-                    value = smartText,
-                    onValueChange = {
-                        smartText = it.take(MAX_PHRASE)
-                        phraseError = ""
-                    },
-                    textStyle = MaterialTheme.typography.bodyMedium.copy(color = H.Ink),
-                    keyboardOptions = KeyboardOptions(imeAction = ImeAction.Send),
-                    keyboardActions = KeyboardActions(onSend = { doParse() }),
-                    maxLines = 3,
-                    modifier = Modifier
-                        .weight(1f)
-                        .padding(horizontal = 10.dp),
-                ) { inner ->
-                    Box {
-                        if (smartText.isEmpty()) {
-                            Text("如:明早七点半提醒${receiverName}吃降压药", style = MaterialTheme.typography.bodyMedium, color = H.Ink3, maxLines = 1)
-                        }
-                        inner()
                     }
-                }
-                // 发送:解析中转圈,空文本置灰
-                Box(
-                    Modifier
-                        .size(44.dp)
-                        .clip(CircleShape)
-                        .background(if (smartText.isNotBlank() && !parsing) H.CoralTint else H.GreyTint)
-                        .clickable(enabled = smartText.isNotBlank() && !parsing) { doParse() },
-                    contentAlignment = Alignment.Center,
-                ) {
-                    Icon(
-                        Icons.AutoMirrored.Rounded.Send,
-                        "发送",
-                        Modifier.size(18.dp),
-                        tint = if (smartText.isNotBlank() && !parsing) H.Coral else H.Ink3,
+                    ChoiceChip(
+                        text = "其他日期…",
+                        selected = date.toEpochDay() !in today.toEpochDay()..today.plusDays(2).toEpochDay(),
+                        onClick = { showDatePicker = true },
                     )
                 }
+                Spacer(Modifier.height(10.dp))
+                // 固定尺寸容器,避免表盘在弹层里被拉伸导致触摸命中偏移
+                Box(
+                    Modifier
+                        .fillMaxWidth()
+                        .height(340.dp),
+                    contentAlignment = Alignment.Center,
+                ) {
+                    TimePicker(state = timeState)
+                }
+                Spacer(Modifier.height(14.dp))
+                GradientButton(
+                    text = "就这个",
+                    onClick = {
+                        hour = timeState.hour
+                        minute = timeState.minute
+                        formError = ""
+                        showTimeSheet = false
+                    },
+                    modifier = Modifier.fillMaxWidth(),
+                    height = 48.dp,
+                )
             }
         }
     }
 
-    // 时间·方式弹层:日期 chips + 时刻网格 + 方式三选,循环/语音叫醒细节就地展开
-    if (showSheet) {
+    // 方式弹层:单次 / 循环 / 互叫 + 循环规则 + 语气 + 语音开关
+    if (showModeSheet) {
         ModalBottomSheet(
-            onDismissRequest = { showSheet = false },
+            onDismissRequest = { showModeSheet = false },
             sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true),
             containerColor = H.Canvas,
             shape = RoundedCornerShape(topStart = 24.dp, topEnd = 24.dp),
@@ -881,83 +1064,23 @@ fun CreateReminderScreen(
                     .padding(horizontal = 20.dp)
                     .padding(bottom = 28.dp),
             ) {
-                Text(
-                    "时刻与方式",
-                    style = MaterialTheme.typography.titleLarge,
-                    color = H.Ink,
-                    modifier = Modifier.fillMaxWidth(),
-                    textAlign = TextAlign.Center,
-                )
-                Spacer(Modifier.height(16.dp))
-                SheetLabel("日期")
                 Row(
-                    Modifier.horizontalScroll(rememberScrollState()),
-                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    Modifier.fillMaxWidth(),
+                    verticalAlignment = Alignment.CenterVertically,
                 ) {
-                    val today = LocalDate.now()
-                    (0..6).forEach { offset ->
-                        val d = today.plusDays(offset.toLong())
-                        ChoiceChip(
-                            text = if (offset <= 2) listOf("今天", "明天", "后天")[offset] else dayChipLabel(d),
-                            selected = d == date,
-                            onClick = {
-                                dateEpochDay = d.toEpochDay()
-                                formError = ""
-                            },
-                        )
-                    }
-                    ChoiceChip(
-                        text = "其他日期…",
-                        selected = date.toEpochDay() !in today.toEpochDay()..today.plusDays(6).toEpochDay(),
-                        onClick = { showDatePicker = true },
-                    )
-                }
-
-                Spacer(Modifier.height(14.dp))
-                SheetLabel("时间")
-                TIME_PRESETS.chunked(5).forEach { row ->
-                    Row(
-                        Modifier
-                            .fillMaxWidth()
-                            .padding(vertical = 4.dp),
-                        horizontalArrangement = Arrangement.spacedBy(8.dp),
-                    ) {
-                        row.forEach { preset ->
-                            val parts = preset.split(":")
-                            val h = parts[0].toInt()
-                            val m = parts[1].toInt()
-                            GridCell(
-                                text = preset,
-                                selected = hour == h && minute == m,
-                                modifier = Modifier.weight(1f),
-                                onClick = {
-                                    hour = h
-                                    minute = m
-                                    formError = ""
-                                },
-                            )
-                        }
-                        repeat(5 - row.size) { Spacer(Modifier.weight(1f)) }
-                    }
-                }
-                Row(
-                    Modifier
-                        .fillMaxWidth()
-                        .padding(vertical = 4.dp),
-                    horizontalArrangement = Arrangement.spacedBy(8.dp),
-                ) {
-                    val presetHit = "%02d:%02d".format(hour, minute) in TIME_PRESETS
-                    GridCell(
-                        text = "自定义时间…",
-                        selected = !presetHit,
+                    Text(
+                        "选择方式",
+                        style = MaterialTheme.typography.titleLarge,
+                        color = H.Ink,
                         modifier = Modifier.weight(1f),
-                        onClick = { showTimePicker = true },
                     )
-                    repeat(4) { Spacer(Modifier.weight(1f)) }
+                    HeaderIconButton(
+                        icon = Icons.Rounded.Close,
+                        contentDescription = "关闭",
+                        onClick = { showModeSheet = false },
+                    )
                 }
-
-                Spacer(Modifier.height(14.dp))
-                SheetLabel("方式")
+                Spacer(Modifier.height(16.dp))
                 KindOption(
                     icon = Icons.Rounded.Alarm,
                     title = "单次",
@@ -1031,13 +1154,13 @@ fun CreateReminderScreen(
                         Spacer(Modifier.width(8.dp))
                         Column(Modifier.weight(1f)) {
                             Text("专属语音叫醒", style = MaterialTheme.typography.titleMedium, color = H.Ink)
-                            Text("到点播报咕咕语音,更有真人感", style = MaterialTheme.typography.bodySmall, color = H.Ink3)
+                            Text("到点播报咕咕语音,更有真人感", style = MaterialTheme.typography.bodySmall, color = H.Ink3Strong)
                         }
                         BrandSwitch(checked = voiceEnabled, onCheckedChange = { voiceEnabled = it })
                     }
                 }
 
-                // 语气:非关键信息收进弹层,表单卡保持三行紧凑
+                // 语气:非关键信息收进弹层,表单卡保持四行紧凑
                 Spacer(Modifier.height(14.dp))
                 SheetLabel("语气")
                 Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
@@ -1054,7 +1177,7 @@ fun CreateReminderScreen(
                 Spacer(Modifier.height(18.dp))
                 GradientButton(
                     text = "就这个",
-                    onClick = { showSheet = false },
+                    onClick = { showModeSheet = false },
                     modifier = Modifier.fillMaxWidth(),
                     height = 48.dp,
                 )
@@ -1062,31 +1185,122 @@ fun CreateReminderScreen(
         }
     }
 
-    // 时钟弹层(24 小时制):快捷网格之外的任意时刻
-    if (showTimePicker) {
-        val state = rememberTimePickerState(initialHour = hour, initialMinute = minute, is24Hour = true)
-        Dialog(onDismissRequest = { showTimePicker = false }) {
+    // AI 浮层:识别到的文字先落在框里,点「帮我填表」才解析回填
+    if (showAssist) {
+        // 解析成功后自动收起浮层
+        LaunchedEffect(parsedOk) { if (parsedOk) showAssist = false }
+        ModalBottomSheet(
+            onDismissRequest = { showAssist = false },
+            sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true),
+            containerColor = H.Canvas,
+            shape = RoundedCornerShape(topStart = 24.dp, topEnd = 24.dp),
+        ) {
             Column(
                 Modifier
                     .fillMaxWidth()
-                    .clip(RoundedCornerShape(24.dp))
-                    .background(H.Canvas)
-                    .padding(16.dp),
-                horizontalAlignment = Alignment.CenterHorizontally,
+                    .padding(horizontal = 20.dp)
+                    .padding(bottom = 24.dp),
             ) {
-                Text("选择呼唤时刻", style = MaterialTheme.typography.titleLarge, color = H.Ink)
-                Spacer(Modifier.height(12.dp))
-                TimePicker(state = state)
-                Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.End) {
-                    TextButton(onClick = { showTimePicker = false }) { Text("取消", color = H.Ink2) }
-                    TextButton(
-                        onClick = {
-                            hour = state.hour
-                            minute = state.minute
-                            formError = ""
-                            showTimePicker = false
+                Row(
+                    Modifier.fillMaxWidth(),
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    Column(Modifier.weight(1f)) {
+                        Text("咕咕帮你填", style = MaterialTheme.typography.titleLarge, color = H.Ink)
+                        Text(
+                            "说一句或写一句,识别结果先放在下面,确认后填表",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = H.Ink3Strong,
+                        )
+                    }
+                    HeaderIconButton(
+                        icon = Icons.Rounded.Close,
+                        contentDescription = "关闭",
+                        onClick = { showAssist = false },
+                    )
+                }
+                Spacer(Modifier.height(14.dp))
+                Column(
+                    Modifier
+                        .fillMaxWidth()
+                        .clip(RoundedCornerShape(16.dp))
+                        .background(Color.White)
+                        .border(1.dp, H.Hairline, RoundedCornerShape(16.dp))
+                        .padding(horizontal = 12.dp, vertical = 10.dp),
+                ) {
+                    BasicTextField(
+                        value = smartText,
+                        onValueChange = {
+                            smartText = it.take(MAX_PHRASE)
+                            phraseError = ""
+                            assistError = ""
                         },
-                    ) { Text("确定", color = H.CoralInk) }
+                        textStyle = MaterialTheme.typography.bodyMedium.copy(color = H.Ink),
+                        maxLines = 4,
+                        modifier = Modifier.fillMaxWidth(),
+                    ) { inner ->
+                        Box {
+                            if (smartText.isEmpty()) {
+                                Text(
+                                    "如:明早七点半提醒${receiverName}吃降压药",
+                                    style = MaterialTheme.typography.bodyMedium,
+                                    color = H.Ink3Strong,
+                                )
+                            }
+                            inner()
+                        }
+                    }
+                    Spacer(Modifier.height(6.dp))
+                    Text(
+                        "${smartText.length}/$MAX_PHRASE",
+                        style = MaterialTheme.typography.titleSmall,
+                        color = H.Ink3Strong,
+                        modifier = Modifier.fillMaxWidth(),
+                        textAlign = TextAlign.End,
+                    )
+                }
+                if (assistError.isNotEmpty()) {
+                    Spacer(Modifier.height(8.dp))
+                    Text(assistError, style = MaterialTheme.typography.titleSmall, color = H.Rose)
+                }
+                Spacer(Modifier.height(12.dp))
+                Row(
+                    Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(10.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    Row(
+                        Modifier
+                            .weight(1f)
+                            .heightIn(min = 48.dp)
+                            .clip(RoundedCornerShape(999.dp))
+                            .background(if (voiceAvailable) H.CoralTint else H.GreyTint)
+                            .clickable(enabled = voiceAvailable && !parsing) { startVoice() }
+                            .padding(horizontal = 14.dp),
+                        horizontalArrangement = Arrangement.Center,
+                        verticalAlignment = Alignment.CenterVertically,
+                    ) {
+                        Icon(
+                            Icons.Rounded.Mic,
+                            "语音识别",
+                            Modifier.size(18.dp),
+                            tint = if (voiceAvailable) H.CoralInk else H.Ink3,
+                        )
+                        Spacer(Modifier.width(6.dp))
+                        Text(
+                            if (voiceAvailable) "语音" else "无语音服务",
+                            style = MaterialTheme.typography.titleSmall,
+                            color = if (voiceAvailable) H.CoralInk else H.Ink3,
+                        )
+                    }
+                    GradientButton(
+                        text = if (parsing) "咕咕在想…" else "帮我填表",
+                        onClick = { doParse() },
+                        enabled = smartText.isNotBlank() && !parsing,
+                        loading = parsing,
+                        modifier = Modifier.weight(1.2f),
+                        height = 48.dp,
+                    )
                 }
             }
         }
@@ -1126,11 +1340,29 @@ fun CreateReminderScreen(
             DatePicker(state = state)
         }
     }
+
+    // 草稿恢复确认对话框
+    if (showDraftDialog) {
+        AlertDialog(
+            onDismissRequest = { showDraftDialog = false },
+            title = { Text("恢复草稿?", color = H.Ink) },
+            text = { Text("将用上次保存的草稿覆盖当前填写内容。", color = H.Ink3Strong) },
+            confirmButton = {
+                TextButton(onClick = { restoreDraft() }) { Text("恢复", color = H.CoralInk) }
+            },
+            dismissButton = {
+                TextButton(onClick = { showDraftDialog = false }) { Text("取消", color = H.Ink2) }
+            },
+        )
+    }
 }
 
-/** 送给行:「自己」默认选中 + 好友横滑选择(好友多时右缘渐隐示意可滑);加载/失败/未绑定仅在好友区轻提示。 */
+/** 送给行:抖音消息页式「头像在上、备注/昵称在下」横滑列表;头像优先,缺失回退首字。 */
 @Composable
 private fun WhoRow(
+    api: GeitaApi,
+    selfAvatarUrl: String?,
+    selfNickname: String?,
     bonds: List<BondDto>,
     selectedRecipientIds: Set<Long>,
     selfSelected: Boolean,
@@ -1141,18 +1373,18 @@ private fun WhoRow(
     onGoBind: () -> Unit,
     onRetry: () -> Unit,
 ) {
+    val selfAvatar = rememberAvatarBitmap(api, selfAvatarUrl)
     Row(
         Modifier
             .fillMaxWidth()
-            .heightIn(min = 44.dp),
+            .heightIn(min = 84.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
-        Text("送给", style = MaterialTheme.typography.titleSmall, color = H.Ink3)
-        Spacer(Modifier.width(10.dp))
-        // 自己 chip 恒在最前
-        PersonChip(
-            name = "自己",
+        // 自己恒在最前
+        PersonColumn(
+            name = selfNickname?.takeIf { it.isNotBlank() } ?: "我",
             avatarText = "自",
+            avatarBitmap = selfAvatar,
             selected = selfSelected,
             onClick = onSelectSelf,
         )
@@ -1162,13 +1394,13 @@ private fun WhoRow(
                     Modifier
                         .fillMaxWidth()
                         .horizontalScroll(rememberScrollState()),
-                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    horizontalArrangement = Arrangement.spacedBy(10.dp),
                 ) {
                     bonds.forEach { bond ->
-                        val name = bond.displayName
-                        PersonChip(
-                            name = name,
-                            avatarText = name.take(1),
+                        PersonColumn(
+                            name = bond.displayName,
+                            avatarText = bond.displayName.take(1),
+                            avatarBitmap = rememberAvatarBitmap(api, bond.counterpartAvatarUrl),
                             selected = bond.counterpartId in selectedRecipientIds,
                             onClick = { bond.counterpartId?.let(onSelectBond) },
                         )
@@ -1179,7 +1411,7 @@ private fun WhoRow(
                     Modifier
                         .align(Alignment.CenterEnd)
                         .width(24.dp)
-                        .height(36.dp)
+                        .height(64.dp)
                         .background(
                             Brush.horizontalGradient(
                                 listOf(Color.Transparent, H.Canvas),
@@ -1190,7 +1422,7 @@ private fun WhoRow(
             loading -> Text(
                 "正在检查互伴…",
                 style = MaterialTheme.typography.titleSmall,
-                color = H.Ink3,
+                color = H.Ink3Strong,
                 modifier = Modifier.padding(start = 8.dp),
             )
             failed -> {
@@ -1207,7 +1439,7 @@ private fun WhoRow(
                 Text(
                     "绑定互伴,把惦记送给 TA",
                     style = MaterialTheme.typography.titleSmall,
-                    color = H.Ink3,
+                    color = H.Ink3Strong,
                     modifier = Modifier.padding(start = 8.dp),
                 )
                 Spacer(Modifier.weight(1f))
@@ -1217,40 +1449,67 @@ private fun WhoRow(
     }
 }
 
-/** 圆角人物胶囊:头像圆 + 昵称;选中珊瑚底白字,触摸目标 ≥44dp。 */
+/** 抖音消息页式人物项:头像在上、备注/昵称在下;选中加珊瑚环与右下勾。 */
 @Composable
-private fun PersonChip(name: String, avatarText: String, selected: Boolean, onClick: () -> Unit) {
-    Row(
+private fun PersonColumn(
+    name: String,
+    avatarText: String,
+    avatarBitmap: ImageBitmap?,
+    selected: Boolean,
+    onClick: () -> Unit,
+) {
+    Column(
         Modifier
-            .heightIn(min = 48.dp)
-            .clip(RoundedCornerShape(999.dp))
-            .background(if (selected) H.CoralTint else Color.White)
-            .border(1.dp, if (selected) H.Coral else H.Hairline, RoundedCornerShape(999.dp))
+            .width(64.dp)
+            .clip(RoundedCornerShape(12.dp))
             .selectable(selected = selected, role = Role.Checkbox, onClick = onClick)
-            .padding(start = 5.dp, end = 13.dp),
-        verticalAlignment = Alignment.CenterVertically,
+            .padding(vertical = 4.dp),
+        horizontalAlignment = Alignment.CenterHorizontally,
     ) {
-        Box(
-            Modifier
-                .size(28.dp)
-                .clip(CircleShape)
-                .background(if (selected) H.Coral else H.WarmFill),
-            contentAlignment = Alignment.Center,
-        ) {
-            Text(
-                avatarText,
-                style = MaterialTheme.typography.titleSmall,
-                color = if (selected) Color.White else H.Ink2,
+        Box {
+            AvatarBubble(
+                bitmap = avatarBitmap,
+                fallbackText = avatarText,
+                size = 48.dp,
+                selected = selected,
             )
+            if (selected) {
+                Box(
+                    Modifier
+                        .align(Alignment.BottomEnd)
+                        .size(18.dp)
+                        .clip(CircleShape)
+                        .background(H.Coral)
+                        .border(1.5.dp, Color.White, CircleShape),
+                    contentAlignment = Alignment.Center,
+                ) {
+                    Icon(Icons.Rounded.Check, null, Modifier.size(11.dp), tint = Color.White)
+                }
+            }
         }
-        Spacer(Modifier.width(6.dp))
+        Spacer(Modifier.height(5.dp))
         Text(
             name,
             style = MaterialTheme.typography.titleSmall,
-            color = if (selected) H.CoralInk else H.Ink2,
+            color = if (selected) H.CoralInk else H.Ink3Strong,
             maxLines = 1,
+            overflow = TextOverflow.Ellipsis,
+            textAlign = TextAlign.Center,
         )
     }
+}
+
+/** 轻量头像加载:按 URL 拉一次并解码;失败返回 null,由 AvatarBubble 回退首字。 */
+@Composable
+private fun rememberAvatarBitmap(api: GeitaApi, url: String?): ImageBitmap? {
+    var bitmap by remember(url) { mutableStateOf<ImageBitmap?>(null) }
+    LaunchedEffect(url) {
+        if (url.isNullOrBlank()) return@LaunchedEffect
+        runCatching { api.downloadStatic(url) }.getOrNull()?.let { raw ->
+            bitmap = BitmapFactory.decodeByteArray(raw, 0, raw.size)?.asImageBitmap()
+        }
+    }
+    return bitmap
 }
 
 /** 表单行闪光容器:解析结果填入时整行珊瑚底淡出 + 轻微 pop,指示「这个字段被咕咕改了」。 */
@@ -1338,7 +1597,7 @@ private fun KindOption(
         Spacer(Modifier.width(11.dp))
         Column(Modifier.weight(1f)) {
             Text(title, style = MaterialTheme.typography.titleMedium, color = H.Ink)
-            Text(desc, style = MaterialTheme.typography.bodySmall, color = H.Ink3)
+            Text(desc, style = MaterialTheme.typography.bodySmall, color = H.Ink3Strong)
         }
         if (selected) {
             Icon(Icons.Rounded.CheckCircle, null, Modifier.size(16.dp), tint = H.Coral)
@@ -1349,7 +1608,7 @@ private fun KindOption(
 /** 弹层分组标签。 */
 @Composable
 private fun SheetLabel(text: String) {
-    Text(text, style = MaterialTheme.typography.titleSmall, color = H.Ink3)
+    Text(text, style = MaterialTheme.typography.titleSmall, color = H.Ink3Strong)
     Spacer(Modifier.height(8.dp))
 }
 
@@ -1393,31 +1652,25 @@ private fun MiniAction(text: String, onClick: () -> Unit, color: Color) {
 
 // ---- 文案/日期小工具 ----
 
-private fun dayChipLabel(d: LocalDate): String {
-    val offset = d.toEpochDay() - LocalDate.now().toEpochDay()
-    return if (offset in 3..6) {
-        "周" + "一二三四五六日"[d.dayOfWeek.value - 1]
-    } else {
-        "%d月%d日".format(d.monthValue, d.dayOfMonth)
-    }
+/** 日期回显:今天/明天/后天,其余显示月日。 */
+private fun dayLabelOf(date: LocalDate): String = when (date.toEpochDay() - LocalDate.now().toEpochDay()) {
+    0L -> "今天"
+    1L -> "明天"
+    2L -> "后天"
+    else -> "%d月%d日".format(date.monthValue, date.dayOfMonth)
 }
 
-/** 时刻·方式行的回显文案:如「明天 08:00 · 循环·工作日 · 轻柔」。 */
-private fun timeValueLabel(
-    date: LocalDate,
-    hour: Int,
-    minute: Int,
+/** 时间行回显:如「明天 08:00」。 */
+private fun timeLabelOf(date: LocalDate, hour: Int, minute: Int): String =
+    "%s %02d:%02d".format(dayLabelOf(date), hour, minute)
+
+/** 方式行回显:如「循环·工作日 · 轻柔」「单次 · 唠叨」。 */
+private fun modeLabelOf(
     kind: String,
     repeatMode: String,
     customDaysCsv: String,
     tone: String,
 ): String {
-    val dateLabel = when (date.toEpochDay() - LocalDate.now().toEpochDay()) {
-        0L -> "今天"
-        1L -> "明天"
-        2L -> "后天"
-        else -> "%d月%d日".format(date.monthValue, date.dayOfMonth)
-    }
     val kindLabel = when (kind) {
         "REPEAT" -> "循环·" + when (repeatMode) {
             "DAILY" -> "每天"
@@ -1435,5 +1688,5 @@ private fun timeValueLabel(
         "STRICT" -> "严格"
         else -> "轻柔"
     }
-    return "$dateLabel %02d:%02d · %s · %s".format(hour, minute, kindLabel, toneLabel)
+    return "$kindLabel · $toneLabel"
 }

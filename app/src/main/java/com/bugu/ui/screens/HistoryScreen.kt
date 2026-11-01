@@ -43,11 +43,18 @@ import com.bugu.client.domain.directionLabel
 import com.bugu.client.api.GeitaApi
 import com.bugu.client.api.GeitaApiException
 import com.bugu.client.api.ReminderView
+import com.bugu.ui.common.BackIconButton
 import com.bugu.ui.common.CircleIcon
 import com.bugu.ui.common.EmptyState
 import com.bugu.ui.common.RiseIn
 import com.bugu.ui.common.StatusAvatar
 import com.bugu.ui.common.TagChip
+import com.bugu.ui.common.kindLabel
+import com.bugu.ui.common.parseIsoTime
+import com.bugu.ui.common.repeatLabel
+import com.bugu.ui.common.statusColor
+import com.bugu.ui.common.statusLabel
+import com.bugu.ui.common.TIME_FMT
 import com.bugu.ui.theme.H
 import java.time.LocalDate
 
@@ -104,17 +111,11 @@ fun HistoryScreen(
     ) {
         item {
             Row(verticalAlignment = Alignment.CenterVertically) {
-                CircleIcon(
-                    icon = Icons.AutoMirrored.Filled.ArrowBack,
-                    bg = Color.White,
-                    tint = H.Ink,
-                    border = H.Hairline,
-                    modifier = Modifier.clickable(onClick = onBack),
-                )
+                BackIconButton(onClick = onBack)
                 Spacer(Modifier.width(12.dp))
                 Column(Modifier.weight(1f)) {
                     Text("惦记历史回执", style = MaterialTheme.typography.headlineSmall, color = H.Ink)
-                    Text("每一次惦记,都有回音", style = MaterialTheme.typography.bodySmall, color = H.Ink3)
+                    Text("每一次惦记,都有回音", style = MaterialTheme.typography.bodySmall, color = H.Ink3Strong)
                 }
                 TagChip(text = "共 ${entries.size} 条", tint = H.Ink2)
             }
@@ -202,7 +203,7 @@ private fun HistoryCard(entry: HistoryEntry, peerName: String, direction: String
                         Text(
                             direction,
                             style = MaterialTheme.typography.bodySmall,
-                            color = H.Ink3,
+                            color = H.Ink3Strong,
                         )
                     }
                 }
@@ -210,12 +211,12 @@ private fun HistoryCard(entry: HistoryEntry, peerName: String, direction: String
                     Text(
                         parseIsoTime(r.fireAt)?.format(TIME_FMT) ?: "--:--",
                         style = MaterialTheme.typography.labelSmall,
-                        color = H.Ink3,
+                        color = H.Ink3Strong,
                     )
                     Text(
                         repeatLabel(r.repeatRule),
                         style = MaterialTheme.typography.labelSmall,
-                        color = H.Ink3,
+                        color = H.Ink3Strong,
                     )
                 }
             }

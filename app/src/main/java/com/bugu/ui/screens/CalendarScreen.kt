@@ -47,10 +47,16 @@ import com.bugu.client.domain.directionLabel
 import com.bugu.client.api.GeitaApi
 import com.bugu.client.api.GeitaApiException
 import com.bugu.client.api.ReminderView
+import com.bugu.ui.common.BackIconButton
 import com.bugu.ui.common.EmptyState
 import com.bugu.ui.common.GuguBird
 import com.bugu.ui.common.GuguMood
 import com.bugu.ui.common.TagChip
+import com.bugu.ui.common.parseIsoTime
+import com.bugu.ui.common.repeatLabel
+import com.bugu.ui.common.statusColor
+import com.bugu.ui.common.statusLabel
+import com.bugu.ui.common.TIME_FMT
 import com.bugu.ui.theme.H
 import java.time.LocalDate
 import java.time.YearMonth
@@ -109,21 +115,11 @@ fun CalendarScreen(api: GeitaApi, bonds: List<BondDto>, onBack: () -> Unit) {
                 .padding(horizontal = 20.dp, vertical = 10.dp),
             verticalAlignment = Alignment.CenterVertically,
         ) {
-            Box(
-                Modifier
-                    .size(38.dp)
-                    .clip(CircleShape)
-                    .background(Color.White)
-                    .border(1.dp, H.Hairline, CircleShape)
-                    .clickable(onClick = onBack),
-                contentAlignment = Alignment.Center,
-            ) {
-                Icon(Icons.AutoMirrored.Filled.ArrowBack, null, Modifier.size(18.dp), tint = H.Ink)
-            }
+            BackIconButton(onClick = onBack)
             Spacer(Modifier.weight(1f))
             Text("日历", style = MaterialTheme.typography.titleLarge, color = H.Ink)
             Spacer(Modifier.weight(1f))
-            Spacer(Modifier.size(38.dp))
+            Spacer(Modifier.size(44.dp))
         }
 
         Column(
@@ -195,7 +191,7 @@ fun CalendarScreen(api: GeitaApi, bonds: List<BondDto>, onBack: () -> Unit) {
                             Text(
                                 w,
                                 style = MaterialTheme.typography.titleSmall,
-                                color = H.Ink3,
+                                color = H.Ink3Strong,
                                 textAlign = TextAlign.Center,
                                 modifier = Modifier.weight(1f),
                             )
@@ -262,7 +258,7 @@ fun CalendarScreen(api: GeitaApi, bonds: List<BondDto>, onBack: () -> Unit) {
                         GuguBird(GuguMood.SLEEP, Modifier.size(84.dp))
                         Spacer(Modifier.height(10.dp))
                         Text("这天很清净", style = MaterialTheme.typography.titleMedium, color = H.Ink)
-                        Text("咕咕帮你盯着呢,放心休息", style = MaterialTheme.typography.bodySmall, color = H.Ink3)
+                        Text("咕咕帮你盯着呢,放心休息", style = MaterialTheme.typography.bodySmall, color = H.Ink3Strong)
                     }
                 } else {
                     selectedList.forEachIndexed { i, e ->
@@ -297,7 +293,7 @@ fun CalendarScreen(api: GeitaApi, bonds: List<BondDto>, onBack: () -> Unit) {
                                 Text(
                                     "${e.r.directionLabel(bonds, e.byMe)} · ${repeatLabel(e.r.repeatRule)}",
                                     style = MaterialTheme.typography.bodySmall,
-                                    color = H.Ink3,
+                                    color = H.Ink3Strong,
                                 )
                             }
                             TagChip(text = statusLabel(e.r.status), tint = statusColor(e.r.status))

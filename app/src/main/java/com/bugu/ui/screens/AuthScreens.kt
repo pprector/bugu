@@ -89,6 +89,7 @@ import com.bugu.client.api.GeitaApiException
 import com.bugu.client.api.UserDto
 import com.bugu.ApiFactory
 import com.bugu.SharedPrefsTokenStore
+import com.bugu.ui.common.BackIconButton
 import com.bugu.ui.common.FieldError
 import com.bugu.ui.common.GradientButton
 import com.bugu.ui.common.GuguBird
@@ -516,7 +517,7 @@ fun LoginScreen(onLoggedIn: (UserDto) -> Unit) {
                 }) { Text("同意并继续", color = H.Coral, fontWeight = FontWeight.SemiBold) }
             },
             dismissButton = {
-                TextButton(onClick = { pendingAction = null }) { Text("暂不", color = H.Ink3) }
+                TextButton(onClick = { pendingAction = null }) { Text("暂不", color = H.Ink3Strong) }
             },
         )
     }
@@ -577,7 +578,7 @@ private fun BasicInput(
         decorationBox = { field ->
             Box {
                 if (value.isEmpty()) {
-                    Text(hint, style = MaterialTheme.typography.bodyLarge, color = H.Ink3)
+                    Text(hint, style = MaterialTheme.typography.bodyLarge, color = H.Ink3Strong)
                 }
                 field()
             }
@@ -616,7 +617,7 @@ private fun AgreementRow(agreed: Boolean, onAgreedChange: (Boolean) -> Unit, onV
             Icon(Icons.Outlined.Check, null, Modifier.size(12.dp).scale(checkScale), tint = Color.White)
         }
         Spacer(Modifier.width(7.dp))
-        Text("已阅读并同意", style = MaterialTheme.typography.bodySmall, color = H.Ink3)
+        Text("已阅读并同意", style = MaterialTheme.typography.bodySmall, color = H.Ink3Strong)
         Text(
             "《用户协议》",
             style = MaterialTheme.typography.bodySmall,
@@ -626,7 +627,7 @@ private fun AgreementRow(agreed: Boolean, onAgreedChange: (Boolean) -> Unit, onV
                 .clickable { onView("user") }
                 .padding(horizontal = 1.dp, vertical = 4.dp),
         )
-        Text("和", style = MaterialTheme.typography.bodySmall, color = H.Ink3)
+        Text("和", style = MaterialTheme.typography.bodySmall, color = H.Ink3Strong)
         Text(
             "《隐私政策》",
             style = MaterialTheme.typography.bodySmall,
@@ -802,15 +803,7 @@ fun PermissionsScreen(onBack: () -> Unit, onDone: (Boolean) -> Unit) {
                 .height(56.dp),
             verticalAlignment = Alignment.CenterVertically,
         ) {
-            Icon(
-                Icons.AutoMirrored.Filled.ArrowBack, "返回",
-                Modifier
-                    .size(44.dp)
-                    .clip(CircleShape)
-                    .clickable(onClick = onBack)
-                    .padding(10.dp),
-                tint = H.Ink,
-            )
+            BackIconButton(onClick = onBack)
             Text(
                 "核心守护权限",
                 style = MaterialTheme.typography.headlineSmall,
@@ -818,6 +811,7 @@ fun PermissionsScreen(onBack: () -> Unit, onDone: (Boolean) -> Unit) {
                 modifier = Modifier.weight(1f),
                 textAlign = TextAlign.Center,
             )
+            Spacer(Modifier.size(44.dp))
             Text(
                 "跳过",
                 style = MaterialTheme.typography.titleMedium,
@@ -920,7 +914,7 @@ fun PermissionsScreen(onBack: () -> Unit, onDone: (Boolean) -> Unit) {
                         }
                     }
                     Spacer(Modifier.height(3.dp))
-                    Text(item.desc, style = MaterialTheme.typography.bodySmall, color = H.Ink3)
+                    Text(item.desc, style = MaterialTheme.typography.bodySmall, color = H.Ink3Strong)
                 }
                 Spacer(Modifier.width(10.dp))
                 Box(

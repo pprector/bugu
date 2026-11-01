@@ -20,10 +20,12 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.gestures.detectTapGestures
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxScope
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.RowScope
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -31,11 +33,14 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.wrapContentSize
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Switch
@@ -57,6 +62,7 @@ import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.ImageBitmap
 import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.drawscope.DrawScope
@@ -124,6 +130,40 @@ fun StatusAvatar(
                     .clip(CircleShape)
                     .background(dotColor)
                     .border((size.value * 0.05f).dp, H.Canvas, CircleShape),
+            )
+        }
+    }
+}
+
+// 网络头像气泡:头像就绪前或加载失败时回退首字,选中态加珊瑚描边
+@Composable
+fun AvatarBubble(
+    bitmap: ImageBitmap?,
+    fallbackText: String,
+    size: Dp,
+    modifier: Modifier = Modifier,
+    selected: Boolean = false,
+) {
+    Box(
+        modifier
+            .size(size)
+            .clip(CircleShape)
+            .background(if (selected) H.CoralTint else H.WarmFill)
+            .then(if (selected) Modifier.border(1.5.dp, H.Coral, CircleShape) else Modifier),
+        contentAlignment = Alignment.Center,
+    ) {
+        if (bitmap != null) {
+            Image(
+                bitmap = bitmap,
+                contentDescription = null,
+                contentScale = ContentScale.Crop,
+                modifier = Modifier.fillMaxSize(),
+            )
+        } else {
+            Text(
+                fallbackText.take(1),
+                style = MaterialTheme.typography.titleSmall,
+                color = if (selected) H.CoralInk else H.Ink2,
             )
         }
     }
@@ -218,6 +258,87 @@ fun CircleIcon(
     }
 }
 
+/** 头部圆形入口:统一 44dp 触控区,白底 hairline 描边,图标补齐无障碍描述。 */
+@Composable
+fun HeaderIconButton(
+    icon: ImageVector,
+    contentDescription: String,
+    onClick: () -> Unit,
+    loading: Boolean = false,
+    modifier: Modifier = Modifier,
+) {
+    Box(
+        modifier
+            .size(44.dp)
+            .clip(CircleShape)
+            .background(Color.White)
+            .border(1.dp, H.Hairline, CircleShape)
+            .clickable(enabled = !loading, onClick = onClick),
+        contentAlignment = Alignment.Center,
+    ) {
+        if (loading) {
+            CircularProgressIndicator(
+                color = H.CoralInk,
+                modifier = Modifier.size(17.dp),
+                strokeWidth = 2.dp,
+            )
+        } else {
+            Icon(icon, contentDescription, Modifier.size(20.dp), tint = H.Ink2)
+        }
+    }
+}
+
+/** 统一的子页面返回按钮:与顶部栏同款圆形白底图标,避免各页各写一套。 */
+@Composable
+fun BackIconButton(onClick: () -> Unit, modifier: Modifier = Modifier) {
+    HeaderIconButton(
+        icon = Icons.AutoMirrored.Filled.ArrowBack,
+        contentDescription = "返回",
+        onClick = onClick,
+        modifier = modifier,
+    )
+}
+
+/**
+ * 统一顶部栏:可选咕咕鸟 + 返回箭头 + 左对齐标题 + 右侧 actions 槽位。
+ * 对齐看板顶部锚点规范,各页复用避免各写各的返回按钮。
+ */
+@Composable
+fun TopBar(
+    title: String,
+    onBack: () -> Unit,
+    modifier: Modifier = Modifier,
+    guguMood: GuguMood? = null,
+    actions: @Composable RowScope.() -> Unit = {},
+) {
+    Row(
+        modifier
+            .fillMaxWidth()
+            .statusBarsPadding()
+            .padding(horizontal = 16.dp, vertical = 10.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        BackIconButton(onClick = onBack)
+        if (guguMood != null) {
+            Spacer(Modifier.width(8.dp))
+            GuguBird(
+                mood = guguMood,
+                modifier = Modifier.size(40.dp),
+                onTap = null,
+                pokeLines = emptyList(),
+            )
+        }
+        Spacer(Modifier.width(10.dp))
+        Text(
+            title,
+            style = MaterialTheme.typography.headlineSmall,
+            color = H.Ink,
+            modifier = Modifier.weight(1f),
+        )
+        Row(horizontalArrangement = Arrangement.spacedBy(6.dp), content = actions)
+    }
+}
+
 // 字段级错误:就近内联显示在对应输入下方,避免远端红字被键盘遮挡
 @Composable
 fun FieldError(message: String?, modifier: Modifier = Modifier) {
@@ -282,6 +403,7 @@ fun EmptyState(
             .fillMaxWidth()
             .clip(RoundedCornerShape(26.dp))
             .background(Color.White)
+            .border(1.dp, H.Hairline, RoundedCornerShape(26.dp))
             .padding(horizontal = 24.dp, vertical = 34.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
     ) {
@@ -302,7 +424,7 @@ fun EmptyState(
         Text(
             subtitle,
             style = MaterialTheme.typography.bodyMedium,
-            color = H.Ink3,
+            color = H.Ink3Strong,
             textAlign = TextAlign.Center,
         )
         if (actionText != null && onAction != null) {

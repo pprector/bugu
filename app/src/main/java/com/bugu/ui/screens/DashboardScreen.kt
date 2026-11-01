@@ -69,89 +69,24 @@ import com.bugu.client.domain.ReminderDisplayState
 import com.bugu.ui.common.EmptyState
 import com.bugu.ui.common.GuguBird
 import com.bugu.ui.common.GuguMood
+import com.bugu.ui.common.HeaderIconButton
+import com.bugu.ui.common.kindLabel
 import com.bugu.ui.common.RiseIn
 import com.bugu.ui.common.StatusAvatar
 import com.bugu.ui.common.TagChip
+import com.bugu.ui.common.parseIsoTime
 import com.bugu.ui.common.pulseScale
+import com.bugu.ui.common.relativeDayLabel
+import com.bugu.ui.common.repeatLabel
+import com.bugu.ui.common.statusColor
+import com.bugu.ui.common.statusLabel
+import com.bugu.ui.common.TIME_FMT
+import com.bugu.ui.common.toneLabel
 import com.bugu.ui.theme.H
 import java.time.LocalDate
 import java.time.LocalDateTime
-import java.time.OffsetDateTime
-import java.time.format.DateTimeFormatter
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
-
-/** ISO 本地时刻 → LocalDateTime(服务端偶发带时区偏移时兜底换算)。 */
-internal fun parseIsoTime(iso: String): LocalDateTime? = try {
-    LocalDateTime.parse(iso)
-} catch (_: Exception) {
-    try {
-        OffsetDateTime.parse(iso).toLocalDateTime()
-    } catch (_: Exception) {
-        null
-    }
-}
-
-internal val TIME_FMT: DateTimeFormatter = DateTimeFormatter.ofPattern("HH:mm")
-
-/** 相对日期标签:今天/昨天/明天,其余带星期,避免列表只看到 HH:mm 分不清哪一天。 */
-private fun relativeDayLabel(d: LocalDate, today: LocalDate): String = when (d) {
-    today -> "今天"
-    today.minusDays(1) -> "昨天"
-    today.plusDays(1) -> "明天"
-    else -> {
-        val week = arrayOf("一", "二", "三", "四", "五", "六", "日")[d.dayOfWeek.value - 1]
-        "${d.monthValue}月${d.dayOfMonth}日 周$week"
-    }
-}
-
-/** 提醒状态 → 彩色小标签文案(History 同源,保持全局一致)。 */
-internal fun statusLabel(status: String): String = when (status) {
-    "PENDING" -> "待触发"
-    "FIRED" -> "已触发"
-    "ACKED" -> "已完成"
-    "SNOOZED" -> "稍后再叫"
-    "DECLINED" -> "已拒绝"
-    "MISSED" -> "已错过"
-    "CANCELED" -> "已撤销"
-    else -> status
-}
-
-/** 提醒状态 → 标签色:PENDING 蓝 / FIRED 橙 / ACKED 绿 / SNOOZED 黄 / DECLINED 红 / MISSED·CANCELED 灰(深色变体保证可读)。 */
-internal fun statusColor(status: String): Color = when (status) {
-    "PENDING" -> H.IndigoInk
-    "FIRED" -> H.CoralInk
-    "ACKED" -> H.MintInk
-    "SNOOZED" -> H.AmberInk
-    "DECLINED" -> H.RoseInk
-    "MISSED", "CANCELED" -> H.Ink3Strong
-    else -> H.Ink2
-}
-
-/** 提醒类型 → 中文短标。 */
-internal fun kindLabel(kind: String): String = when (kind) {
-    "ONCE" -> "单次惦记"
-    "REPEAT" -> "循环惦记"
-    "MUTUAL_ALARM" -> "互叫闹钟"
-    else -> kind
-}
-
-/** 语气档位 → 中文(server ToneLevel:GENTLE/NAG/STRICT)。 */
-internal fun toneLabel(tone: String): String = when (tone) {
-    "GENTLE" -> "轻柔语气"
-    "NAG" -> "唠叨语气"
-    "STRICT" -> "严格语气"
-    else -> tone
-}
-
-/** 重复规则 → 中文(最小表达:DAILY / WEEKLY:MON,TUE…)。 */
-internal fun repeatLabel(rule: String?): String = when {
-    rule == null -> "仅一次"
-    rule == "DAILY" -> "每天重复"
-    rule.startsWith("WEEKLY:") -> "每周 " + rule.removePrefix("WEEKLY:").split(",")
-        .joinToString(" ") { day -> day.take(1) + day.drop(1).lowercase() }
-    else -> rule
-}
 
 /**
  * 看板:我发出的「我的惦记」与收到的「TA 的惦记」双列表 + 进行中提醒卡。
@@ -187,6 +122,7 @@ fun DashboardScreen(
 
     /** 进入/操作后统一重拉三路数据。 */
     fun refresh() {
+        if (refreshing) return
         refreshing = true
         scope.launch {
             try {
@@ -349,9 +285,16 @@ fun DashboardScreen(
             }
         }
 
-        // 轻提示:成功回执(绿)与错误(红)互斥展示
+        // 轻提示:成功回执(绿)与错误(红)互斥展示,3.5s 后自动消失
         item {
             AnimatedVisibility(visible = notice != null || error != null) {
+                LaunchedEffect(notice, error) {
+                    if (notice != null || error != null) {
+                        delay(3500)
+                        notice = null
+                        error = null
+                    }
+                }
                 Row(
                     Modifier
                         .fillMaxWidth()
@@ -849,35 +792,6 @@ fun DashboardScreen(
                     }
                 }
             }
-        }
-    }
-}
-
-/** 头部圆形入口:统一 44dp 触控区,并给图标补齐无障碍描述。 */
-@Composable
-private fun HeaderIconButton(
-    icon: ImageVector,
-    contentDescription: String,
-    onClick: () -> Unit,
-    loading: Boolean = false,
-) {
-    Box(
-        Modifier
-            .size(44.dp)
-            .clip(CircleShape)
-            .background(Color.White)
-            .border(1.dp, H.Hairline, CircleShape)
-            .clickable(enabled = !loading, onClick = onClick),
-        contentAlignment = Alignment.Center,
-    ) {
-        if (loading) {
-            CircularProgressIndicator(
-                color = H.CoralInk,
-                modifier = Modifier.size(17.dp),
-                strokeWidth = 2.dp,
-            )
-        } else {
-            Icon(icon, contentDescription, Modifier.size(20.dp), tint = H.Ink2)
         }
     }
 }

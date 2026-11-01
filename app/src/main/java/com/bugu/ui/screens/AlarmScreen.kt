@@ -351,7 +351,7 @@ fun AlarmScreen(
         Row(verticalAlignment = Alignment.CenterVertically) {
             Text("给${peerName}捎个快捷回执：", style = MaterialTheme.typography.titleMedium, color = H.Ink)
             Spacer(Modifier.weight(1f))
-            Text("轻点即发送", style = MaterialTheme.typography.titleSmall, color = H.Ink3)
+            Text("轻点即发送", style = MaterialTheme.typography.titleSmall, color = H.Ink3Strong)
         }
         Spacer(Modifier.height(10.dp))
         val quickReplies = remember { mutableStateOf(listOf("已醒别担心 ☕", "在刷牙啦 🪥", "爱你 ❤️")) }
@@ -405,7 +405,7 @@ fun AlarmScreen(
             Text(
                 "若 40 秒未确认，系统将自动降级为温柔震动，并通知关怀圈【我来处理】协同待命。",
                 style = MaterialTheme.typography.bodySmall,
-                color = H.Ink3,
+                color = H.Ink3Strong,
             )
         }
         Spacer(Modifier.height(20.dp))

@@ -17,7 +17,9 @@ import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.ui.unit.dp
 import com.bugu.client.api.*
+import com.bugu.ui.common.BackIconButton
 import com.bugu.ui.common.GradientButton
+import com.bugu.ui.common.parseIsoTime
 import com.bugu.ui.theme.H
 import kotlinx.coroutines.launch
 
@@ -54,7 +56,8 @@ fun FriendsScreen(
     LaunchedEffect(Unit) { initiate() }
     Column(Modifier.fillMaxSize().background(H.Canvas).statusBarsPadding().navigationBarsPadding()
         .verticalScroll(rememberScrollState()).padding(20.dp)) {
-        TextButton(onClick = onBack) { Text("返回", color = H.CoralInk) }
+        BackIconButton(onClick = onBack)
+        Spacer(Modifier.height(12.dp))
         Text("添加亲友", style = MaterialTheme.typography.headlineSmall, color = H.Ink)
         Text("多一份惦记。双方确认后，即可互相发送提醒。", color = H.Ink2)
         Spacer(Modifier.height(24.dp))
