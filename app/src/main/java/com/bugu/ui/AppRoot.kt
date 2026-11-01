@@ -1,3 +1,5 @@
+@file:OptIn(androidx.compose.foundation.layout.ExperimentalLayoutApi::class)
+
 package com.bugu.ui
 
 import android.app.Activity
@@ -35,6 +37,7 @@ import androidx.compose.foundation.layout.asPaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.isImeVisible
 import androidx.compose.foundation.layout.navigationBars
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
@@ -181,7 +184,7 @@ fun AppRoot() {
             exitArmed = false
         }
     }
-    BackHandler {
+    BackHandler(enabled = !WindowInsets.isImeVisible) {
         when {
             screen != Screen.Main -> screen = Screen.Main
             tab != Tab.DASHBOARD -> tab = Tab.DASHBOARD

@@ -1,4 +1,7 @@
-@file:OptIn(androidx.compose.material3.ExperimentalMaterial3Api::class)
+@file:OptIn(
+    androidx.compose.material3.ExperimentalMaterial3Api::class,
+    androidx.compose.foundation.layout.ExperimentalLayoutApi::class,
+)
 
 package com.bugu.ui.screens
 
@@ -27,11 +30,13 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.imePadding
+import androidx.compose.foundation.layout.isImeVisible
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
@@ -55,6 +60,7 @@ import androidx.compose.material.icons.rounded.Edit
 import androidx.compose.material.icons.rounded.Drafts
 import androidx.compose.material.icons.rounded.EditNote
 import androidx.compose.material.icons.rounded.EventRepeat
+import androidx.compose.material.icons.rounded.KeyboardArrowRight
 import androidx.compose.material.icons.rounded.Mic
 import androidx.compose.material.icons.rounded.NotificationsActive
 import androidx.compose.material.icons.rounded.Schedule
@@ -213,11 +219,13 @@ fun CreateReminderScreen(
     var degradedParse by rememberSaveable { mutableStateOf(false) }
     var phraseError by rememberSaveable { mutableStateOf("") }
     var titleError by rememberSaveable { mutableStateOf("") }
+    var noteError by rememberSaveable { mutableStateOf("") }
     var formError by rememberSaveable { mutableStateOf("") }
 
     fun clearErrors() {
         phraseError = ""
         titleError = ""
+        noteError = ""
         formError = ""
     }
 
@@ -248,10 +256,13 @@ fun CreateReminderScreen(
         val raw = prefs.getString("draft_reminder", null) ?: return
         try {
             val o = JSONObject(raw)
-            val savedTitle = o.optString("title", "").take(MAX_TITLE)
+            val savedTitle = o.optString("title", "")
             titleDirty = savedTitle.isNotBlank()
             title = savedTitle.ifBlank { defaultTitle }
-            note = o.optString("note", "")
+            val savedNote = o.optString("note", "")
+            note = savedNote
+            noteError = if (savedNote.length > MAX_NOTE) "便签不超过 $MAX_NOTE 字" else ""
+            titleError = if (savedTitle.length > MAX_TITLE) "标题不超过 $MAX_TITLE 字" else ""
             dateEpochDay = o.optLong("dateEpochDay", LocalDate.now().plusDays(1).toEpochDay())
             hour = o.optInt("hour", 8)
             minute = o.optInt("minute", 0)
@@ -307,8 +318,8 @@ fun CreateReminderScreen(
     }
     val canSubmit = !busy && title.isNotBlank() && selectedRecipientIds.isNotEmpty() && !invalidRecipient
 
-    // 系统返回键:回看板而不是退出 App(与左上角箭头一致)
-    BackHandler { onBack() }
+    // 系统返回键:回看板而不是退出 App;键盘弹出时先让系统收起键盘
+    BackHandler(enabled = !WindowInsets.isImeVisible) { onBack() }
 
     /** 选择提醒类型:非互叫类型必须关掉语音;多人或自己参与时不能使用互叫闹钟。 */
     fun selectKind(next: String) {
@@ -382,9 +393,9 @@ fun CreateReminderScreen(
                     assistError = ""
                     // 逐字段填入:标题 → 时刻·方式 → 便签,每步珊瑚闪光,像咕咕逐项落笔
                     draft.title?.takeIf { it.isNotBlank() && it != title.trim() }?.let {
-                        title = it.take(MAX_TITLE)
+                        title = it
                         titleDirty = true
-                        titleError = ""
+                        titleError = if (it.length > MAX_TITLE) "标题不超过 $MAX_TITLE 字" else ""
                         titleTick++
                         delay(170)
                     }
@@ -409,7 +420,8 @@ fun CreateReminderScreen(
                         delay(170)
                     }
                     draft.note?.takeIf { it.isNotBlank() && it != note.trim() }?.let {
-                        note = it.take(MAX_NOTE)
+                        note = it
+                        noteError = if (it.length > MAX_NOTE) "便签不超过 $MAX_NOTE 字" else ""
                         noteTick++
                     }
                     parsedOk = true
@@ -510,7 +522,7 @@ fun CreateReminderScreen(
                 return
             }
             note.length > MAX_NOTE -> {
-                formError = "便签不超过 $MAX_NOTE 字"
+                noteError = "便签不超过 $MAX_NOTE 字"
                 return
             }
             past -> {
@@ -669,56 +681,45 @@ fun CreateReminderScreen(
 
             Spacer(Modifier.height(12.dp))
 
-            // ② 常驻表单:标题 / 时刻·方式 / 捎句话 / 语气
+            // ② 常驻表单:标题 / 时间 / 方式 / 捎句话(无行内图标,靠层级与留白分组)
             RiseIn(delayMs = 60) {
             Column(
                 Modifier
                     .fillMaxWidth()
                     .clip(RoundedCornerShape(24.dp))
-                    .background(Color.White),
+                    .background(Color.White)
+                    .border(1.dp, H.Hairline, RoundedCornerShape(24.dp)),
             ) {
                 FlashRow(tick = titleTick) {
-                    Row(
+                    Column(
                         Modifier
                             .fillMaxWidth()
-                            .padding(horizontal = 16.dp, vertical = 12.dp),
-                        verticalAlignment = Alignment.CenterVertically,
+                            .padding(horizontal = 18.dp, vertical = 14.dp),
                     ) {
-                        Icon(Icons.Rounded.EditNote, null, Modifier.size(20.dp), tint = H.Ink3)
-                        Spacer(Modifier.width(12.dp))
-                        Column(Modifier.weight(1f)) {
-                            Row(verticalAlignment = Alignment.CenterVertically) {
-                                Text("惦记标题", style = MaterialTheme.typography.titleSmall, color = H.Ink3Strong)
-                                Spacer(Modifier.weight(1f))
-                                Text(
-                                    "${title.length}/$MAX_TITLE",
-                                    style = MaterialTheme.typography.titleSmall,
-                                    color = if (title.length >= MAX_TITLE) H.Rose else H.Ink3Strong,
-                                )
-                            }
-                            BasicTextField(
-                                value = title,
-                                onValueChange = {
-                                    title = it.take(MAX_TITLE)
-                                    titleDirty = true
-                                    titleError = ""
-                                    formError = ""
-                                },
-                                textStyle = MaterialTheme.typography.titleMedium.copy(color = H.Ink),
-                                singleLine = true,
-                                keyboardOptions = KeyboardOptions(imeAction = ImeAction.Done),
-                                keyboardActions = KeyboardActions(onDone = { focusManager.clearFocus() }),
-                                modifier = Modifier.fillMaxWidth(),
-                            ) { inner ->
-                                Box {
-                                    if (title.isEmpty()) {
-                                        Text("如:吃降压药 / 早安叫醒", style = MaterialTheme.typography.titleMedium, color = H.Ink3Strong)
-                                    }
-                                    inner()
+                        Text("惦记标题", style = MaterialTheme.typography.titleSmall, color = H.Ink3Strong)
+                        Spacer(Modifier.height(2.dp))
+                        BasicTextField(
+                            value = title,
+                            onValueChange = {
+                                title = it
+                                titleDirty = true
+                                titleError = if (it.length > MAX_TITLE) "标题不超过 $MAX_TITLE 字" else ""
+                                formError = ""
+                            },
+                            textStyle = MaterialTheme.typography.titleMedium.copy(color = H.Ink),
+                            singleLine = true,
+                            keyboardOptions = KeyboardOptions(imeAction = ImeAction.Done),
+                            keyboardActions = KeyboardActions(onDone = { focusManager.clearFocus() }),
+                            modifier = Modifier.fillMaxWidth(),
+                        ) { inner ->
+                            Box {
+                                if (title.isEmpty()) {
+                                    Text("如:吃降压药 / 早安叫醒", style = MaterialTheme.typography.titleMedium, color = H.Ink3Strong)
                                 }
+                                inner()
                             }
-                            FieldError(titleError.takeIf { it.isNotEmpty() }, Modifier.padding(top = 4.dp))
                         }
+                        FieldError(titleError.takeIf { it.isNotEmpty() }, Modifier.padding(top = 4.dp))
                     }
                 }
 
@@ -730,14 +731,12 @@ fun CreateReminderScreen(
                             .fillMaxWidth()
                             .clip(RoundedCornerShape(16.dp))
                             .clickable { showTimeSheet = true }
-                            .padding(horizontal = 16.dp, vertical = 12.dp),
+                            .padding(horizontal = 18.dp, vertical = 14.dp),
                     ) {
                         Row(verticalAlignment = Alignment.CenterVertically) {
-                            Icon(Icons.Rounded.Schedule, null, Modifier.size(20.dp), tint = H.Ink3)
-                            Spacer(Modifier.width(12.dp))
                             Column(Modifier.weight(1f)) {
                                 Text("时间", style = MaterialTheme.typography.titleSmall, color = H.Ink3Strong)
-                                Spacer(Modifier.height(1.dp))
+                                Spacer(Modifier.height(2.dp))
                                 Text(
                                     timeLabelOf(date, hour, minute),
                                     style = MaterialTheme.typography.titleMedium,
@@ -746,7 +745,7 @@ fun CreateReminderScreen(
                                     overflow = TextOverflow.Ellipsis,
                                 )
                             }
-                            Icon(Icons.Rounded.Edit, null, Modifier.size(13.dp), tint = H.Ink3)
+                            Icon(Icons.Rounded.KeyboardArrowRight, null, Modifier.size(18.dp), tint = H.Ink3)
                         }
                         if (isPast) {
                             Spacer(Modifier.height(8.dp))
@@ -780,14 +779,12 @@ fun CreateReminderScreen(
                             .fillMaxWidth()
                             .clip(RoundedCornerShape(16.dp))
                             .clickable { showModeSheet = true }
-                            .padding(horizontal = 16.dp, vertical = 12.dp),
+                            .padding(horizontal = 18.dp, vertical = 14.dp),
                     ) {
                         Row(verticalAlignment = Alignment.CenterVertically) {
-                            Icon(Icons.Rounded.EventRepeat, null, Modifier.size(20.dp), tint = H.Ink3)
-                            Spacer(Modifier.width(12.dp))
                             Column(Modifier.weight(1f)) {
                                 Text("方式", style = MaterialTheme.typography.titleSmall, color = H.Ink3Strong)
-                                Spacer(Modifier.height(1.dp))
+                                Spacer(Modifier.height(2.dp))
                                 Text(
                                     modeLabelOf(kind, repeatMode, customDaysCsv, tone),
                                     style = MaterialTheme.typography.titleMedium,
@@ -796,7 +793,7 @@ fun CreateReminderScreen(
                                     overflow = TextOverflow.Ellipsis,
                                 )
                             }
-                            Icon(Icons.Rounded.Edit, null, Modifier.size(13.dp), tint = H.Ink3)
+                            Icon(Icons.Rounded.KeyboardArrowRight, null, Modifier.size(18.dp), tint = H.Ink3)
                         }
                     }
                 }
@@ -804,44 +801,34 @@ fun CreateReminderScreen(
                 HorizontalDivider(color = H.Hairline, thickness = 1.dp)
 
                 FlashRow(tick = noteTick) {
-                    Row(
+                    Column(
                         Modifier
                             .fillMaxWidth()
-                            .padding(horizontal = 16.dp, vertical = 12.dp),
-                        verticalAlignment = Alignment.CenterVertically,
+                            .padding(horizontal = 18.dp, vertical = 14.dp),
                     ) {
-                        Icon(Icons.AutoMirrored.Rounded.Chat, null, Modifier.size(20.dp), tint = H.Ink3)
-                        Spacer(Modifier.width(12.dp))
-                        Column(Modifier.weight(1f)) {
-                            Row(verticalAlignment = Alignment.CenterVertically) {
-                                Text("捎句话(可选)", style = MaterialTheme.typography.titleSmall, color = H.Ink3Strong)
-                                Spacer(Modifier.weight(1f))
-                                Text(
-                                    "${note.length}/$MAX_NOTE",
-                                    style = MaterialTheme.typography.titleSmall,
-                                    color = if (note.length >= MAX_NOTE) H.Rose else H.Ink3Strong,
-                                )
-                            }
-                            BasicTextField(
-                                value = note,
-                                onValueChange = {
-                                    note = it.take(MAX_NOTE)
-                                    formError = ""
-                                },
-                                textStyle = MaterialTheme.typography.titleMedium.copy(color = H.Ink),
-                                singleLine = true,
-                                keyboardOptions = KeyboardOptions(imeAction = ImeAction.Done),
-                                keyboardActions = KeyboardActions(onDone = { focusManager.clearFocus() }),
-                                modifier = Modifier.fillMaxWidth(),
-                            ) { inner ->
-                                Box {
-                                    if (note.isEmpty()) {
-                                        Text("写一句暖心的惦记…", style = MaterialTheme.typography.titleMedium, color = H.Ink3Strong)
-                                    }
-                                    inner()
+                        Text("捎句话（可选）", style = MaterialTheme.typography.titleSmall, color = H.Ink3Strong)
+                        Spacer(Modifier.height(2.dp))
+                        BasicTextField(
+                            value = note,
+                            onValueChange = {
+                                note = it
+                                noteError = if (it.length > MAX_NOTE) "便签不超过 $MAX_NOTE 字" else ""
+                                formError = ""
+                            },
+                            textStyle = MaterialTheme.typography.titleMedium.copy(color = H.Ink),
+                            singleLine = true,
+                            keyboardOptions = KeyboardOptions(imeAction = ImeAction.Done),
+                            keyboardActions = KeyboardActions(onDone = { focusManager.clearFocus() }),
+                            modifier = Modifier.fillMaxWidth(),
+                        ) { inner ->
+                            Box {
+                                if (note.isEmpty()) {
+                                    Text("写一句暖心的惦记…", style = MaterialTheme.typography.titleMedium, color = H.Ink3Strong)
                                 }
+                                inner()
                             }
                         }
+                        FieldError(noteError.takeIf { it.isNotEmpty() }, Modifier.padding(top = 4.dp))
                     }
                 }
 
