@@ -53,6 +53,7 @@ import com.bugu.ui.common.TagChip
 import com.bugu.ui.common.TopBar
 import com.bugu.ui.common.parseIsoTime
 import com.bugu.ui.theme.H
+import java.time.format.DateTimeFormatter
 import kotlinx.coroutines.launch
 
 @Composable
@@ -201,7 +202,11 @@ fun FriendsScreen(
                             Spacer(Modifier.size(10.dp))
                             Row(verticalAlignment = Alignment.CenterVertically) {
                                 Text(
-                                    "有效期至 ${parseIsoTime(inv.expiresAt) ?: inv.expiresAt}",
+                                    "有效期至 ${
+                                        parseIsoTime(inv.expiresAt)
+                                            ?.format(DateTimeFormatter.ofPattern("M月d日 HH:mm"))
+                                            ?: inv.expiresAt
+                                    }",
                                     style = MaterialTheme.typography.bodySmall,
                                     color = H.Ink3Strong,
                                     modifier = Modifier.weight(1f),

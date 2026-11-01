@@ -237,8 +237,8 @@ private fun PermissionDiagnostics(onSnack: (String) -> Unit) {
             description = "用于本机准点调度，不保证服务器推送或绕过勿扰模式",
             status = if (exact) "可用" else "未授权",
             statusTint = if (exact) H.Mint else H.Coral,
-            action = if (Build.VERSION.SDK_INT >= 31) "去授权精确闹钟" else null,
-            onAction = if (Build.VERSION.SDK_INT >= 31) {
+            action = if (Build.VERSION.SDK_INT >= 31 && !exact) "去授权精确闹钟" else null,
+            onAction = if (Build.VERSION.SDK_INT >= 31 && !exact) {
                 { open(Intent(Settings.ACTION_REQUEST_SCHEDULE_EXACT_ALARM, "package:${context.packageName}".toUri())) }
             } else {
                 null
