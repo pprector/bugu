@@ -10,8 +10,8 @@ object BindCodePolicy {
 
     const val CODE_LENGTH = 6
 
-    /** 绑定码有效期,超时后发起方续发新码(同一 bond 行,不重复创建)。 */
-    val CODE_TTL: Duration = Duration.ofMinutes(10)
+    /** 绑定码有效期：改为 7 天，方便家人朋友之间分享使用。 */
+    val CODE_TTL: Duration = Duration.ofDays(7)
 
     fun isExpired(codeExpiresAt: LocalDateTime, now: LocalDateTime): Boolean = !now.isBefore(codeExpiresAt)
 }

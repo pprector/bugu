@@ -336,10 +336,18 @@ fun DashboardScreen(
                 }
                 val stage = fireInstant?.let { EscalationCountdown.stageAt(it, nowInstant) }
                     ?: EscalationCountdown.Stage.BEFORE_T1
-                val remain = fireInstant
-                    ?.let { EscalationCountdown.remainingToNext(it, nowInstant) }
-                    ?.let { d -> "${d.inWholeMinutes} 分 ${(d.inWholeSeconds % 60).coerceAtLeast(0)} 秒" }
-                    .orEmpty()
+                val remainText = fireInstant?.let { fire ->
+                    val isFuture = nowInstant < fire
+                    val duration = if (isFuture) fire - nowInstant else EscalationCountdown.remainingToNext(fire, nowInstant)
+                    val mins = duration.inWholeMinutes
+                    when {
+                        isFuture -> if (mins == 0L) "即将呼唤" else "约 $mins 分钟后呼唤"
+                        stage == EscalationCountdown.Stage.BEFORE_T1 -> "正在呼唤中"
+                        stage == EscalationCountdown.Stage.AFTER_T1 -> "已再推一次，等待响应"
+                        stage == EscalationCountdown.Stage.AFTER_T2 -> "已通知家人协助"
+                        else -> ""
+                    }
+                } ?: ""
                 val stageText = when (stage) {
                     EscalationCountdown.Stage.BEFORE_T1 -> "咕咕守着呢"
                     EscalationCountdown.Stage.AFTER_T1 -> "已再推一次"
@@ -378,7 +386,7 @@ fun DashboardScreen(
                                 append("来自${live.companionName(bonds)} · ")
                                 if (fireDate != null) append(relativeDayLabel(fireDate, today)).append(" ")
                                 append(parseIsoTime(live.fireAt)?.format(TIME_FMT) ?: live.fireAt)
-                                if (stage != EscalationCountdown.Stage.CLOSED) append(" · 距下次呼唤 $remain")
+                                if (remainText.isNotEmpty()) append(" · $remainText")
                             },
                             style = MaterialTheme.typography.bodySmall,
                             color = H.Ink3Strong,
