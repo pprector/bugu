@@ -179,9 +179,9 @@ private fun HistoryCard(entry: HistoryEntry, peerName: String, direction: String
         Column(
             Modifier
                 .fillMaxWidth()
-                .clip(RoundedCornerShape(20.dp))
+                .clip(RoundedCornerShape(16.dp))
                 .background(Color.White)
-                .border(1.dp, H.Hairline, RoundedCornerShape(20.dp))
+                .border(1.dp, H.Hairline, RoundedCornerShape(16.dp))
                 .padding(16.dp),
         ) {
             Row(verticalAlignment = Alignment.CenterVertically) {

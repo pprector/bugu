@@ -544,7 +544,6 @@ private fun AboutContent() {
     var agreement by rememberSaveable { mutableStateOf<String?>(null) }
     RiseIn {
         BuguCard(
-            shape = MaterialTheme.shapes.extraLarge,
             containerColor = H.CoralTint,
             borderColor = H.Coral.copy(alpha = 0.38f),
             contentPadding = PaddingValues(20.dp),

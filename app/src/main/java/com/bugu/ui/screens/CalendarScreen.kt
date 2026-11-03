@@ -256,9 +256,9 @@ fun CalendarScreen(api: GeitaApi, bonds: List<BondDto>, onBack: () -> Unit) {
                             Modifier
                                 .fillMaxWidth()
                                 .padding(bottom = 10.dp)
-                                .clip(RoundedCornerShape(20.dp))
+                                .clip(RoundedCornerShape(16.dp))
                                 .background(Color.White)
-                                .border(1.dp, H.Hairline, RoundedCornerShape(20.dp))
+                                .border(1.dp, H.Hairline, RoundedCornerShape(16.dp))
                                 .padding(horizontal = 18.dp, vertical = 16.dp),
                             verticalAlignment = Alignment.CenterVertically,
                         ) {

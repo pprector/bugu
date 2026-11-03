@@ -147,7 +147,6 @@ fun FriendsScreen(
                     LoadingCard("正在为你准备邀请码…")
                 } else if (invite == null && inviteError) {
                     BuguCard(
-                        shape = MaterialTheme.shapes.extraLarge,
                         contentPadding = PaddingValues(20.dp),
                     ) {
                         Text("邀请码暂时没准备好", style = MaterialTheme.typography.titleMedium, color = H.Ink)
@@ -165,16 +164,11 @@ fun FriendsScreen(
                 } else {
                     invite?.let { inv ->
                         BuguCard(
-                            shape = MaterialTheme.shapes.extraLarge,
                             containerColor = H.CoralTint,
                             borderColor = H.Coral.copy(alpha = 0.38f),
                             contentPadding = PaddingValues(20.dp),
                         ) {
-                            Row(verticalAlignment = Alignment.CenterVertically) {
-                                Text("我的邀请码", style = MaterialTheme.typography.titleLarge, color = H.CoralInk)
-                                Spacer(Modifier.weight(1f))
-                                TagChip(text = "给家人朋友", tint = H.Coral)
-                            }
+                            Text("我的邀请码", style = MaterialTheme.typography.titleLarge, color = H.CoralInk)
                             Spacer(Modifier.size(8.dp))
                             Text(inv.bindCode, style = MaterialTheme.typography.displayMedium, color = H.CoralInk)
                             Spacer(Modifier.size(2.dp))
@@ -228,7 +222,6 @@ fun FriendsScreen(
             // 接受邀请卡
             RiseIn(delayMs = 60) {
                 BuguCard(
-                    shape = MaterialTheme.shapes.extraLarge,
                     contentPadding = PaddingValues(20.dp),
                 ) {
                     Text("接受对方的邀请", style = MaterialTheme.typography.titleLarge, color = H.Ink)
@@ -286,7 +279,6 @@ fun FriendsScreen(
             when {
                 bondsLoading -> LoadingCard("正在同步亲友列表…")
                 bondsError -> BuguCard(
-                    shape = MaterialTheme.shapes.extraLarge,
                     contentPadding = PaddingValues(20.dp),
                 ) {
                     Text("亲友列表没加载出来", style = MaterialTheme.typography.titleMedium, color = H.Ink)
@@ -404,7 +396,6 @@ fun FriendsScreen(
 @Composable
 private fun LoadingCard(text: String) {
     BuguCard(
-        shape = MaterialTheme.shapes.extraLarge,
         contentPadding = PaddingValues(vertical = 28.dp),
     ) {
         Row(
