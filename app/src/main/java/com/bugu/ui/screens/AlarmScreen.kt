@@ -83,7 +83,10 @@ fun AlarmScreen(
     elderMode: Boolean,
     onConfirmed: () -> Unit,
     onSnoozed: () -> Unit,
+    isSelf: Boolean = false,
+    confirmLabel: String = "向右滑动：我已完成",
 ) {
+    val peerLabel = if (isSelf) "自己" else peerName
     // 响铃时钟从当前时刻起走;倒计时 40s 与升级链 T1 对齐(纯展示)
     var countdown by remember { mutableIntStateOf(40) }
     val now = remember { LocalTime.now() }
@@ -149,7 +152,7 @@ fun AlarmScreen(
         Row(verticalAlignment = Alignment.CenterVertically) {
             Row(
                 Modifier
-                    .clip(RoundedCornerShape(999.dp))
+                    .clip(RoundedCornerShape(10.dp))
                     .background(H.CoralTint)
                     .padding(horizontal = 12.dp, vertical = 7.dp),
                 verticalAlignment = Alignment.CenterVertically,
@@ -166,7 +169,7 @@ fun AlarmScreen(
             if (elderMode) {
                 Row(
                     Modifier
-                        .clip(RoundedCornerShape(999.dp))
+                        .clip(RoundedCornerShape(10.dp))
                         .background(H.IndigoTint)
                         .padding(horizontal = 12.dp, vertical = 7.dp),
                     verticalAlignment = Alignment.CenterVertically,
@@ -206,9 +209,9 @@ fun AlarmScreen(
         Column(
             Modifier
                 .fillMaxWidth()
-                .clip(RoundedCornerShape(28.dp))
+                .clip(RoundedCornerShape(16.dp))
                 .background(Color.White)
-                .border(1.dp, H.Hairline, RoundedCornerShape(28.dp))
+                .border(1.dp, H.Hairline, RoundedCornerShape(16.dp))
                 .padding(vertical = 22.dp, horizontal = 18.dp),
             horizontalAlignment = Alignment.CenterHorizontally,
         ) {
@@ -233,12 +236,12 @@ fun AlarmScreen(
             Spacer(Modifier.height(12.dp))
             Row(
                 Modifier
-                    .clip(RoundedCornerShape(999.dp))
+                    .clip(RoundedCornerShape(10.dp))
                     .background(H.CoralTint)
                     .padding(horizontal = 12.dp, vertical = 6.dp),
                 verticalAlignment = Alignment.CenterVertically,
             ) {
-                Text("来自${peerName}的惦记", style = MaterialTheme.typography.titleSmall, color = H.CoralInk)
+                Text("来自${peerLabel}的惦记", style = MaterialTheme.typography.titleSmall, color = H.CoralInk)
             }
             Spacer(Modifier.height(10.dp))
             Text(
@@ -256,15 +259,15 @@ fun AlarmScreen(
             Column(
                 Modifier
                     .fillMaxWidth()
-                    .clip(RoundedCornerShape(24.dp))
+                    .clip(RoundedCornerShape(16.dp))
                     .background(Color.White)
-                    .border(1.dp, H.Hairline, RoundedCornerShape(24.dp))
+                    .border(1.dp, H.Hairline, RoundedCornerShape(16.dp))
                     .padding(16.dp),
             ) {
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Icon(Icons.Outlined.RecordVoiceOver, null, Modifier.size(17.dp), tint = H.Coral)
                     Spacer(Modifier.width(6.dp))
-                    Text("${peerName}的留言", style = MaterialTheme.typography.titleMedium, color = H.Ink)
+                    Text(if (isSelf) "留给自己的话" else "${peerName}的留言", style = MaterialTheme.typography.titleMedium, color = H.Ink)
                     Spacer(Modifier.weight(1f))
                     Text(
                         "00:%02d / 00:15".format((progress * 15).toInt()),
@@ -316,7 +319,7 @@ fun AlarmScreen(
             contentAlignment = Alignment.CenterStart,
         ) {
             Text(
-                "向右滑动：我已起床",
+                confirmLabel,
                 style = MaterialTheme.typography.titleMedium,
                 color = H.Ink2,
                 modifier = Modifier.align(Alignment.Center),
@@ -330,7 +333,7 @@ fun AlarmScreen(
         Row(
             Modifier
                 .fillMaxWidth()
-                .clip(RoundedCornerShape(999.dp))
+                .clip(RoundedCornerShape(14.dp))
                 .background(H.IndigoTint)
                 .clickable(onClick = onSnoozed)
                 .padding(vertical = 15.dp),
@@ -347,7 +350,11 @@ fun AlarmScreen(
             Icon(Icons.Outlined.Info, null, Modifier.size(15.dp), tint = H.Ink3)
             Spacer(Modifier.width(6.dp))
             Text(
-                "确认后，咕咕会把回执告诉${peerName}。若 40 秒未确认，咕咕会再轻轻叫你一次。",
+                if (isSelf) {
+                    "确认后，咕咕会记下这次完成。若 40 秒未确认，咕咕会再轻轻叫你一次。"
+                } else {
+                    "确认后，咕咕会把回执告诉${peerName}。若 40 秒未确认，咕咕会再轻轻叫你一次。"
+                },
                 style = MaterialTheme.typography.bodySmall,
                 color = H.Ink3Strong,
             )

@@ -350,9 +350,9 @@ private fun FeedbackContent(api: GeitaApi) {
                     Box(
                         Modifier
                             .heightIn(min = 44.dp)
-                            .clip(RoundedCornerShape(999.dp))
+                            .clip(RoundedCornerShape(12.dp))
                             .background(if (selected) H.Coral else H.WarmFill)
-                            .border(1.dp, if (selected) H.Coral else H.Hairline, RoundedCornerShape(999.dp))
+                            .border(1.dp, if (selected) H.Coral else H.Hairline, RoundedCornerShape(12.dp))
                             .clickable(enabled = !submitting) { category = key; submitMessage = null }
                             .padding(horizontal = 14.dp),
                         contentAlignment = Alignment.Center,

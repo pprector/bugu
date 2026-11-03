@@ -347,14 +347,14 @@ fun DashboardScreen(
                     EscalationCountdown.Stage.CLOSED -> "今日收口"
                 }
                 RiseIn {
-                    val heroShape = RoundedCornerShape(24.dp)
+                    val heroShape = RoundedCornerShape(16.dp)
                     Column(
                         Modifier
                             .fillMaxWidth()
                             .clip(heroShape)
                             .background(H.CoralTint)
                             .border(1.dp, H.Coral.copy(alpha = 0.38f), heroShape)
-                            .padding(horizontal = 20.dp, vertical = 16.dp),
+                            .padding(horizontal = 18.dp, vertical = 16.dp),
                     ) {
                         Row(verticalAlignment = Alignment.CenterVertically) {
                             Icon(Icons.Outlined.Bolt, null, Modifier.size(18.dp), tint = H.Coral)
@@ -420,15 +420,15 @@ fun DashboardScreen(
                 Column(
                     Modifier
                         .fillMaxWidth()
-                        .clip(RoundedCornerShape(24.dp))
+                        .clip(RoundedCornerShape(16.dp))
                         .background(Color.White)
-                        .border(1.dp, H.Hairline, RoundedCornerShape(24.dp))
+                        .border(1.dp, H.Hairline, RoundedCornerShape(16.dp))
                         .padding(20.dp),
                 ) {
                     Row(verticalAlignment = Alignment.CenterVertically) {
                         Row(
                             Modifier
-                                .clip(RoundedCornerShape(999.dp))
+                                .clip(RoundedCornerShape(10.dp))
                                 .background(syncBg)
                                 .padding(horizontal = 10.dp, vertical = 5.dp),
                             verticalAlignment = Alignment.CenterVertically,
@@ -466,15 +466,15 @@ fun DashboardScreen(
             }
         }
 
-        // 分段切换(白色指示条平滑滑动)
+        // 分段切换(白色指示条平滑滑动，采用 12dp 适度圆角)
         item {
             Box(
                 Modifier
                     .fillMaxWidth()
-                    .clip(RoundedCornerShape(999.dp))
+                    .clip(RoundedCornerShape(12.dp))
                     .background(H.GreyTint)
-                    .border(1.dp, H.Hairline, RoundedCornerShape(999.dp))
-                    .padding(4.dp),
+                    .border(1.dp, H.Hairline, RoundedCornerShape(12.dp))
+                    .padding(3.dp),
             ) {
                 val frac by animateFloatAsState(
                     targetValue = if (tab == 0) 0f else 1f,
@@ -485,7 +485,7 @@ fun DashboardScreen(
                     Modifier
                         .matchParentSize()
                         .graphicsLayer { translationX = frac * size.width / 2f }
-                        .clip(RoundedCornerShape(999.dp))
+                        .clip(RoundedCornerShape(10.dp))
                         .background(Color.White),
                 )
                 Row(Modifier.fillMaxWidth()) {
@@ -519,9 +519,9 @@ fun DashboardScreen(
                     Column(
                         Modifier
                             .fillMaxWidth()
-                            .clip(RoundedCornerShape(20.dp))
+                            .clip(RoundedCornerShape(16.dp))
                             .background(Color.White)
-                            .border(1.dp, H.Hairline, RoundedCornerShape(20.dp))
+                            .border(1.dp, H.Hairline, RoundedCornerShape(16.dp))
                             .padding(vertical = 24.dp),
                         horizontalAlignment = Alignment.CenterHorizontally,
                     ) {
@@ -546,9 +546,9 @@ fun DashboardScreen(
                     Row(
                         Modifier
                             .fillMaxWidth()
-                            .clip(RoundedCornerShape(20.dp))
+                            .clip(RoundedCornerShape(16.dp))
                             .background(Color.White)
-                            .border(1.dp, H.Hairline, RoundedCornerShape(20.dp))
+                            .border(1.dp, H.Hairline, RoundedCornerShape(16.dp))
                             .padding(horizontal = 20.dp, vertical = 16.dp),
                         verticalAlignment = Alignment.CenterVertically,
                     ) {
@@ -585,7 +585,7 @@ fun DashboardScreen(
                         if (r.status == "PENDING") {
                             Box(
                                 Modifier
-                                    .clip(RoundedCornerShape(999.dp))
+                                    .clip(RoundedCornerShape(10.dp))
                                     .background(if (r.id in busyIds) H.GreyTint else H.WarmFill)
                                     .clickable(enabled = r.id !in busyIds) { cancel(r) }
                                     .heightIn(min = 44.dp)
@@ -609,9 +609,9 @@ fun DashboardScreen(
                     Column(
                         Modifier
                             .fillMaxWidth()
-                            .clip(RoundedCornerShape(20.dp))
+                            .clip(RoundedCornerShape(16.dp))
                             .background(Color.White)
-                            .border(1.dp, H.Hairline, RoundedCornerShape(20.dp))
+                            .border(1.dp, H.Hairline, RoundedCornerShape(16.dp))
                             .padding(vertical = 24.dp),
                         horizontalAlignment = Alignment.CenterHorizontally,
                     ) {
@@ -637,9 +637,9 @@ fun DashboardScreen(
                     Column(
                         Modifier
                             .fillMaxWidth()
-                            .clip(RoundedCornerShape(20.dp))
+                            .clip(RoundedCornerShape(16.dp))
                             .background(Color.White)
-                            .border(1.dp, H.Hairline, RoundedCornerShape(20.dp))
+                            .border(1.dp, H.Hairline, RoundedCornerShape(16.dp))
                             .padding(horizontal = 20.dp, vertical = 14.dp),
                     ) {
                         Row(verticalAlignment = Alignment.CenterVertically) {
@@ -693,9 +693,9 @@ fun DashboardScreen(
                 Row(
                     Modifier
                         .fillMaxWidth()
-                        .clip(RoundedCornerShape(20.dp))
+                        .clip(RoundedCornerShape(16.dp))
                         .background(Color.White)
-                        .border(1.dp, H.Hairline, RoundedCornerShape(20.dp))
+                        .border(1.dp, H.Hairline, RoundedCornerShape(16.dp))
                         .clickable(onClick = onOpenHistory)
                         .padding(horizontal = 20.dp, vertical = 14.dp),
                     verticalAlignment = Alignment.CenterVertically,
@@ -742,9 +742,9 @@ fun DashboardScreen(
             Row(
                 Modifier
                     .fillMaxWidth()
-                    .clip(RoundedCornerShape(20.dp))
+                    .clip(RoundedCornerShape(16.dp))
                     .background(Color.White)
-                    .border(1.dp, H.Hairline, RoundedCornerShape(20.dp))
+                    .border(1.dp, H.Hairline, RoundedCornerShape(16.dp))
                     .clickable(onClick = onOpenCalendar)
                     .semantics { contentDescription = "查看未来 7 天日程" }
                     .padding(vertical = 14.dp, horizontal = 8.dp),
@@ -801,7 +801,7 @@ fun DashboardScreen(
 private fun AckChip(text: String, tint: Color, enabled: Boolean = true, onClick: () -> Unit) {
     Box(
         Modifier
-            .clip(RoundedCornerShape(999.dp))
+            .clip(RoundedCornerShape(14.dp))
             .background(tint.copy(alpha = if (enabled) 0.10f else 0.05f))
             .clickable(enabled = enabled, onClick = onClick)
             .heightIn(min = 44.dp)
@@ -818,7 +818,7 @@ private fun SegTab(text: String, selected: Boolean, modifier: Modifier = Modifie
     val tint by animateColorAsState(if (selected) H.CoralInk else H.Ink2, tween(200), label = "segTint")
     Box(
         modifier
-            .clip(RoundedCornerShape(999.dp))
+            .clip(RoundedCornerShape(12.dp))
             .clickable(onClick = onClick)
             .padding(vertical = 11.dp),
         contentAlignment = Alignment.Center,

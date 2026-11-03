@@ -56,6 +56,7 @@ class AlarmScheduler(
                 putExtra(EXTRA_IDEMPOTENCY_KEY, it.idempotencyKey())
                 putExtra(EXTRA_VOICE, it.voiceEnabled)
                 putExtra(EXTRA_KIND, it.kind)
+                putExtra(EXTRA_SELF, it.selfReminder)
             }
         }
         return PendingIntent.getBroadcast(
@@ -75,5 +76,6 @@ class AlarmScheduler(
         const val EXTRA_IDEMPOTENCY_KEY = "idempotencyKey"
         const val EXTRA_VOICE = "voice"
         const val EXTRA_KIND = "kind"
+        const val EXTRA_SELF = "selfReminder"
     }
 }

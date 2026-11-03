@@ -24,6 +24,8 @@ data class PlannedAlarm(
     val kind: String,
     /** 互叫闹钟的幂等键 target = 本端用户(即 incoming 视图的 receiverId) */
     val targetUserId: Long,
+    /** 自惦记(发起人=接收人):响铃页用「自己」而不是「惦记你的人」 */
+    val selfReminder: Boolean = false,
 ) {
     /** E7-S1 上报幂等键(与服务端 saveFires 规则一致,MUTUAL 带 target)。 */
     fun idempotencyKey(): String =
@@ -55,6 +57,7 @@ object ReminderPlanner {
                     voiceEnabled = reminder.voiceEnabled,
                     kind = reminder.kind,
                     targetUserId = reminder.receiverId,
+                    selfReminder = reminder.creatorId == reminder.receiverId,
                 )
             }
             .distinctBy { it.fireId }

@@ -208,7 +208,7 @@ fun TagChip(
     val content = accessibleTagColor(tint)
     Row(
         modifier = modifier
-            .clip(RoundedCornerShape(999.dp))
+            .clip(RoundedCornerShape(8.dp))
             .background(if (solid) content else tint.copy(alpha = 0.10f))
             .padding(horizontal = 9.dp, vertical = 4.dp),
         verticalAlignment = Alignment.CenterVertically,
@@ -351,21 +351,21 @@ fun FieldError(message: String?, modifier: Modifier = Modifier) {
     }
 }
 
-// 品牌渐变主按钮
+// 品牌渐变主按钮:克制的 14dp 圆角,避免过度膨胀的胶囊药丸感
 @Composable
 fun GradientButton(
     text: String,
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
-    height: Dp = 56.dp,
+    height: Dp = 50.dp,
     enabled: Boolean = true,
     loading: Boolean = false,
 ) {
     Box(
         modifier = modifier
             .height(height)
-            .clip(RoundedCornerShape(999.dp))
-            .background(Brush.linearGradient(listOf(H.CoralLight, H.Coral)))
+            .clip(RoundedCornerShape(14.dp))
+            .background(H.Coral)
             .alpha(if (enabled) 1f else 0.45f)
             .clickable(role = androidx.compose.ui.semantics.Role.Button, enabled = enabled && !loading, onClick = onClick),
         contentAlignment = Alignment.Center,
@@ -401,10 +401,10 @@ fun EmptyState(
     Column(
         modifier
             .fillMaxWidth()
-            .clip(RoundedCornerShape(26.dp))
+            .clip(RoundedCornerShape(16.dp))
             .background(Color.White)
-            .border(1.dp, H.Hairline, RoundedCornerShape(26.dp))
-            .padding(horizontal = 24.dp, vertical = 34.dp),
+            .border(1.dp, H.Hairline, RoundedCornerShape(16.dp))
+            .padding(horizontal = 24.dp, vertical = 32.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
     ) {
         GuguBird(

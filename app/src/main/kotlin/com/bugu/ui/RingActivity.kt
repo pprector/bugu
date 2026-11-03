@@ -52,6 +52,16 @@ class RingActivity : ComponentActivity() {
         val idempotencyKey = intent.getStringExtra(AlarmScheduler.EXTRA_IDEMPOTENCY_KEY) ?: ""
         val voice = intent.getBooleanExtra(AlarmScheduler.EXTRA_VOICE, false)
         val reminderId = intent.getLongExtra(AlarmScheduler.EXTRA_REMINDER_ID, -1)
+        val selfReminder = intent.getBooleanExtra(AlarmScheduler.EXTRA_SELF, false)
+        val kind = intent.getStringExtra(AlarmScheduler.EXTRA_KIND) ?: "ONCE"
+        // 打卡文案跟随内容:只有起床/叫醒类才是「我已起床」,其余提醒是「我已完成」
+        // 注意不要用单字「醒」——「提醒自己」会被误判成起床
+        val wakeupWords = listOf("起床", "叫醒", "唤醒", "睡醒", "醒醒", "醒来")
+        val confirmLabel = if (kind == "MUTUAL_ALARM" || wakeupWords.any { title.contains(it) }) {
+            "向右滑动：我已起床"
+        } else {
+            "向右滑动：我已完成"
+        }
 
         val api = ApiFactory.create(this)
         val stores = PrefsStores(this)
@@ -131,6 +141,8 @@ class RingActivity : ComponentActivity() {
                     elderMode = false,
                     onConfirmed = { ack("DONE") },
                     onSnoozed = { ack("SNOOZE", snoozeMinutes = 15) },
+                    isSelf = selfReminder,
+                    confirmLabel = confirmLabel,
                 )
             }
         }

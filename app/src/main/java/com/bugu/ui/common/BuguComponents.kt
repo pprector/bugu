@@ -46,11 +46,11 @@ import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
 import com.bugu.ui.theme.H
 
-/** 标准品牌白卡：白底 + 20dp 圆角 + 1dp hairline；可选点击态。 */
+/** 标准品牌白卡：白底 + 16dp 细腻圆角 + 1dp hairline；可选点击态。 */
 @Composable
 fun BuguCard(
     modifier: Modifier = Modifier,
-    shape: Shape = RoundedCornerShape(20.dp),
+    shape: Shape = RoundedCornerShape(16.dp),
     containerColor: Color = Color.White,
     borderColor: Color = H.Hairline,
     contentPadding: PaddingValues = PaddingValues(16.dp),
@@ -103,7 +103,7 @@ fun BuguButton(
     }
     val background = if (style == BuguButtonStyle.Danger) H.RoseInk else H.WarmFill
     val foreground = if (style == BuguButtonStyle.Danger) Color.White else H.Ink2
-    val shape = RoundedCornerShape(999.dp)
+    val shape = RoundedCornerShape(14.dp)
     Box(
         modifier
             .height(height)
@@ -205,9 +205,9 @@ fun BuguDialog(
                 modifier
                     .widthIn(max = 360.dp)
                     .fillMaxWidth()
-                    .clip(RoundedCornerShape(24.dp))
+                    .clip(RoundedCornerShape(20.dp))
                     .background(Color.White)
-                    .border(1.dp, H.Hairline, RoundedCornerShape(24.dp))
+                    .border(1.dp, H.Hairline, RoundedCornerShape(20.dp))
                     .padding(20.dp),
             ) {
                 Row(verticalAlignment = Alignment.CenterVertically) {

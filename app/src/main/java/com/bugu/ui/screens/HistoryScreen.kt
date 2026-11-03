@@ -155,7 +155,7 @@ fun HistoryScreen(
                             Spacer(Modifier.width(8.dp))
                             Box(
                                 Modifier
-                                    .clip(RoundedCornerShape(999.dp))
+                                    .clip(RoundedCornerShape(8.dp))
                                     .background(H.GreyTint)
                                     .padding(horizontal = 10.dp, vertical = 3.dp),
                             ) {

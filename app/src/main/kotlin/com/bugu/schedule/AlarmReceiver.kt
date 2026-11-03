@@ -31,6 +31,7 @@ class AlarmReceiver : BroadcastReceiver() {
                     putExtra(AlarmScheduler.EXTRA_IDEMPOTENCY_KEY, intent.getStringExtra(AlarmScheduler.EXTRA_IDEMPOTENCY_KEY) ?: "")
                     putExtra(AlarmScheduler.EXTRA_VOICE, intent.getBooleanExtra(AlarmScheduler.EXTRA_VOICE, false))
                     putExtra(AlarmScheduler.EXTRA_KIND, intent.getStringExtra(AlarmScheduler.EXTRA_KIND) ?: "ONCE")
+                    putExtra(AlarmScheduler.EXTRA_SELF, intent.getBooleanExtra(AlarmScheduler.EXTRA_SELF, false))
                     addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
                 }
                 context.startActivity(ring)

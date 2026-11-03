@@ -296,9 +296,9 @@ fun ProfileScreen(
             Row(
                 Modifier
                     .fillMaxWidth()
-                    .clip(RoundedCornerShape(22.dp))
+                    .clip(RoundedCornerShape(16.dp))
                     .background(Color.White)
-                    .border(1.dp, H.Hairline, RoundedCornerShape(22.dp))
+                    .border(1.dp, H.Hairline, RoundedCornerShape(16.dp))
                     .clickable(onClick = onOpenFriends)
                     .padding(16.dp),
                 verticalAlignment = Alignment.CenterVertically,
@@ -322,7 +322,6 @@ fun ProfileScreen(
                         Text("绑定家人朋友,开始互相惦记", style = MaterialTheme.typography.bodySmall, color = H.Ink3Strong)
                     }
                 }
-                TagChip(text = if (active.isNotEmpty()) "管理" else "添加亲友", tint = H.Coral)
                 Icon(Icons.AutoMirrored.Filled.KeyboardArrowRight, null, Modifier.size(18.dp), tint = H.Ink3)
             }
         }
@@ -334,9 +333,9 @@ fun ProfileScreen(
             Row(
                 Modifier
                     .fillMaxWidth()
-                    .clip(RoundedCornerShape(22.dp))
+                    .clip(RoundedCornerShape(16.dp))
                     .background(Color.White)
-                    .border(1.dp, H.Hairline, RoundedCornerShape(22.dp))
+                    .border(1.dp, H.Hairline, RoundedCornerShape(16.dp))
                     .padding(horizontal = 16.dp, vertical = 18.dp),
                 horizontalArrangement = Arrangement.SpaceEvenly,
             ) {
@@ -365,9 +364,9 @@ fun ProfileScreen(
         Row(
             Modifier
                 .fillMaxWidth()
-                .clip(RoundedCornerShape(22.dp))
+                .clip(RoundedCornerShape(16.dp))
                 .background(Color.White)
-                .border(1.dp, H.Hairline, RoundedCornerShape(22.dp))
+                .border(1.dp, H.Hairline, RoundedCornerShape(16.dp))
                 .padding(horizontal = 16.dp, vertical = 14.dp),
             verticalAlignment = Alignment.CenterVertically,
         ) {
@@ -407,9 +406,9 @@ fun ProfileScreen(
         Row(
             Modifier
                 .fillMaxWidth()
-                .clip(RoundedCornerShape(22.dp))
+                .clip(RoundedCornerShape(16.dp))
                 .background(Color.White)
-                .border(1.dp, H.Hairline, RoundedCornerShape(22.dp))
+                .border(1.dp, H.Hairline, RoundedCornerShape(16.dp))
                 .clickable { confirmLogout = true }
                 .padding(16.dp),
             verticalAlignment = Alignment.CenterVertically,
@@ -473,9 +472,9 @@ private fun MenuRow(
     Row(
         Modifier
             .fillMaxWidth()
-            .clip(RoundedCornerShape(22.dp))
+            .clip(RoundedCornerShape(16.dp))
             .background(Color.White)
-            .border(1.dp, H.Hairline, RoundedCornerShape(22.dp))
+            .border(1.dp, H.Hairline, RoundedCornerShape(16.dp))
             .clickable(onClick = onClick)
             .padding(16.dp),
         verticalAlignment = Alignment.CenterVertically,

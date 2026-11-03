@@ -90,9 +90,9 @@ fun CompanionScreen(
                 Column(
                     Modifier
                         .fillMaxWidth()
-                        .clip(RoundedCornerShape(22.dp))
+                        .clip(RoundedCornerShape(16.dp))
                         .background(Color.White)
-                        .border(1.dp, H.Hairline, RoundedCornerShape(22.dp))
+                        .border(1.dp, H.Hairline, RoundedCornerShape(16.dp))
                         .padding(vertical = 32.dp),
                     horizontalAlignment = Alignment.CenterHorizontally,
                 ) {
@@ -105,9 +105,9 @@ fun CompanionScreen(
                 Column(
                     Modifier
                         .fillMaxWidth()
-                        .clip(RoundedCornerShape(22.dp))
+                        .clip(RoundedCornerShape(16.dp))
                         .background(Color.White)
-                        .border(1.dp, H.Hairline, RoundedCornerShape(22.dp))
+                        .border(1.dp, H.Hairline, RoundedCornerShape(16.dp))
                         .padding(vertical = 24.dp),
                     horizontalAlignment = Alignment.CenterHorizontally,
                 ) {
@@ -139,9 +139,9 @@ fun CompanionScreen(
                             Modifier
                                 .fillMaxWidth()
                                 .padding(vertical = 5.dp)
-                                .clip(RoundedCornerShape(22.dp))
+                                .clip(RoundedCornerShape(16.dp))
                                 .background(Color.White)
-                                .border(1.dp, H.Hairline, RoundedCornerShape(22.dp))
+                                .border(1.dp, H.Hairline, RoundedCornerShape(16.dp))
                                 .clickable(role = Role.Button, onClickLabel = "查看${bond.displayName}的陪伴详情") { onOpenBond(bond.id) }
                                 .padding(16.dp),
                             verticalAlignment = Alignment.CenterVertically,
@@ -256,9 +256,9 @@ fun CompanionDetailScreen(
             Column(
                 Modifier
                     .fillMaxWidth()
-                    .clip(RoundedCornerShape(22.dp))
+                    .clip(RoundedCornerShape(16.dp))
                     .background(Color.White)
-                    .border(1.dp, H.Hairline, RoundedCornerShape(22.dp))
+                    .border(1.dp, H.Hairline, RoundedCornerShape(16.dp))
                     .padding(16.dp),
             ) {
                 Text("为 $name 设一条惦记", style = MaterialTheme.typography.titleMedium, color = H.Ink)
@@ -274,8 +274,8 @@ fun CompanionDetailScreen(
         Spacer(Modifier.height(8.dp))
         if (error) {
             Column(
-                Modifier.fillMaxWidth().clip(RoundedCornerShape(20.dp)).background(Color.White)
-                    .border(1.dp, H.Hairline, RoundedCornerShape(20.dp)).padding(vertical = 24.dp),
+                Modifier.fillMaxWidth().clip(RoundedCornerShape(16.dp)).background(Color.White)
+                    .border(1.dp, H.Hairline, RoundedCornerShape(16.dp)).padding(vertical = 24.dp),
                 horizontalAlignment = Alignment.CenterHorizontally,
             ) {
                 Text("惦记与设置加载失败", style = MaterialTheme.typography.titleMedium, color = H.Ink)
@@ -288,8 +288,8 @@ fun CompanionDetailScreen(
             }
         } else if (reminders!!.isEmpty()) {
             Column(
-                Modifier.fillMaxWidth().clip(RoundedCornerShape(20.dp)).background(Color.White)
-                    .border(1.dp, H.Hairline, RoundedCornerShape(20.dp)).padding(vertical = 24.dp),
+                Modifier.fillMaxWidth().clip(RoundedCornerShape(16.dp)).background(Color.White)
+                    .border(1.dp, H.Hairline, RoundedCornerShape(16.dp)).padding(vertical = 24.dp),
                 horizontalAlignment = Alignment.CenterHorizontally,
             ) {
                 Text("还没有双方的惦记", style = MaterialTheme.typography.titleMedium, color = H.Ink)
@@ -303,9 +303,9 @@ fun CompanionDetailScreen(
                     Modifier
                         .fillMaxWidth()
                         .padding(vertical = 5.dp)
-                        .clip(RoundedCornerShape(20.dp))
+                        .clip(RoundedCornerShape(16.dp))
                         .background(Color.White)
-                        .border(1.dp, H.Hairline, RoundedCornerShape(20.dp))
+                        .border(1.dp, H.Hairline, RoundedCornerShape(16.dp))
                         .padding(horizontal = 16.dp, vertical = 14.dp),
                     verticalAlignment = Alignment.CenterVertically,
                 ) {
@@ -335,9 +335,9 @@ fun CompanionDetailScreen(
         Row(
             Modifier
                 .fillMaxWidth()
-                .clip(RoundedCornerShape(22.dp))
+                .clip(RoundedCornerShape(16.dp))
                 .background(Color.White)
-                .border(1.dp, H.Hairline, RoundedCornerShape(22.dp))
+                .border(1.dp, H.Hairline, RoundedCornerShape(16.dp))
                 .padding(horizontal = 16.dp, vertical = 14.dp),
             verticalAlignment = Alignment.CenterVertically,
         ) {
@@ -367,9 +367,10 @@ fun CompanionDetailScreen(
                 )
             }
         }
+
         Spacer(Modifier.height(12.dp))
         BuguCard(
-            shape = RoundedCornerShape(20.dp),
+            shape = RoundedCornerShape(16.dp),
             contentPadding = androidx.compose.foundation.layout.PaddingValues(0.dp),
         ) {
             Row(

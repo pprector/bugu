@@ -283,37 +283,21 @@ fun LoginScreen(onLoggedIn: (UserDto) -> Unit) {
             Box(Modifier.fillMaxWidth(), contentAlignment = Alignment.Center) {
                 Box(
                     Modifier
-                        .size(92.dp)
-                        .background(Color(0xFFFFEDE6), CircleShape),
+                        .size(88.dp)
+                        .background(H.WarmFill, CircleShape),
                     contentAlignment = Alignment.Center,
                 ) {
                     GuguBird(
                         guguMood,
-                        Modifier.size(80.dp),
+                        Modifier.size(72.dp),
                         onTap = { guguLine = GUGU_IDLE_LINES.random() },
                         pokeLines = listOf(guguLine),
-                        bubbleOffset = (-46).dp,
+                        bubbleOffset = (-40).dp,
                     )
-                    Box(
-                        Modifier
-                            .align(Alignment.BottomEnd)
-                            .size(26.dp)
-                            .clip(CircleShape)
-                            .background(Color.White),
-                        contentAlignment = Alignment.Center,
-                    ) {
-                        Waveform(
-                            bars = listOf(0.4f, 0.8f, 0.5f, 0.9f, 0.45f),
-                            color = H.Mint,
-                            modifier = Modifier
-                                .height(14.dp)
-                                .width(16.dp),
-                        )
-                    }
                 }
             }
 
-            Spacer(Modifier.height(14.dp))
+            Spacer(Modifier.height(18.dp))
             Text(
                 "欢迎来到布谷",
                 style = MaterialTheme.typography.headlineMedium,
@@ -321,114 +305,106 @@ fun LoginScreen(onLoggedIn: (UserDto) -> Unit) {
                 modifier = Modifier.fillMaxWidth(),
                 textAlign = TextAlign.Center,
             )
-            Spacer(Modifier.height(10.dp))
-            Box(Modifier.fillMaxWidth(), contentAlignment = Alignment.Center) {
-                Row(
-                    Modifier
-                        .clip(RoundedCornerShape(999.dp))
-                        .background(Color.White)
-                        .border(1.dp, H.Hairline, RoundedCornerShape(999.dp))
-                        .padding(horizontal = 14.dp, vertical = 7.dp),
-                    verticalAlignment = Alignment.CenterVertically,
-                ) {
-                    Box(Modifier.size(6.dp).clip(CircleShape).background(H.Coral))
-                    Spacer(Modifier.width(7.dp))
-                    Text("让每一份惦记 · 都有回音", style = MaterialTheme.typography.titleSmall, color = H.Ink2)
-                }
-            }
+            Spacer(Modifier.height(6.dp))
+            Text(
+                "让每一份惦记 · 都有回音",
+                style = MaterialTheme.typography.bodyMedium,
+                color = H.Ink3Strong,
+                modifier = Modifier.fillMaxWidth(),
+                textAlign = TextAlign.Center,
+            )
 
-            Spacer(Modifier.height(24.dp))
+            Spacer(Modifier.height(28.dp))
 
             // 表单卡片
             Column(
                 Modifier
                     .fillMaxWidth()
-                    .clip(RoundedCornerShape(24.dp))
+                    .clip(RoundedCornerShape(16.dp))
                     .background(Color.White)
-                    .border(1.dp, H.Hairline, RoundedCornerShape(24.dp))
-                    .padding(18.dp),
+                    .border(1.dp, H.Hairline, RoundedCornerShape(16.dp))
+                    .padding(20.dp),
             ) {
                 Text("手机号码", style = MaterialTheme.typography.titleMedium, color = H.Ink)
-                Spacer(Modifier.height(10.dp))
-                Row(verticalAlignment = Alignment.CenterVertically) {
+                Spacer(Modifier.height(8.dp))
+                Row(
+                    Modifier
+                        .fillMaxWidth()
+                        .clip(RoundedCornerShape(12.dp))
+                        .background(H.WarmFill)
+                        .border(1.dp, if (phone.isNotEmpty()) H.Hairline else Color.Transparent, RoundedCornerShape(12.dp))
+                        .padding(horizontal = 14.dp, vertical = 13.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    Text("+86", style = MaterialTheme.typography.titleMedium, color = H.Ink)
+                    Spacer(Modifier.width(12.dp))
                     Box(
                         Modifier
-                            .clip(RoundedCornerShape(14.dp))
-                            .background(H.WarmFill)
-                            .padding(horizontal = 14.dp, vertical = 15.dp),
-                    ) {
-                        Text("+86", style = MaterialTheme.typography.titleMedium, color = H.Ink)
-                    }
-                    Spacer(Modifier.width(10.dp))
-                    Box(
-                        Modifier
-                            .weight(1f)
-                            .clip(RoundedCornerShape(14.dp))
-                            .background(H.WarmFill)
-                            .border(1.dp, if (phone.isNotEmpty()) H.Coral else Color.Transparent, RoundedCornerShape(14.dp))
-                            .padding(horizontal = 14.dp, vertical = 14.dp),
-                    ) {
-                        BasicInput(
-                            value = phone,
-                            onValue = { digits ->
-                                val wasFull = phoneOk
-                                phone = digits
-                                phoneError = null
-                                formError = null
-                                // 输满 11 位自动跳到验证码,减少一次点击
-                                if (!wasFull && digits.length == 11) runCatching { codeFocus.requestFocus() }
-                            },
-                            hint = "请输入手机号码",
-                            number = true,
-                            maxDigits = 11,
-                            imeAction = ImeAction.Next,
-                            onImeAction = { runCatching { codeFocus.requestFocus() } },
-                            display = ::formatPhone,
-                        )
-                    }
+                            .width(1.dp)
+                            .height(18.dp)
+                            .background(H.Hairline),
+                    )
+                    Spacer(Modifier.width(12.dp))
+                    BasicInput(
+                        value = phone,
+                        onValue = { digits ->
+                            val wasFull = phoneOk
+                            phone = digits
+                            phoneError = null
+                            formError = null
+                            if (!wasFull && digits.length == 11) runCatching { codeFocus.requestFocus() }
+                        },
+                        hint = "请输入手机号码",
+                        number = true,
+                        maxDigits = 11,
+                        imeAction = ImeAction.Next,
+                        onImeAction = { runCatching { codeFocus.requestFocus() } },
+                        display = ::formatPhone,
+                        modifier = Modifier.weight(1f),
+                    )
                 }
                 FieldError(phoneError)
 
                 Spacer(Modifier.height(16.dp))
                 Text("短信验证码", style = MaterialTheme.typography.titleMedium, color = H.Ink)
-                Spacer(Modifier.height(10.dp))
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    Row(
-                        Modifier
+                Spacer(Modifier.height(8.dp))
+                Row(
+                    Modifier
+                        .fillMaxWidth()
+                        .clip(RoundedCornerShape(12.dp))
+                        .background(H.WarmFill)
+                        .border(1.dp, if (code.isNotEmpty()) H.Hairline else Color.Transparent, RoundedCornerShape(12.dp))
+                        .padding(start = 14.dp, end = 6.dp, top = 6.dp, bottom = 6.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    BasicInput(
+                        value = code,
+                        onValue = { digits ->
+                            code = digits
+                            codeError = null
+                            formError = null
+                            if (digits.length == 6) requestLogin()
+                        },
+                        hint = "请输入6位验证码",
+                        number = true,
+                        maxDigits = 6,
+                        imeAction = ImeAction.Done,
+                        onImeAction = { requestLogin() },
+                        otp = true,
+                        modifier = Modifier
                             .weight(1f)
-                            .clip(RoundedCornerShape(14.dp))
-                            .background(H.WarmFill)
-                            .padding(horizontal = 12.dp, vertical = 10.dp),
-                        verticalAlignment = Alignment.CenterVertically,
-                    ) {
-                        BasicInput(
-                            value = code,
-                            onValue = { digits ->
-                                code = digits
-                                codeError = null
-                                formError = null
-                                // 输满 6 位自动提交,免一次点击
-                                if (digits.length == 6) requestLogin()
-                            },
-                            hint = "请输入6位验证码",
-                            number = true,
-                            maxDigits = 6,
-                            imeAction = ImeAction.Done,
-                            onImeAction = { requestLogin() },
-                            otp = true,
-                            modifier = Modifier.focusRequester(codeFocus),
-                        )
-                    }
-                    Spacer(Modifier.width(10.dp))
+                            .focusRequester(codeFocus),
+                    )
+                    Spacer(Modifier.width(8.dp))
                     Box(
                         Modifier
-                            .clip(RoundedCornerShape(999.dp))
-                            .background(if (countdown > 0 || !phoneOk || sending) H.GreyTint else H.CoralTint)
+                            .clip(RoundedCornerShape(8.dp))
+                            .background(if (countdown > 0 || !phoneOk || sending) H.WarmFill else H.CoralTint)
                             .then(
                                 if (countdown > 0 || !phoneOk || sending) Modifier
                                 else Modifier.clickable { requestSendCode() },
                             )
-                            .padding(horizontal = 14.dp, vertical = 12.dp),
+                            .padding(horizontal = 12.dp, vertical = 9.dp),
                     ) {
                         Text(
                             when {
@@ -437,13 +413,13 @@ fun LoginScreen(onLoggedIn: (UserDto) -> Unit) {
                                 else -> "获取验证码"
                             },
                             style = MaterialTheme.typography.titleSmall,
-                            color = if (countdown > 0 || !phoneOk || sending) H.Ink3 else H.Coral,
+                            color = if (countdown > 0 || !phoneOk || sending) H.Ink3 else H.CoralInk,
                         )
                     }
                 }
                 FieldError(codeError)
 
-                Spacer(Modifier.height(20.dp))
+                Spacer(Modifier.height(22.dp))
                 GradientButton(
                     text = if (loggingIn) "登录中…" else "登录 / 注册",
                     onClick = { requestLogin() },
@@ -451,7 +427,6 @@ fun LoginScreen(onLoggedIn: (UserDto) -> Unit) {
                     loading = loggingIn,
                     modifier = Modifier.fillMaxWidth(),
                 )
-                // 服务端/网络/协议错误:内联在按钮下方,键盘弹出时仍可见
                 FieldError(formError)
             }
 
@@ -892,16 +867,16 @@ fun PermissionsScreen(onBack: () -> Unit, onDone: (Boolean) -> Unit) {
             items.forEachIndexed { index, item ->
                 RiseIn(delayMs = index * 40) {
                     BuguCard(
-                        shape = MaterialTheme.shapes.extraLarge,
+                        shape = RoundedCornerShape(16.dp),
                         contentPadding = PaddingValues(16.dp),
                         onClick = item.onClick,
                     ) {
                         Row(verticalAlignment = Alignment.CenterVertically) {
                             Box(
                                 Modifier
-                                    .size(46.dp)
-                                    .clip(RoundedCornerShape(16.dp))
-                                    .background(H.CoralTint),
+                                    .size(44.dp)
+                                    .clip(RoundedCornerShape(12.dp))
+                                    .background(H.WarmFill),
                                 contentAlignment = Alignment.Center,
                             ) {
                                 Icon(item.icon, null, Modifier.size(22.dp), tint = H.Coral)

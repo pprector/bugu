@@ -653,9 +653,9 @@ fun CreateReminderScreen(
                 Column(
                     Modifier
                         .fillMaxWidth()
-                        .clip(RoundedCornerShape(20.dp))
+                        .clip(RoundedCornerShape(16.dp))
                         .background(Color.White)
-                        .border(1.dp, H.Hairline, RoundedCornerShape(20.dp))
+                        .border(1.dp, H.Hairline, RoundedCornerShape(16.dp))
                         .padding(16.dp),
                 ) {
                     Row(
@@ -696,9 +696,9 @@ fun CreateReminderScreen(
             Column(
                 Modifier
                     .fillMaxWidth()
-                    .clip(RoundedCornerShape(24.dp))
+                    .clip(RoundedCornerShape(16.dp))
                     .background(Color.White)
-                    .border(1.dp, H.Hairline, RoundedCornerShape(24.dp)),
+                    .border(1.dp, H.Hairline, RoundedCornerShape(16.dp)),
             ) {
                 FlashRow(tick = titleTick) {
                     Column(
@@ -868,19 +868,19 @@ fun CreateReminderScreen(
             Spacer(Modifier.height(96.dp))
         }
 
-        // AI 悬浮入口:右下常驻,点开半屏浮层
+        // AI 悬浮入口:右下常驻,点开半屏浮层 (采用现代克制 14dp 圆角微阴影，消除 999dp 胶囊感)
         Row(
             Modifier
                 .align(Alignment.BottomEnd)
                 .padding(end = 20.dp, bottom = 14.dp)
-                .clip(RoundedCornerShape(999.dp))
+                .clip(RoundedCornerShape(14.dp))
                 .background(Color.White)
-                .border(1.dp, H.Coral.copy(alpha = 0.45f), RoundedCornerShape(999.dp))
+                .border(1.dp, H.Coral.copy(alpha = 0.35f), RoundedCornerShape(14.dp))
                 .clickable { assistError = ""; showAssist = true }
-                .padding(horizontal = 14.dp, vertical = 10.dp),
+                .padding(horizontal = 14.dp, vertical = 9.dp),
             verticalAlignment = Alignment.CenterVertically,
         ) {
-            Icon(Icons.Rounded.AutoAwesome, "咕咕帮填", Modifier.size(17.dp), tint = H.CoralInk)
+            Icon(Icons.Rounded.AutoAwesome, "咕咕帮填", Modifier.size(16.dp), tint = H.CoralInk)
             Spacer(Modifier.width(6.dp))
             Text("咕咕帮填", style = MaterialTheme.typography.titleSmall, color = H.CoralInk)
         }
@@ -1097,10 +1097,10 @@ fun CreateReminderScreen(
                     Row(
                         Modifier
                             .fillMaxWidth()
-                            .clip(RoundedCornerShape(15.dp))
+                            .clip(RoundedCornerShape(14.dp))
                             .background(Color.White)
-                            .border(1.dp, H.Coral, RoundedCornerShape(15.dp))
-                            .padding(horizontal = 13.dp, vertical = 11.dp),
+                            .border(1.dp, H.Coral.copy(alpha = 0.6f), RoundedCornerShape(14.dp))
+                            .padding(horizontal = 14.dp, vertical = 12.dp),
                         verticalAlignment = Alignment.CenterVertically,
                     ) {
                         Icon(Icons.Rounded.Mic, null, Modifier.size(16.dp), tint = H.Coral)
@@ -1197,7 +1197,7 @@ fun CreateReminderScreen(
                         Modifier
                             .weight(1f)
                             .heightIn(min = 48.dp)
-                            .clip(RoundedCornerShape(999.dp))
+                            .clip(RoundedCornerShape(14.dp))
                             .background(if (voiceAvailable) H.CoralTint else H.GreyTint)
                             .clickable(enabled = voiceAvailable && !parsing) { startVoice() }
                             .padding(horizontal = 14.dp),
@@ -1561,7 +1561,7 @@ private fun ChoiceChip(text: String, selected: Boolean, onClick: () -> Unit) {
     Box(
         Modifier
             .heightIn(min = 44.dp)
-            .clip(RoundedCornerShape(999.dp))
+            .clip(RoundedCornerShape(12.dp))
             .background(if (selected) H.Coral else H.WarmFill)
             .selectable(selected = selected, role = Role.RadioButton, onClick = onClick)
             .padding(horizontal = 16.dp),
@@ -1583,8 +1583,8 @@ private fun MiniAction(text: String, onClick: () -> Unit, color: Color) {
     Box(
         Modifier
             .heightIn(min = 44.dp)
-            .clip(RoundedCornerShape(999.dp))
-            .border(1.dp, color.copy(alpha = 0.45f), RoundedCornerShape(999.dp))
+            .clip(RoundedCornerShape(12.dp))
+            .border(1.dp, color.copy(alpha = 0.45f), RoundedCornerShape(12.dp))
             .clickable(onClick = onClick)
             .padding(horizontal = 16.dp),
         contentAlignment = Alignment.Center,
