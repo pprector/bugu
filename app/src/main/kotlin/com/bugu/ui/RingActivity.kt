@@ -21,33 +21,37 @@ import androidx.activity.ComponentActivity
 import androidx.activity.SystemBarStyle
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
-import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.key
 import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.runtime.LaunchedEffect
 import androidx.lifecycle.lifecycleScope
 import com.bugu.ApiFactory
 import com.bugu.R
 import com.bugu.client.api.AckRequest
+import com.bugu.client.api.GeitaApi
 import com.bugu.client.api.GeitaApiException
+import com.bugu.schedule.AlarmNotifications
 import com.bugu.schedule.AlarmScheduler
-import com.bugu.schedule.PrefsStores
 import com.bugu.schedule.PendingReport
+import com.bugu.schedule.PrefsStores
 import com.bugu.schedule.ReminderSync
 import com.bugu.schedule.ReportQueue
 import com.bugu.schedule.ReportWorker
 import com.bugu.schedule.WakeupCopyCache
 import com.bugu.ui.screens.AlarmScreen
 import com.bugu.ui.theme.BuguTheme
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
 import java.time.LocalDate
 import java.util.Locale
 
 /**
- * 全屏响铃(FR-06/FR-07):复用应用内 [AlarmScreen] 布谷视觉。
- * TTS 播叫醒语(缓存优先,断网回落标题);立即上报触发事实,
- * 失败入重试队列(WorkManager 退避);409 = 已错过,静默关闭。
+ * 全屏响铃(FR-06/FR-07):同一时间多条 fire 只保留一个 Activity。
+ * 新 fire 通过 singleTask onNewIntent 入队;当前 fire 确认/稍后后自动切下一条,
+ * 全部处理完才 finish;声音、震动、WakeLock、音频焦点和通知按当前 fire 统一收尾。
  */
 class RingActivity : ComponentActivity() {
 
@@ -58,18 +62,19 @@ class RingActivity : ComponentActivity() {
     private var audioManager: AudioManager? = null
     private var audioFocusRequest: AudioFocusRequest? = null
     private var ringingStopped = false
-    private var guardFireId: Long? = null
+
+    private lateinit var api: GeitaApi
+    private lateinit var reportQueue: ReportQueue
+    private lateinit var copyCache: WakeupCopyCache
+    private lateinit var scope: CoroutineScope
+
+    private val pending = ArrayDeque<RingPayload>()
+    private var currentPayload by mutableStateOf<RingPayload?>(null)
+    private var currentCopyLine by mutableStateOf<String?>(null)
+    private var handled = false
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        val fireId = intent.getLongExtra(AlarmScheduler.EXTRA_FIRE_ID, -1)
-        // 同一 fire 可能同时被 startActivity 和全屏通知拉起;只保留一个实例,避免双份铃声/WakeLock。
-        if (fireId >= 0 && !activeFireIds.add(fireId)) {
-            Log.i("BuguRing", "duplicate RingActivity ignored fire=$fireId")
-            finish()
-            return
-        }
-        if (fireId >= 0) guardFireId = fireId
         // 锁屏直达:亮屏、越过 keyguard 展示,必要时请求用户解锁。
         if (Build.VERSION.SDK_INT >= 27) {
             setShowWhenLocked(true)
@@ -86,28 +91,102 @@ class RingActivity : ComponentActivity() {
             statusBarStyle = SystemBarStyle.light(android.graphics.Color.TRANSPARENT, android.graphics.Color.TRANSPARENT),
             navigationBarStyle = SystemBarStyle.light(android.graphics.Color.TRANSPARENT, android.graphics.Color.TRANSPARENT),
         )
-        // 全屏通知已经把用户带到响铃页,移除常驻通知;若全屏被拦截,通知仍可点击进入。
-        com.bugu.schedule.AlarmNotifications.cancel(this, fireId)
-        val title = intent.getStringExtra(AlarmScheduler.EXTRA_TITLE) ?: "到点了"
-        val idempotencyKey = intent.getStringExtra(AlarmScheduler.EXTRA_IDEMPOTENCY_KEY) ?: ""
-        val voice = intent.getBooleanExtra(AlarmScheduler.EXTRA_VOICE, false)
-        val reminderId = intent.getLongExtra(AlarmScheduler.EXTRA_REMINDER_ID, -1)
-        val selfReminder = intent.getBooleanExtra(AlarmScheduler.EXTRA_SELF, false)
-        val kind = intent.getStringExtra(AlarmScheduler.EXTRA_KIND) ?: "ONCE"
-        // 打卡文案跟随内容:只有起床/叫醒类才是「我已起床」,其余提醒是「我已完成」
-        // 注意不要用单字「醒」——「提醒自己」会被误判成起床
+
+        api = ApiFactory.create(this)
+        reportQueue = ReportQueue(PrefsStores(this).reportQueue)
+        copyCache = WakeupCopyCache(PrefsStores(this).wakeupCopy)
+        scope = lifecycleScope
+
+        setContent {
+            BuguTheme {
+                val payload = currentPayload
+                if (payload != null) {
+                    key(payload.fireId) {
+                        RingContent(
+                            payload = payload,
+                            copyLine = currentCopyLine,
+                            onConfirmed = { ack("DONE") },
+                            onSnoozed = { ack("SNOOZE", snoozeMinutes = 15) },
+                        )
+                    }
+                }
+            }
+        }
+
+        val payload = readPayload(intent)
+        if (payload != null) {
+            startRinging(payload)
+        } else {
+            finish()
+        }
+    }
+
+    override fun onNewIntent(intent: android.content.Intent) {
+        super.onNewIntent(intent)
+        setIntent(intent)
+        val payload = readPayload(intent) ?: return
+        if (payload.fireId == currentPayload?.fireId ||
+            pending.any { it.fireId == payload.fireId }
+        ) {
+            Log.i("BuguRing", "duplicate fire ignored fire=${payload.fireId}")
+            return
+        }
+        if (currentPayload == null) {
+            startRinging(payload)
+        } else {
+            // 不打断当前响铃;等当前确认/稍后后再切下一条。
+            pending.addLast(payload)
+            Log.i("BuguRing", "fire queued fire=${payload.fireId} pending=${pending.size}")
+        }
+    }
+
+    @Composable
+    private fun RingContent(
+        payload: RingPayload,
+        copyLine: String?,
+        onConfirmed: () -> Unit,
+        onSnoozed: () -> Unit,
+    ) {
         val wakeupWords = listOf("起床", "叫醒", "唤醒", "睡醒", "醒醒", "醒来")
-        val confirmLabel = if (kind == "MUTUAL_ALARM" || wakeupWords.any { title.contains(it) }) {
+        val confirmLabel = if (payload.kind == "MUTUAL_ALARM" || wakeupWords.any { payload.title.contains(it) }) {
             "向右滑动：我已起床"
         } else {
             "向右滑动：我已完成"
         }
+        LaunchedEffect(payload.fireId) {
+            currentCopyLine = copyCache.hit(payload.reminderId, LocalDate.now().toString()) ?: payload.title
+            if (payload.fireId >= 0) {
+                attempt {
+                    api.reportFire(payload.fireId, payload.idempotencyKey, "LOCAL_ALARM")
+                }.onFailure { e ->
+                    if (e is GeitaApiException && e.code == "CONFLICT") {
+                        reportQueue.markMissed(payload.fireId)
+                    } else {
+                        reportQueue.enqueue(PendingReport(payload.fireId, payload.idempotencyKey, "LOCAL_ALARM"))
+                        ReportWorker.schedule(this@RingActivity, payload.fireId)
+                    }
+                }
+            }
+        }
+        AlarmScreen(
+            peerName = "惦记你的人",
+            title = payload.title,
+            copyLine = copyLine,
+            kindLabel = "布谷来叫你啦",
+            elderMode = false,
+            onConfirmed = onConfirmed,
+            onSnoozed = onSnoozed,
+            isSelf = payload.selfReminder,
+            confirmLabel = confirmLabel,
+        )
+    }
 
-        val api = ApiFactory.create(this)
-        val stores = PrefsStores(this)
-        val queue = ReportQueue(stores.reportQueue)
-        val copyCache = WakeupCopyCache(stores.wakeupCopy)
-        val scope = this.lifecycleScope
+    private fun startRinging(payload: RingPayload) {
+        AlarmNotifications.cancel(this, payload.fireId)
+        currentPayload = payload
+        currentCopyLine = copyCache.hit(payload.reminderId, LocalDate.now().toString()) ?: payload.title
+        ringingStopped = false
+        handled = false
 
         val audioAttributes = AudioAttributes.Builder()
             .setUsage(AudioAttributes.USAGE_ALARM)
@@ -117,7 +196,6 @@ class RingActivity : ComponentActivity() {
         requestAudioFocus(audioAttributes)
         acquireWakeLock()
         startVibration()
-        // 到点持续响「布谷」,走闹钟声道;确认/稍后/退出时会显式 stop/release。
         bell = runCatching {
             MediaPlayer().apply {
                 setAudioAttributes(audioAttributes)
@@ -131,82 +209,52 @@ class RingActivity : ComponentActivity() {
             }
         }.onFailure { Log.e("BuguRing", "bell start failed", it) }.getOrNull()
 
-        // 防抖:确认/小憩只发一次
-        var handled = false
-        fun ack(action: String, snoozeMinutes: Int? = null) {
-            if (handled) return
-            handled = true
-            // 先停本地声音/震动/锁,再发网络请求;确认后立即安静。
-            stopRinging()
-            scope.launch {
-                val hint = if (action == "SNOOZE" && reminderId >= 0) {
-                    ReminderSync.snoozeHint(reminderId)
-                } else {
-                    null
-                }
-                runCatching { api.ack(AckRequest(fireId, action, snoozeMinutes = snoozeMinutes)) }
-                    .onSuccess {
-                        // ack 后统一重排:REPEAT 用服务端推进后的 fireAt,SNOOZE 用 hint 覆盖新 fireAt。
-                        runCatching { ReminderSync.sync(this@RingActivity, api, hint) }
-                    }
-                finish()
-            }
-        }
-
-        // TTS 初始化(系统引擎,离线可播)
-        var speakText: String? = null
-        if (voice) {
+        if (payload.voiceEnabled) {
+            val line = currentCopyLine
             tts = TextToSpeech(this) { status ->
                 if (!ringingStopped && status == TextToSpeech.SUCCESS) {
                     tts?.language = Locale.CHINA
-                    speakText?.let { tts?.speak(it, TextToSpeech.QUEUE_FLUSH, null, "bugu-ring") }
+                    line?.let { tts?.speak(it, TextToSpeech.QUEUE_FLUSH, null, "bugu-ring") }
                 }
             }
         }
+    }
 
-        setContent {
-            BuguTheme {
-                var copyLine by remember { mutableStateOf<String?>(null) }
-
-                // 互叫:当日叫醒语缓存优先(次日预取后断网可播),未命中回落标题
-                LaunchedEffect(Unit) {
-                    val today = LocalDate.now().toString()
-                    copyLine = copyCache.hit(reminderId, today) ?: title
-                    if (voice) {
-                        speakText = copyLine
-                    }
-                    // 立即上报触发事实(E7):失败入队重试
-                    attempt {
-                        api.reportFire(fireId, idempotencyKey, "LOCAL_ALARM")
-                    }.onFailure { e ->
-                        if (e is GeitaApiException && e.code == "CONFLICT") {
-                            queue.markMissed(fireId) // 已收口/已错过
-                        } else {
-                            queue.enqueue(PendingReport(fireId, idempotencyKey, "LOCAL_ALARM"))
-                            ReportWorker.schedule(this@RingActivity, fireId)
-                        }
-                    }
-                }
-
-                AlarmScreen(
-                    peerName = "惦记你的人",
-                    title = title,
-                    copyLine = copyLine,
-                    kindLabel = "布谷来叫你啦",
-                    elderMode = false,
-                    onConfirmed = { ack("DONE") },
-                    onSnoozed = { ack("SNOOZE", snoozeMinutes = 15) },
-                    isSelf = selfReminder,
-                    confirmLabel = confirmLabel,
-                )
+    private fun ack(action: String, snoozeMinutes: Int? = null) {
+        val payload = currentPayload ?: return
+        if (handled) return
+        handled = true
+        // 先停本地声音/震动/锁,再发网络请求;确认后立即安静并切下一条。
+        stopRinging()
+        scope.launch {
+            val hint = if (action == "SNOOZE" && payload.reminderId >= 0) {
+                ReminderSync.snoozeHint(payload.reminderId)
+            } else {
+                null
             }
+            runCatching { api.ack(AckRequest(payload.fireId, action, snoozeMinutes = snoozeMinutes)) }
+                .onSuccess {
+                    // ack 后统一重排:REPEAT 用服务端推进后的 fireAt,SNOOZE 用 hint 覆盖新 fireAt。
+                    runCatching { ReminderSync.sync(this@RingActivity, api, hint) }
+                }
+            advance()
+        }
+    }
+
+    private fun advance() {
+        stopRinging()
+        val next = pending.removeFirstOrNull()
+        if (next == null) {
+            finish()
+        } else {
+            Log.i("BuguRing", "advance to fire=${next.fireId}")
+            startRinging(next)
         }
     }
 
     override fun onDestroy() {
         stopRinging()
-        guardFireId?.let { activeFireIds.remove(it) }
-        guardFireId = null
+        pending.clear()
         super.onDestroy()
     }
 
@@ -217,7 +265,6 @@ class RingActivity : ComponentActivity() {
             .setAcceptsDelayedFocusGain(false)
             .setWillPauseWhenDucked(false)
             .setOnAudioFocusChangeListener({ change ->
-                // 闹钟优先:被抢占/闪避时也不主动调低音量或停止;仅记录供诊断。
                 when (change) {
                     AudioManager.AUDIOFOCUS_LOSS,
                     AudioManager.AUDIOFOCUS_LOSS_TRANSIENT ->
@@ -250,7 +297,6 @@ class RingActivity : ComponentActivity() {
             getSystemService(Vibrator::class.java)
         }
         vibrator = current
-        // repeat=0 表示从头循环整段波形,直到 cancel。
         val effect = VibrationEffect.createWaveform(longArrayOf(0, 600, 400, 600, 1_200), 0)
         runCatching { current?.vibrate(effect) }
             .onFailure { Log.w("BuguRing", "vibrate failed", it) }
@@ -276,17 +322,35 @@ class RingActivity : ComponentActivity() {
             audioManager?.let { manager -> runCatching { manager.abandonAudioFocusRequest(request) } }
         }
         audioFocusRequest = null
-        com.bugu.schedule.AlarmNotifications.cancel(
-            this,
-            intent.getLongExtra(AlarmScheduler.EXTRA_FIRE_ID, -1),
-        )
+        currentPayload?.let { AlarmNotifications.cancel(this, it.fireId) }
     }
 
-    private companion object {
-        /** 同 fire 去重;不同 fire 仍各自独立响铃。 */
-        val activeFireIds = java.util.concurrent.ConcurrentHashMap.newKeySet<Long>()
+    private fun readPayload(intent: android.content.Intent): RingPayload? {
+        val fireId = intent.getLongExtra(AlarmScheduler.EXTRA_FIRE_ID, -1)
+        if (fireId < 0) return null
+        return RingPayload(
+            fireId = fireId,
+            reminderId = intent.getLongExtra(AlarmScheduler.EXTRA_REMINDER_ID, -1),
+            title = intent.getStringExtra(AlarmScheduler.EXTRA_TITLE) ?: "到点了",
+            fireAt = intent.getStringExtra(AlarmScheduler.EXTRA_FIRE_AT) ?: "",
+            idempotencyKey = intent.getStringExtra(AlarmScheduler.EXTRA_IDEMPOTENCY_KEY) ?: "",
+            voiceEnabled = intent.getBooleanExtra(AlarmScheduler.EXTRA_VOICE, false),
+            kind = intent.getStringExtra(AlarmScheduler.EXTRA_KIND) ?: "ONCE",
+            selfReminder = intent.getBooleanExtra(AlarmScheduler.EXTRA_SELF, false),
+        )
     }
 }
+
+private data class RingPayload(
+    val fireId: Long,
+    val reminderId: Long,
+    val title: String,
+    val fireAt: String,
+    val idempotencyKey: String,
+    val voiceEnabled: Boolean,
+    val kind: String,
+    val selfReminder: Boolean,
+)
 
 /** suspend 友好 try/catch(CancellationException 透传)。 */
 internal suspend fun <T> attempt(block: suspend () -> T): Result<T> =

@@ -1,5 +1,11 @@
 package com.bugu.ui.screens
 
+import android.Manifest
+import android.app.NotificationManager
+import android.content.Intent
+import android.content.pm.PackageManager
+import android.os.Build
+import android.provider.Settings
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.Spring
@@ -32,12 +38,14 @@ import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
 import androidx.compose.material.icons.outlined.Alarm
 import androidx.compose.material.icons.outlined.Bolt
 import androidx.compose.material.icons.outlined.History
+import androidx.compose.material.icons.outlined.Notifications
 import androidx.compose.material.icons.outlined.Refresh
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
@@ -52,12 +60,16 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalLifecycleOwner
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import androidx.core.content.ContextCompat
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.LifecycleEventObserver
 import com.bugu.client.api.AckRequest
 import com.bugu.client.api.BondDto
 import com.bugu.client.api.GeitaApi
@@ -67,6 +79,7 @@ import com.bugu.client.api.ReminderView
 import com.bugu.client.domain.EscalationCountdown
 import com.bugu.client.domain.ReminderDisplay
 import com.bugu.client.domain.ReminderDisplayState
+import com.bugu.schedule.AlarmNotifications
 import com.bugu.schedule.ReminderSync
 import com.bugu.ui.common.EmptyState
 import com.bugu.ui.common.GuguBird
@@ -105,6 +118,25 @@ fun DashboardScreen(
 ) {
     val scope = rememberCoroutineScope()
     val context = LocalContext.current
+    val notificationManager = remember { context.getSystemService(NotificationManager::class.java) }
+    var notificationRevision by remember { mutableIntStateOf(0) }
+    val lifecycleOwner = LocalLifecycleOwner.current
+    DisposableEffect(lifecycleOwner) {
+        val observer = LifecycleEventObserver { _, event ->
+            if (event == Lifecycle.Event.ON_RESUME) notificationRevision++
+        }
+        lifecycleOwner.lifecycle.addObserver(observer)
+        onDispose { lifecycleOwner.lifecycle.removeObserver(observer) }
+    }
+    val notificationsEnabled = remember(notificationRevision) {
+        val permissionGranted = Build.VERSION.SDK_INT < 33 ||
+            ContextCompat.checkSelfPermission(context, Manifest.permission.POST_NOTIFICATIONS) ==
+            PackageManager.PERMISSION_GRANTED
+        val channel = notificationManager?.getNotificationChannel(AlarmNotifications.CHANNEL_ID)
+        permissionGranted &&
+            notificationManager?.areNotificationsEnabled() == true &&
+            (channel == null || channel.importance != NotificationManager.IMPORTANCE_NONE)
+    }
     var my by remember { mutableStateOf<List<ReminderView>?>(null) } // null = 首载中
     var incoming by remember { mutableStateOf<List<ReminderView>?>(null) }
     var current by remember { mutableStateOf<ReminderView?>(null) }
@@ -240,6 +272,43 @@ fun DashboardScreen(
         contentPadding = PaddingValues(start = 20.dp, end = 20.dp, top = 12.dp, bottom = 24.dp),
         verticalArrangement = Arrangement.spacedBy(12.dp),
     ) {
+        if (!notificationsEnabled) {
+            item {
+                Row(
+                    Modifier
+                        .fillMaxWidth()
+                        .clip(RoundedCornerShape(16.dp))
+                        .background(H.RoseTint)
+                        .clickable {
+                            runCatching {
+                                context.startActivity(
+                                    Intent(Settings.ACTION_APP_NOTIFICATION_SETTINGS)
+                                        .putExtra(Settings.EXTRA_APP_PACKAGE, context.packageName),
+                                )
+                            }
+                        }
+                        .padding(horizontal = 14.dp, vertical = 12.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    Icon(Icons.Outlined.Notifications, null, Modifier.size(22.dp), tint = H.Rose)
+                    Spacer(Modifier.width(10.dp))
+                    Column(Modifier.weight(1f)) {
+                        Text(
+                            "通知权限未开启",
+                            style = MaterialTheme.typography.titleSmall,
+                            color = H.RoseInk,
+                        )
+                        Text(
+                            "锁屏/后台到点可能收不到全屏提醒，点这里去系统设置开启",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = H.RoseInk,
+                        )
+                    }
+                    Icon(Icons.AutoMirrored.Filled.KeyboardArrowRight, null, Modifier.size(18.dp), tint = H.Rose)
+                }
+            }
+        }
+
         // 顶部标题:咕咕生活位 + 时辰问候
         item {
             val hour = now.hour
