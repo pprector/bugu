@@ -48,6 +48,8 @@ class RingActivity : ComponentActivity() {
             navigationBarStyle = SystemBarStyle.light(android.graphics.Color.TRANSPARENT, android.graphics.Color.TRANSPARENT),
         )
         val fireId = intent.getLongExtra(AlarmScheduler.EXTRA_FIRE_ID, -1)
+        // 全屏通知已经把用户带到响铃页,移除常驻通知;若全屏被拦截,通知仍可点击进入。
+        com.bugu.schedule.AlarmNotifications.cancel(this, fireId)
         val title = intent.getStringExtra(AlarmScheduler.EXTRA_TITLE) ?: "到点了"
         val idempotencyKey = intent.getStringExtra(AlarmScheduler.EXTRA_IDEMPOTENCY_KEY) ?: ""
         val voice = intent.getBooleanExtra(AlarmScheduler.EXTRA_VOICE, false)
@@ -152,6 +154,7 @@ class RingActivity : ComponentActivity() {
         bell?.release()
         bell = null
         tts?.shutdown()
+        com.bugu.schedule.AlarmNotifications.cancel(this, intent.getLongExtra(AlarmScheduler.EXTRA_FIRE_ID, -1))
         super.onDestroy()
     }
 }
