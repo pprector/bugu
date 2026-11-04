@@ -16,12 +16,20 @@ import java.time.LocalDateTime
 object ReminderSync {
 
     /**
-     * SNOOZE 的端侧新 fireAt。服务端 ack 的 ReminderView 仍返回原 reminder.fireAt,
-     * 不含新 snooze fire 的时刻,故端侧以 ack 本地时间 +15min 近似;服务端实际时间可能差几秒。
+     * SNOOZE 的新 fireAt:优先取服务端 ack 返回的 nextFireAt。
+     * 仅当服务端尚未部署新契约(无 nextFireAt)时,才走 [legacySnoozeHint] 的本地 +15 分钟回退。
      */
     data class SnoozeHint(val reminderId: Long, val fireAtIso: String)
 
-    fun snoozeHint(reminderId: Long, minutes: Long = 15): SnoozeHint =
+    fun snoozeHint(reminderId: Long, fireAtIso: String): SnoozeHint =
+        SnoozeHint(reminderId = reminderId, fireAtIso = fireAtIso)
+
+    /**
+     * 兼容旧服务端回退:旧版 ack 不返回 nextFireAt,端侧只能按本地确认时间 +15 分钟近似。
+     * 服务端 V17 部署后应走 [snoozeHint];保留此路径避免旧环境 snooze 排期断裂。
+     */
+    @Deprecated("服务端 ack 已返回 nextFireAt;仅在未部署新契约时回退使用")
+    fun legacySnoozeHint(reminderId: Long, minutes: Long = 15): SnoozeHint =
         SnoozeHint(
             reminderId = reminderId,
             fireAtIso = LocalDateTime.now().plusMinutes(minutes).withNano(0).toString(),
@@ -68,8 +76,8 @@ object ReminderSync {
 
     /**
      * 唯一的端侧重排入口:
-     * - SNOOZE 通过 [snoozeHint] 覆盖服务端未返回的新 fireAt;
-     * - REPEAT 直接使用服务端推进后的 reminder.fireAt;
+     * - SNOOZE 通过 [SnoozeHint] 覆盖服务端未返回的新 fireAt(服务端新契约下该值来自 ack.nextFireAt);
+     * - REPEAT 直接使用服务端推进后的 reminder.fireAt(与 ack.nextFireAt 同源);
      * - ACKED/CANCELED/MISSED 不会进入 Planner(WAITING 过滤),周期同步不会复活。
      */
     suspend fun sync(

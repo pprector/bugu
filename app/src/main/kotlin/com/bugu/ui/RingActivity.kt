@@ -227,14 +227,16 @@ class RingActivity : ComponentActivity() {
         // 先停本地声音/震动/锁,再发网络请求;确认后立即安静并切下一条。
         stopRinging()
         scope.launch {
-            val hint = if (action == "SNOOZE" && payload.reminderId >= 0) {
-                ReminderSync.snoozeHint(payload.reminderId)
-            } else {
-                null
-            }
             runCatching { api.ack(AckRequest(payload.fireId, action, snoozeMinutes = snoozeMinutes)) }
-                .onSuccess {
-                    // ack 后统一重排:REPEAT 用服务端推进后的 fireAt,SNOOZE 用 hint 覆盖新 fireAt。
+                .onSuccess { ackView ->
+                    // SNOOZE 优先用服务端 ack 返回的 nextFireAt;旧服务端无该字段时才回退 +15min。
+                    val hint = if (action == "SNOOZE" && payload.reminderId >= 0) {
+                        ackView.nextFireAt?.let { ReminderSync.snoozeHint(payload.reminderId, it) }
+                            ?: ReminderSync.legacySnoozeHint(payload.reminderId)
+                    } else {
+                        null
+                    }
+                    // REPEAT 使用服务端列表推进后的 fireAt(与 ack.nextFireAt 同源),不做本地推算。
                     runCatching { ReminderSync.sync(this@RingActivity, api, hint) }
                 }
             advance()

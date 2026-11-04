@@ -206,7 +206,7 @@ fun DashboardScreen(
         scope.launch {
             busyIds = busyIds + r.id
             try {
-                api.ack(
+                val ackView = api.ack(
                     AckRequest(
                         fireId = fireId,
                         action = action,
@@ -214,8 +214,14 @@ fun DashboardScreen(
                         snoozeMinutes = if (action == "SNOOZE") 15 else null,
                     ),
                 )
-                // 与响铃页共用同一重排入口:REPEAT 取服务端下一天,SNOOZE 用本地 hint 覆盖。
-                val hint = if (action == "SNOOZE") ReminderSync.snoozeHint(r.id) else null
+                // 与响铃页共用同一重排入口:SNOOZE 优先用服务端 ack.nextFireAt,旧服务端才回退 +15min;
+                // REPEAT 使用服务端列表推进后的 fireAt(与 ack.nextFireAt 同源),不做本地推算。
+                val hint = if (action == "SNOOZE") {
+                    ackView.nextFireAt?.let { ReminderSync.snoozeHint(r.id, it) }
+                        ?: ReminderSync.legacySnoozeHint(r.id)
+                } else {
+                    null
+                }
                 runCatching { ReminderSync.sync(context, api, hint) }
                 notice = if (action == "DONE") "已完成「${r.title}」" else if (action == "SNOOZE") "15 分钟后咕咕再叫你" else "已告诉${r.companionName(bonds)}这会儿不方便"
                 refresh()
