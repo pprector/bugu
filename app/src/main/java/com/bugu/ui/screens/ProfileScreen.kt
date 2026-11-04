@@ -123,7 +123,8 @@ fun ProfileScreen(
             val mine = api.myReminders()
             val incoming = api.incomingReminders()
             val now = java.time.LocalDate.now()
-            val doneThisMonth = (mine + incoming).count { r ->
+            // 自惦记同时出现在 mine/incoming;跨列表统计按 id 去重,避免本月完成数翻倍。
+            val doneThisMonth = (mine + incoming).distinctBy { it.id }.count { r ->
                 r.status == "ACKED" && parseIsoTime(r.fireAt)?.let {
                     it.year == now.year && it.monthValue == now.monthValue
                 } == true

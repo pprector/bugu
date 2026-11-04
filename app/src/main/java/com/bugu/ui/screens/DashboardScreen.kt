@@ -194,10 +194,12 @@ fun DashboardScreen(
     // 派生数据:首页只处理「仍待响应」的惦记,已结束统一进历史
     val myList = my.orEmpty().sortedBy { it.fireAt }
     val incomingList = incoming.orEmpty().sortedBy { it.fireAt }
+    // 自惦记会同时出现在 mine/incoming;跨列表统计必须按提醒 id 去重,与历史页口径一致。
+    val allReminders = (myList + incomingList).distinctBy { it.id }
     val myActive = myList.filter { ReminderDisplay.actionable(it.status) }
     val incomingActive = incomingList.filter { ReminderDisplay.actionable(it.status) }
-    val activeAll = myActive + incomingActive
-    val endedCount = (myList.size + incomingList.size) - activeAll.size
+    val activeAll = allReminders.filter { ReminderDisplay.actionable(it.status) }
+    val endedCount = allReminders.size - activeAll.size
     val loading = my == null || incoming == null
     val today = LocalDate.now()
     val todayCount = activeAll.count { parseIsoTime(it.fireAt)?.toLocalDate() == today }
