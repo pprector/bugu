@@ -87,10 +87,10 @@ fun AlarmScreen(
     confirmLabel: String = "向右滑动：我已完成",
 ) {
     val peerLabel = if (isSelf) "自己" else peerName
-    // 响铃时钟从当前时刻起走;倒计时 40s 与升级链 T1 对齐(纯展示)
+    // 响铃时钟从当前时刻起走;按秒累加,格式化为时分(此前按分钟初值每秒 +1,导致时钟快 60 倍)
     var countdown by remember { mutableIntStateOf(40) }
     val now = remember { LocalTime.now() }
-    var clockSec by remember { mutableIntStateOf(now.hour * 60 + now.minute) }
+    var clockSec by remember { mutableIntStateOf(now.hour * 3600 + now.minute * 60 + now.second) }
     LaunchedEffect(Unit) {
         while (true) {
             delay(1000)
@@ -98,7 +98,7 @@ fun AlarmScreen(
             clockSec++
         }
     }
-    val clockText = "%02d:%02d".format(clockSec / 60 % 24, clockSec % 60)
+    val clockText = "%02d:%02d".format(clockSec / 3600 % 24, clockSec / 60 % 60)
 
     // 语音播放
     var playing by remember { mutableStateOf(false) }
