@@ -236,6 +236,7 @@ fun AppRoot() {
     // 登录态就绪后拉绑定关系(1v1)并同步端侧精确闹钟
     LaunchedEffect(user?.id) {
         if (user != null) {
+            ReminderSync.schedulePeriodic(context)
             loadBonds()
             // FR-07:把我接收的待响应提醒注册为 AlarmManager 精确闹钟(推送之外的第二保险)
             runCatching { ReminderSync.sync(context, api) }

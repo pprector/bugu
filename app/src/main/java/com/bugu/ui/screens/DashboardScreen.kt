@@ -182,6 +182,9 @@ fun DashboardScreen(
                         snoozeMinutes = if (action == "SNOOZE") 15 else null,
                     ),
                 )
+                // 与响铃页共用同一重排入口:REPEAT 取服务端下一天,SNOOZE 用本地 hint 覆盖。
+                val hint = if (action == "SNOOZE") ReminderSync.snoozeHint(r.id) else null
+                runCatching { ReminderSync.sync(context, api, hint) }
                 notice = if (action == "DONE") "已完成「${r.title}」" else if (action == "SNOOZE") "15 分钟后咕咕再叫你" else "已告诉${r.companionName(bonds)}这会儿不方便"
                 refresh()
             } catch (e: GeitaApiException) {

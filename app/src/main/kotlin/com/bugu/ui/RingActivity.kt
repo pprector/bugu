@@ -34,6 +34,7 @@ import com.bugu.client.api.GeitaApiException
 import com.bugu.schedule.AlarmScheduler
 import com.bugu.schedule.PrefsStores
 import com.bugu.schedule.PendingReport
+import com.bugu.schedule.ReminderSync
 import com.bugu.schedule.ReportQueue
 import com.bugu.schedule.ReportWorker
 import com.bugu.schedule.WakeupCopyCache
@@ -138,7 +139,16 @@ class RingActivity : ComponentActivity() {
             // 先停本地声音/震动/锁,再发网络请求;确认后立即安静。
             stopRinging()
             scope.launch {
+                val hint = if (action == "SNOOZE" && reminderId >= 0) {
+                    ReminderSync.snoozeHint(reminderId)
+                } else {
+                    null
+                }
                 runCatching { api.ack(AckRequest(fireId, action, snoozeMinutes = snoozeMinutes)) }
+                    .onSuccess {
+                        // ack 后统一重排:REPEAT 用服务端推进后的 fireAt,SNOOZE 用 hint 覆盖新 fireAt。
+                        runCatching { ReminderSync.sync(this@RingActivity, api, hint) }
+                    }
                 finish()
             }
         }

@@ -2,6 +2,7 @@ package com.bugu.schedule
 
 import android.content.Context
 import kotlinx.serialization.builtins.ListSerializer
+import kotlinx.serialization.builtins.MapSerializer
 import kotlinx.serialization.builtins.serializer
 import kotlinx.serialization.json.Json
 /** SharedPreferences 实现的三类本地存储:已注册闹钟 / 上报重试队列 / 叫醒语缓存。 */
@@ -37,6 +38,24 @@ class PrefsStores(context: Context) {
         prefs.edit().clear().apply()
     }
 
+    /**
+     * SNOOZE 覆盖表:reminderId → 端侧应注册的 snooze fireAt。
+     * 服务端 ack 视图不返回新 fire 的 fireAt,周期同步必须用它覆盖旧 fireAt,否则会误删本地 snooze 闹钟。
+     */
+    val snoozeOverrides: LoadableStore<Map<Long, String>> = object : LoadableStore<Map<Long, String>> {
+        override fun load(): Map<Long, String> =
+            prefs.getString(KEY_SNOOZE_OVERRIDES, null)?.let {
+                json.decodeFromString(MapSerializer(Long.serializer(), String.serializer()), it)
+            } ?: emptyMap()
+
+        override fun save(items: Map<Long, String>) {
+            prefs.edit().putString(
+                KEY_SNOOZE_OVERRIDES,
+                json.encodeToString(MapSerializer(Long.serializer(), String.serializer()), items),
+            ).apply()
+        }
+    }
+
     val wakeupCopy: WakeupCopyCache.WakeupCopyStore = object : WakeupCopyCache.WakeupCopyStore {
         override fun get(key: String): String? = prefs.getString("$KEY_COPY_PREFIX$key", null)
         override fun put(key: String, content: String) {
@@ -63,6 +82,7 @@ class PrefsStores(context: Context) {
         const val KEY_SCHEDULED = "scheduled_alarms"
         const val KEY_QUEUE = "report_queue"
         const val KEY_INCOMING = "last_incoming"
+        const val KEY_SNOOZE_OVERRIDES = "snooze_overrides"
         const val KEY_COPY_PREFIX = "wakeup_copy:"
     }
 }
