@@ -51,6 +51,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
@@ -66,6 +67,7 @@ import com.bugu.client.api.ReminderView
 import com.bugu.client.domain.EscalationCountdown
 import com.bugu.client.domain.ReminderDisplay
 import com.bugu.client.domain.ReminderDisplayState
+import com.bugu.schedule.ReminderSync
 import com.bugu.ui.common.EmptyState
 import com.bugu.ui.common.GuguBird
 import com.bugu.ui.common.GuguMood
@@ -102,6 +104,7 @@ fun DashboardScreen(
     onGoCreate: () -> Unit,
 ) {
     val scope = rememberCoroutineScope()
+    val context = LocalContext.current
     var my by remember { mutableStateOf<List<ReminderView>?>(null) } // null = 首载中
     var incoming by remember { mutableStateOf<List<ReminderView>?>(null) }
     var current by remember { mutableStateOf<ReminderView?>(null) }
@@ -150,6 +153,8 @@ fun DashboardScreen(
             busyIds = busyIds + r.id
             try {
                 api.cancelReminder(r.id)
+                // 服务端取消成功后立即移除本地 PendingIntent 与缓存,避免到点残留响铃。
+                ReminderSync.removeReminder(context, r.id, r.fireId)
                 notice = "已撤销「${r.title}」"
                 refresh()
             } catch (e: GeitaApiException) {

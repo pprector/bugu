@@ -32,6 +32,11 @@ class ReportQueue(private val store: ReportQueueStore) {
 
     fun all(): List<PendingReport> = store.load()
 
+    /** 401/登出:清空旧账号的补报队列。 */
+    fun clear() {
+        store.save(emptyList())
+    }
+
     /** 成功:移除。 */
     fun markDone(fireId: Long) {
         store.save(store.load().filterNot { it.fireId == fireId })

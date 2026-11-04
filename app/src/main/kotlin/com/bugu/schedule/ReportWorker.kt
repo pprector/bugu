@@ -28,11 +28,17 @@ class ReportWorker(context: Context, params: WorkerParameters) : CoroutineWorker
                 api.reportFire(item.fireId, item.idempotencyKey, item.source)
                 queue.markDone(item.fireId)
             } catch (e: GeitaApiException) {
-                if (e.code == "CONFLICT") {
-                    queue.markMissed(item.fireId) // 已收口/已错过,停止重试
-                } else {
-                    queue.markRetry(item.fireId)
-                    retryNeeded = true
+                when (e.code) {
+                    "CONFLICT" -> queue.markMissed(item.fireId) // 已收口/已错过,停止重试
+                    "UNAUTHORIZED" -> {
+                        // 旧账号 token 已失效:清空队列,不在后台永久重试。
+                        queue.clear()
+                        return androidx.work.ListenableWorker.Result.success()
+                    }
+                    else -> {
+                        queue.markRetry(item.fireId)
+                        retryNeeded = true
+                    }
                 }
             } catch (e: Exception) {
                 queue.markRetry(item.fireId)
@@ -47,11 +53,14 @@ class ReportWorker(context: Context, params: WorkerParameters) : CoroutineWorker
     }
 
     companion object {
-        private const val WORK_NAME = "bugu-fire-report"
+        const val TAG = "bugu-fire-report"
+        private const val WORK_NAME = TAG
 
         /** 冷启动全量补报:立即跑一遍队列(幂等,空队列零开销)。 */
         fun flush(context: Context) {
-            val request = OneTimeWorkRequestBuilder<ReportWorker>().build()
+            val request = OneTimeWorkRequestBuilder<ReportWorker>()
+                .addTag(TAG)
+                .build()
             WorkManager.getInstance(context).enqueueUniqueWork(
                 WORK_NAME,
                 ExistingWorkPolicy.KEEP,
@@ -62,6 +71,7 @@ class ReportWorker(context: Context, params: WorkerParameters) : CoroutineWorker
         /** 队列非空时调度一次退避重试(30s 起,线性退避)。 */
         fun schedule(context: Context, fireId: Long) {
             val request = OneTimeWorkRequestBuilder<ReportWorker>()
+                .addTag(TAG)
                 .setInitialDelay(Duration.ofSeconds(30))
                 .setBackoffCriteria(BackoffPolicy.LINEAR, Duration.ofSeconds(30))
                 .build()
@@ -70,6 +80,11 @@ class ReportWorker(context: Context, params: WorkerParameters) : CoroutineWorker
                 ExistingWorkPolicy.REPLACE,
                 request,
             )
+        }
+
+        /** 登出/401:停止全部补报任务。 */
+        fun cancelAll(context: Context) {
+            WorkManager.getInstance(context).cancelAllWorkByTag(TAG)
         }
     }
 }

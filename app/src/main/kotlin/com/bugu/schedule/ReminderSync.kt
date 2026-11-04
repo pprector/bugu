@@ -1,6 +1,7 @@
 package com.bugu.schedule
 
 import android.content.Context
+import com.bugu.PushReporter
 import com.bugu.client.api.GeitaApi
 import com.bugu.client.api.ReminderView
 
@@ -20,6 +21,30 @@ object ReminderSync {
         AlarmScheduler(context, stores.scheduledAlarms).reschedule(
             ReminderPlanner.plan(remaining, System.currentTimeMillis()),
         )
+    }
+
+    /** 取消成功后立即移除对应 PendingIntent,并把剩余提醒重新排程。 */
+    fun removeReminder(context: Context, reminderId: Long, fireId: Long?) {
+        val stores = PrefsStores(context)
+        fireId?.let { AlarmScheduler(context, stores.scheduledAlarms).cancel(it) }
+        val remaining = stores.lastIncoming.load().filterNot { it.id == reminderId }
+        stores.lastIncoming.save(remaining)
+        AlarmScheduler(context, stores.scheduledAlarms).reschedule(
+            ReminderPlanner.plan(remaining, System.currentTimeMillis()),
+        )
+    }
+
+    /**
+     * 登出/401 的统一清理入口:
+     * 取消全部闹钟 → 清本机调度/队列缓存 → 停止补报任务 → 移除闹钟通知 → 停止推送接收。
+     */
+    fun clearLocalState(context: Context) {
+        val stores = PrefsStores(context)
+        AlarmScheduler(context, stores.scheduledAlarms).cancelAll()
+        stores.clearAll()
+        ReportWorker.cancelAll(context)
+        AlarmNotifications.cancelAll(context)
+        PushReporter.stop(context)
     }
 
     suspend fun sync(context: Context, api: GeitaApi): List<ReminderView> {

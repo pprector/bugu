@@ -26,8 +26,11 @@ object PushReporter {
     fun launch(context: Context, api: GeitaApi) {
         val appContext = context.applicationContext
         CoroutineScope(Dispatchers.IO).launch {
-            runCatching { JPushInterface.init(appContext) }
-                .onFailure { Log.e(TAG, "JPush init failed", it) }
+            runCatching {
+                JPushInterface.init(appContext)
+                // 登出时 stopPush,同一账号重新登录后恢复推送。
+                JPushInterface.resumePush(appContext)
+            }.onFailure { Log.e(TAG, "JPush init failed", it) }
             val regId = pollRegistrationId(appContext)
             if (regId == null) {
                 Log.w(TAG, "registrationID not ready after ${POLL_TIMES}s; will retry next launch")
@@ -37,6 +40,13 @@ object PushReporter {
                 .onSuccess { Log.i(TAG, "device token reported: $regId") }
                 .onFailure { Log.w(TAG, "report token failed (will retry next launch)", it) }
         }
+    }
+
+    /** 登出/401:停止极光推送接收,避免旧账号通知继续落到设备。 */
+    fun stop(context: Context) {
+        val appContext = context.applicationContext
+        runCatching { JPushInterface.stopPush(appContext) }
+            .onFailure { Log.w(TAG, "JPush stopPush failed", it) }
     }
 
     /** 极光异步分配 registrationID,轮询至非空或放弃。 */

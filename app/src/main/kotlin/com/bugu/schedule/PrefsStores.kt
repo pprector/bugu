@@ -32,6 +32,11 @@ class PrefsStores(context: Context) {
         }
     }
 
+    /** 登出/401 时清空所有本地调度与队列缓存。 */
+    fun clearAll() {
+        prefs.edit().clear().apply()
+    }
+
     val wakeupCopy: WakeupCopyCache.WakeupCopyStore = object : WakeupCopyCache.WakeupCopyStore {
         override fun get(key: String): String? = prefs.getString("$KEY_COPY_PREFIX$key", null)
         override fun put(key: String, content: String) {

@@ -143,6 +143,7 @@ fun AppRoot() {
     val api = remember {
         ApiFactory.create(context) {
             tokenStore.set(null)
+            ReminderSync.clearLocalState(context)
             user = null
             bonds = emptyList()
         }
@@ -244,6 +245,7 @@ fun AppRoot() {
     fun logout() {
         scope.launch {
             SharedPrefsTokenStore(context).set(null)
+            ReminderSync.clearLocalState(context)
             user = null
             bonds = emptyList()
             bondsError = false

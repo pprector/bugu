@@ -28,6 +28,20 @@ class AlarmScheduler(
     fun exactAlarmUsable(): Boolean =
         Build.VERSION.SDK_INT < 31 || alarmManager.canScheduleExactAlarms()
 
+    /** 精确取消一个 fire,并同步从已注册清单移除。 */
+    fun cancel(fireId: Long) {
+        alarmManager.cancel(firePendingIntent(fireId, null))
+        scheduledStore.save(scheduledStore.load().filterNot { it == fireId })
+    }
+
+    /** 取消全部已注册闹钟(登出/401/本地清理)。 */
+    fun cancelAll() {
+        scheduledStore.load().forEach { fireId ->
+            alarmManager.cancel(firePendingIntent(fireId, null))
+        }
+        scheduledStore.save(emptyList())
+    }
+
     fun reschedule(planned: List<PlannedAlarm>) {
         scheduledStore.load().forEach { fireId ->
             alarmManager.cancel(firePendingIntent(fireId, null))
