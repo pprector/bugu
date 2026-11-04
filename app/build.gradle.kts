@@ -1,4 +1,6 @@
+import java.io.File
 import java.util.Properties
+import org.gradle.api.GradleException
 
 plugins {
     id("com.android.application")
@@ -9,7 +11,6 @@ plugins {
 }
 
 group = "com.bugu"
-version = "1.0.0"
 
 // 极光 JPush AppKey 不进 git,经 local.properties 的 jpush.appKey 注入(联验时填入)
 val localProps: Properties = Properties().apply {
@@ -18,19 +19,52 @@ val localProps: Properties = Properties().apply {
 }
 val jpushAppKey: String = localProps.getProperty("jpush.appKey") ?: "PLACEHOLDER-APPKEY"
 
+// Release 签名只从本机 gitignored 的 local.properties 读取;keystore 文件必须放在仓库外。
+val releaseStoreFilePath: String? = localProps.getProperty("bugu.release.storeFile")
+val releaseStorePassword: String? = localProps.getProperty("bugu.release.storePassword")
+val releaseKeyAlias: String? = localProps.getProperty("bugu.release.keyAlias")
+val releaseKeyPassword: String? = localProps.getProperty("bugu.release.keyPassword")
+val releaseStoreFile: File? = releaseStoreFilePath?.let { rootProject.file(it) }
+val releaseSigningConfigured: Boolean =
+    releaseStoreFile?.isFile == true &&
+        !releaseStorePassword.isNullOrBlank() &&
+        !releaseKeyAlias.isNullOrBlank() &&
+        !releaseKeyPassword.isNullOrBlank()
+
+// 版本号只维护这一处;每次对外发布 versionCode 必须 +1,versionName 按语义化版本递增。
+val versionProps: Properties = Properties().apply {
+    val file = rootProject.file("version.properties")
+    require(file.isFile) { "缺少 app/version.properties,无法确定 versionCode/versionName" }
+    file.inputStream().use { load(it) }
+}
+val appVersionCode: Int = versionProps.getProperty("versionCode")?.toIntOrNull()
+    ?: error("app/version.properties 的 versionCode 必须是整数")
+val appVersionName: String = versionProps.getProperty("versionName")?.takeIf { it.isNotBlank() }
+    ?: error("app/version.properties 缺少 versionName")
+version = appVersionName
+
 android {
     namespace = "com.bugu"
     // Compose BOM 2026.09 依赖面向 android-37.2 编译(AGP 9 支持次版本 SDK)
     compileSdk = 37
     compileSdkMinor = 2
 
+    signingConfigs {
+        create("release") {
+            releaseStoreFile?.let { storeFile = it }
+            storePassword = releaseStorePassword
+            keyAlias = releaseKeyAlias
+            keyPassword = releaseKeyPassword
+        }
+    }
+
     defaultConfig {
         // 安装身份(com.bugu):与极光平台绑定的 Android 包名一致;namespace/Kotlin 包名已统一为 com.bugu
         applicationId = "com.bugu"
         minSdk = 26
         targetSdk = 36
-        versionCode = 1
-        versionName = "1.0.0"
+        versionCode = appVersionCode
+        versionName = appVersionName
         manifestPlaceholders["JPUSH_APPKEY"] = jpushAppKey
         // 极光 SDK AAR 的 manifest 引用 ${JPUSH_CHANNEL},统计维度用,固定 developer
         manifestPlaceholders["JPUSH_CHANNEL"] = "developer"
@@ -44,6 +78,38 @@ android {
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_17
         targetCompatibility = JavaVersion.VERSION_17
+    }
+
+    buildTypes {
+        release {
+            isMinifyEnabled = true
+            isShrinkResources = true
+            isDebuggable = false
+            proguardFiles(
+                getDefaultProguardFile("proguard-android-optimize.txt"),
+                "proguard-rules.pro",
+            )
+            // 签名配置存在但字段缺失时由下方 taskGraph 检查给出明确错误,绝不回退 debug 签名。
+            signingConfig = signingConfigs.getByName("release")
+        }
+    }
+}
+
+// 只有执行 release 相关任务时才要求签名;debug/test 不依赖 release 密钥。
+gradle.taskGraph.whenReady {
+    val releaseTasks = setOf(
+        "assembleRelease",
+        "bundleRelease",
+        "packageRelease",
+        "installRelease",
+        "validateSigningRelease",
+    )
+    if (allTasks.any { it.name in releaseTasks } && !releaseSigningConfigured) {
+        throw GradleException(
+            "Release 签名未配置:请在 app/local.properties 设置 " +
+                "bugu.release.storeFile/storePassword/keyAlias/keyPassword,并确认 keystore 文件存在。" +
+                "构建不会静默回退到 debug 签名。",
+        )
     }
 }
 
