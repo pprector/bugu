@@ -41,6 +41,26 @@ export async function handleExpiredRequest(state: RequestInstanceState) {
   return success;
 }
 
+/** 会话过期:清 token 并跳登录页,并发请求只提示一次。 */
+export function handleSessionExpired(state: RequestInstanceState) {
+  const { resetStore } = useAuthStore();
+
+  resetStore();
+
+  if (state.sessionExpiredShown) {
+    return;
+  }
+
+  state.sessionExpiredShown = true;
+
+  window.$message?.warning('登录已过期，请重新登录', {
+    duration: 5000,
+    onLeave: () => {
+      state.sessionExpiredShown = false;
+    }
+  });
+}
+
 export function showErrorMsg(state: RequestInstanceState, message: string) {
   if (!state.errMsgStack?.length) {
     state.errMsgStack = [];
