@@ -6,6 +6,9 @@ WORKDIR /app
 
 COPY server/build/libs/app.jar app.jar
 
+# 镜像即生产形态:强制 prod profile,使 JWT secret / admin 初始口令等占位符缺失时启动失败
+ENV SPRING_PROFILES_ACTIVE=prod
+
 # 生产配置经 docker-compose.prod.yml 的 SPRING_*/BUGU_* 环境变量注入
 EXPOSE 8081
 
