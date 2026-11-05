@@ -215,9 +215,42 @@ adb shell dumpsys power | grep 'Wake Locks'
 adb logcat -d > bugu-real-device-$(date +%Y%m%d-%H%M).log
 ```
 
-## 四、已知未完成/不在本轮范围
+## 四、验收状态与边界
 
-- 服务端 fireAt 推送批次**未提交、未部署**；端侧代码已接，但未做真实极光端到端联调。
-- 登出清理未在本轮重复实测（会丢失当前登录态且需短信验证码）；上一轮已实测，代码路径未改。
-- 排队队列未做本地持久化，取舍见第 4 节。
+**模拟器已验证（本轮，Android 15 / Pixel 模拟器，release 包 1.1.0 / versionCode 2）**
+
+| 项 | 结果 |
+|---|---|
+| 新建→到点→全屏→右滑 ACKED | 通过（锁屏息屏也能亮屏进入 `RingActivity`） |
+| 取消后不响 | 通过（到点无广播、无通知，闹钟已移除） |
+| 稍后二次响 | 通过（+15 分钟再次响铃；旧服务端走回退路径） |
+| 循环次日注册 | 通过（确认后次日 10:54 有新闹钟，`/incoming` 已推进） |
+| 两条同时到期排队 | 通过（`fire queued` → `advance to fire=...`，单 Activity） |
+| 通知权限拒绝 | 通过（Banner + 跳系统设置；到点日志 `POST_NOTIFICATIONS unavailable`，前台仍进响铃页） |
+| 进程被杀 + 锁屏 | 通过（`am kill` 后新进程处理到点 fire，亮屏全屏） |
+| 通知点击进响铃页 | 通过（后台解锁到点只出高优先级通知，点击顶层为 `.ui.RingActivity`） |
+| 登出清理 | 通过（root 快照→登出：jwt/调度/闹钟全清→恢复快照，登录态与次日闹钟恢复） |
+
+**仍未验证 / 不能验证**
+
+- 服务端 fireAt 推送批次**未提交、未部署**；`FIRE_AT` 推送、`nextFireId/nextFireAt` 端到端联调必须等服务端上线后执行（见第 10 节）。
+- 真实短信验证码重登：登出清理用快照恢复验证，未走「登出→收码→重登」链路。
+- 排队队列未做本地持久化，取舍见第 4 节；进程被杀期间仅在途 AlarmManager 闹钟与已 post 通知可恢复，第三条及以后的内存排队会丢。
 - 国产 ROM/真实极光送达/真实闹钟听感必须在真机验证，模拟器只能证明逻辑路径。
+
+## 五、必须用户真机验证清单（逐项操作）
+
+> 每项失败：先 `adb logcat -c`，复现后 `adb logcat -d > bugu-$(date +%H%M).log`，再按「失败看什么」定位。
+
+| # | 机型/条件 | 操作步骤 | 期望结果 | 失败看什么 |
+|---|---|---|---|---|
+| D1 | 华为/荣耀 HarmonyOS 4.x；小米 HyperOS 2；OPPO ColorOS 15（各一台） | 设置允许自启动/后台活动/不限制耗电 → 建 5 分钟后提醒 → Home 回桌面 → 锁屏等待 | 到点亮屏 + 响铃页；右滑确认后服务端状态 ACKED | `dumpsys alarm \| grep -A4 com.bugu.ACTION_FIRE`；`logcat -s BuguAlarm BuguAlarmNotification`；厂商自启动/锁屏显示开关 |
+| D2 | 同上，划掉最近任务 | 建 2 分钟后提醒 → 上滑清除最近任务 → 等待 | 仍能到点响铃或至少 post 通知 | `dumpsys alarm` 是否还有闹钟；`logcat -s BuguAlarm` |
+| D3 | 任意国产 ROM，解锁停留桌面 | 建 2 分钟后提醒 → 解锁停在桌面等待 | 只出高优先级通知（不强制全屏）；点击通知进 `RingActivity` | `dumpsys notification --noredact \| grep -A8 com.bugu`；`dumpsys activity activities \| head` |
+| D4 | 华为/小米/OPPO/vivo 各一台 | 服务端部署后：用另一账号给本机建 1 分钟后提醒，本机后台/锁屏 | 收到极光 `FIRE_AT` 推送；标题含提醒人+内容；点击直达响铃页且不与本地闹钟叠加 | `logcat -s BuguPush BuguPushClick BuguRing`；极光控制台在线/厂商通道；服务端 `escalation_log` FIRE_AT 行 |
+| D5 | 任意真机，正常媒体音量/静音/振动模式 | 各建一条 1 分钟后提醒，响铃 ≥90 秒 | 铃声循环、震动持续、属闹钟通道；确认/稍后立即停止 | `logcat -s BuguRing`（`bell start failed`/`audio focus lost`）；`dumpsys audio \| grep -A5 bugu`；`dumpsys power \| grep "Wake Locks"` |
+| D6 | 任意真机，勿扰模式 | 开启勿扰（分别允许/禁止闹钟例外）→ 锁屏等待 | 系统允许时突破勿扰；不允许时不崩溃、至少留通知 | `logcat -s BuguAlarmNotification BuguRing`；`dumpsys notification` 中 `mBypassDnd` |
+| D7 | 任意真机，耳机/蓝牙/播放音乐 | 到点时连接耳机或正在播放音乐 | 闹钟不被媒体抢占，暂停/压低媒体后响铃 | `dumpsys audio`；`logcat -s BuguRing` |
+| D8 | 任意真机，省电模式 + 待机 30 分钟 | 开启省电模式 → 建 10 分钟后提醒 → 息屏待机 | 到点仍触发（厂商允许时） | `dumpsys deviceidle`；`dumpsys alarm`；厂商省电白名单 |
+| D9 | 任意真机，通知权限关闭 | 关闭通知权限 → 建 2 分钟后提醒 → 后台等待 | 首页有 Banner；到点仍能进响铃页（视系统 BAL 策略） | `logcat -s BuguAlarmNotification`；截图/Dashboard Banner |
+| D10 | 两台真机，互相惦记 | A 给 B 建 1 分钟后提醒，B 锁屏 | B 到点响铃；A 的「TA 的惦记」状态更新为 ACKED | 两端首页状态；服务端 `/incoming`；`logcat -s BuguAlarm BuguRing` |
