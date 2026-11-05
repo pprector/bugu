@@ -52,8 +52,16 @@ export interface AdminAppUser {
   elderMode: boolean;
 }
 
-export function fetchAdminUsers(query?: string) {
-  return request<AdminAppUser[]>({ url: '/api/v1/admin/users', params: { query } });
+/** 分页口径与反馈管理一致:page 从 1 起,size 1-100 */
+export interface AdminAppUserPage {
+  items: AdminAppUser[];
+  total: number;
+  page: number;
+  size: number;
+}
+
+export function fetchAdminUsers(params: { query?: string; page: number; size: number }) {
+  return request<AdminAppUserPage>({ url: '/api/v1/admin/users', params });
 }
 
 export function fetchSetElderMode(userId: number, enabled: boolean) {
@@ -74,8 +82,15 @@ export interface AdminBond {
   createdAt: string;
 }
 
-export function fetchAdminBonds(query?: string) {
-  return request<AdminBond[]>({ url: '/api/v1/admin/bonds', params: { query } });
+export interface AdminBondPage {
+  items: AdminBond[];
+  total: number;
+  page: number;
+  size: number;
+}
+
+export function fetchAdminBonds(params: { query?: string; page: number; size: number }) {
+  return request<AdminBondPage>({ url: '/api/v1/admin/bonds', params });
 }
 
 export function fetchAdminUnbind(bondId: number) {
@@ -95,8 +110,21 @@ export interface AdminReminder {
   createdAt: string;
 }
 
-export function fetchAdminReminders(params: { status?: string; kind?: string; query?: string }) {
-  return request<AdminReminder[]>({ url: '/api/v1/admin/reminders', params });
+export interface AdminReminderPage {
+  items: AdminReminder[];
+  total: number;
+  page: number;
+  size: number;
+}
+
+export function fetchAdminReminders(params: {
+  status?: string;
+  kind?: string;
+  query?: string;
+  page: number;
+  size: number;
+}) {
+  return request<AdminReminderPage>({ url: '/api/v1/admin/reminders', params });
 }
 
 export interface AdminEscalationAction {
@@ -220,7 +248,13 @@ export interface AdminAuditLog {
   createdAt: string;
 }
 
-export function fetchAdminAuditLogs(adminUserId?: number) {
-  // P0: 按操作人过滤;全量经 /admin/audit-logs 端点(S2 查询服务),此处先按 repo 现有查询
-  return request<AdminAuditLog[]>({ url: '/api/v1/admin/audit-logs', params: { adminUserId } });
+export interface AdminAuditLogPage {
+  items: AdminAuditLog[];
+  total: number;
+  page: number;
+  size: number;
+}
+
+export function fetchAdminAuditLogs(params: { adminUserId?: number; page: number; size: number }) {
+  return request<AdminAuditLogPage>({ url: '/api/v1/admin/audit-logs', params });
 }

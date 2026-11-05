@@ -71,8 +71,10 @@ class AdminOpsIntegrationTest @Autowired constructor(
             param("query", a.id.toString())
         }.andExpect {
             status { isOk() }
-            jsonPath("$.data[0].id") { value(a.id) }
-            jsonPath("$.data[0].elderMode") { value(false) }
+            jsonPath("$.data.items[0].id") { value(a.id) }
+            jsonPath("$.data.items[0].elderMode") { value(false) }
+            jsonPath("$.data.page") { value(1) }
+            jsonPath("$.data.size") { value(20) }
         }
 
         mockMvc.patch("/api/v1/admin/users/${a.id}/elder-mode") {
@@ -132,8 +134,8 @@ class AdminOpsIntegrationTest @Autowired constructor(
             param("query", "吃药")
         }.andExpect {
             status { isOk() }
-            jsonPath("$.data[0].id") { value(reminderId) }
-            jsonPath("$.data[0].creatorId") { value(a.id) }
+            jsonPath("$.data.items[0].id") { value(reminderId) }
+            jsonPath("$.data.items[0].creatorId") { value(a.id) }
         }
 
         val escalations = mockMvc.get("/api/v1/admin/reminders/$reminderId/escalations") {
@@ -185,9 +187,9 @@ class AdminOpsIntegrationTest @Autowired constructor(
             header("Authorization", "Bearer $token")
         }.andExpect {
             status { isOk() }
-            jsonPath("$.data.length()") { value(org.hamcrest.Matchers.greaterThan(0)) }
-            jsonPath("$.data[0].action") { exists() }
-            jsonPath("$.data[0].createdAt") { exists() }
+            jsonPath("$.data.items.length()") { value(org.hamcrest.Matchers.greaterThan(0)) }
+            jsonPath("$.data.items[0].action") { exists() }
+            jsonPath("$.data.items[0].createdAt") { exists() }
         }.andReturn().response.contentAsString
 
         // 按管理员过滤:全部归属该管理员
@@ -205,7 +207,7 @@ class AdminOpsIntegrationTest @Autowired constructor(
             param("adminUserId", "99999999")
         }.andExpect {
             status { isOk() }
-            jsonPath("$.data.length()") { value(0) }
+            jsonPath("$.data.items.length()") { value(0) }
         }
         assertTrue(all.isNotEmpty())
     }
@@ -250,8 +252,8 @@ class AdminOpsIntegrationTest @Autowired constructor(
             param("query", "状态筛选提醒")
         }.andExpect {
             status { isOk() }
-            jsonPath("$.data[0].id") { value(reminderId) }
-            jsonPath("$.data[0].status") { value("PENDING") }
+            jsonPath("$.data.items[0].id") { value(reminderId) }
+            jsonPath("$.data.items[0].status") { value("PENDING") }
         }
 
         reminders.cancel(a.token, reminderId).andExpect { status { isOk() } }
@@ -262,8 +264,8 @@ class AdminOpsIntegrationTest @Autowired constructor(
             param("query", "状态筛选提醒")
         }.andExpect {
             status { isOk() }
-            jsonPath("$.data[0].id") { value(reminderId) }
-            jsonPath("$.data[0].status") { value("CANCELED") }
+            jsonPath("$.data.items[0].id") { value(reminderId) }
+            jsonPath("$.data.items[0].status") { value("CANCELED") }
         }
 
         mockMvc.get("/api/v1/admin/reminders") {
@@ -272,7 +274,47 @@ class AdminOpsIntegrationTest @Autowired constructor(
             param("query", "状态筛选提醒")
         }.andExpect {
             status { isOk() }
-            jsonPath("$.data.length()") { value(0) }
+            jsonPath("$.data.items.length()") { value(0) }
+        }
+    }
+
+    @Test
+    fun `核心列表分页_越界页与非法参数`() {
+        val token = superToken()
+
+        // 审计日志至少有本次登录的 LOGIN,page=1&size=1 只返回 1 条
+        mockMvc.get("/api/v1/admin/audit-logs") {
+            header("Authorization", "Bearer $token")
+            param("page", "1")
+            param("size", "1")
+        }.andExpect {
+            status { isOk() }
+            jsonPath("$.data.page") { value(1) }
+            jsonPath("$.data.size") { value(1) }
+            jsonPath("$.data.items.length()") { value(1) }
+            jsonPath("$.data.total") { value(org.hamcrest.Matchers.greaterThanOrEqualTo(1)) }
+        }
+
+        // 用户列表越界页:返回空列表,total 仍保留
+        mockMvc.get("/api/v1/admin/users") {
+            header("Authorization", "Bearer $token")
+            param("page", "99999")
+            param("size", "100")
+        }.andExpect {
+            status { isOk() }
+            jsonPath("$.data.items.length()") { value(0) }
+            jsonPath("$.data.total") { exists() }
+        }
+
+        // 非法分页参数统一 400 INVALID_ARGUMENT(与反馈管理同口径)
+        for (bad in listOf("page" to "0", "size" to "0", "size" to "101")) {
+            mockMvc.get("/api/v1/admin/users") {
+                header("Authorization", "Bearer $token")
+                param(bad.first, bad.second)
+            }.andExpect {
+                status { isBadRequest() }
+                jsonPath("$.code") { value("INVALID_ARGUMENT") }
+            }
         }
     }
 

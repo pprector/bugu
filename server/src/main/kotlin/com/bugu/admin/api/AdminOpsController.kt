@@ -28,7 +28,9 @@ class AdminOpsController(
     @GetMapping("/users")
     fun users(
         @RequestParam(required = false) query: String?,
-    ): ApiResponse<List<AdminAppUserView>> = ApiResponse.ok(service.users(query))
+        @RequestParam(defaultValue = "1") page: Int,
+        @RequestParam(defaultValue = "20") size: Int,
+    ): ApiResponse<AdminUserPage> = ApiResponse.ok(service.users(query, page, size))
 
     @PatchMapping("/users/{id}/elder-mode")
     fun setElderMode(
@@ -43,8 +45,11 @@ class AdminOpsController(
     }
 
     @GetMapping("/bonds")
-    fun bonds(@RequestParam(required = false) query: String?): ApiResponse<List<AdminBondView>> =
-        ApiResponse.ok(service.bonds(query))
+    fun bonds(
+        @RequestParam(required = false) query: String?,
+        @RequestParam(defaultValue = "1") page: Int,
+        @RequestParam(defaultValue = "20") size: Int,
+    ): ApiResponse<AdminBondPage> = ApiResponse.ok(service.bonds(query, page, size))
 
     @PostMapping("/bonds/{id}/unbind")
     fun unbind(request: HttpServletRequest, @PathVariable id: Long): ApiResponse<Map<String, Boolean>> {
@@ -59,7 +64,9 @@ class AdminOpsController(
         @RequestParam(required = false) status: String?,
         @RequestParam(required = false) kind: String?,
         @RequestParam(required = false) query: String?,
-    ): ApiResponse<List<AdminReminderView>> = ApiResponse.ok(service.reminders(status, kind, query))
+        @RequestParam(defaultValue = "1") page: Int,
+        @RequestParam(defaultValue = "20") size: Int,
+    ): ApiResponse<AdminReminderPage> = ApiResponse.ok(service.reminders(status, kind, query, page, size))
 
     @GetMapping("/reminders/{id}/escalations")
     fun escalations(@PathVariable id: Long): ApiResponse<List<AdminEscalationView>> =
@@ -69,8 +76,11 @@ class AdminOpsController(
     fun pushStatus(): ApiResponse<AdminPushStatusView> = ApiResponse.ok(service.pushStatus())
 
     @GetMapping("/audit-logs")
-    fun auditLogs(@RequestParam(required = false) adminUserId: Long?): ApiResponse<List<AdminAuditLogView>> =
-        ApiResponse.ok(service.auditLogs(adminUserId))
+    fun auditLogs(
+        @RequestParam(required = false) adminUserId: Long?,
+        @RequestParam(defaultValue = "1") page: Int,
+        @RequestParam(defaultValue = "20") size: Int,
+    ): ApiResponse<AdminAuditLogPage> = ApiResponse.ok(service.auditLogs(adminUserId, page, size))
 
     private fun adminId(request: HttpServletRequest): Long =
         request.getAttribute(AdminAuthFilter.ATTR_ADMIN_ID) as? Long

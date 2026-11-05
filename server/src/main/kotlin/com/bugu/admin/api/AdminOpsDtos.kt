@@ -68,6 +68,39 @@ data class AdminPushStatusView(
     val description: String,
 )
 
+/** 后台列表分页响应:与反馈管理同口径(page 从 1 起,size 1-100)。 */
+@Serializable
+data class AdminUserPage(
+    val items: List<AdminAppUserView>,
+    val total: Long,
+    val page: Int,
+    val size: Int,
+)
+
+@Serializable
+data class AdminBondPage(
+    val items: List<AdminBondView>,
+    val total: Long,
+    val page: Int,
+    val size: Int,
+)
+
+@Serializable
+data class AdminReminderPage(
+    val items: List<AdminReminderView>,
+    val total: Long,
+    val page: Int,
+    val size: Int,
+)
+
+@Serializable
+data class AdminAuditLogPage(
+    val items: List<AdminAuditLogView>,
+    val total: Long,
+    val page: Int,
+    val size: Int,
+)
+
 /** 后台操作审计视图(E9)。 */
 @Serializable
 data class AdminAuditLogView(

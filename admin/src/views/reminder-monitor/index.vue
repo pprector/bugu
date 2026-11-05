@@ -18,6 +18,9 @@ const loading = ref(false);
 const keyword = ref('');
 const status = ref<string | null>(null);
 const rows = ref<AdminReminder[]>([]);
+const page = ref(1);
+const size = ref(20);
+const total = ref(0);
 
 const columns = [
   { title: 'ID', key: 'id', width: 80 },
@@ -63,17 +66,50 @@ async function openEscalations(row: AdminReminder) {
   }
 }
 
+let requestId = 0;
+
 async function load() {
+  const currentRequest = ++requestId;
   loading.value = true;
   try {
     const { data, error } = await fetchAdminReminders({
       status: status.value ?? undefined,
-      query: keyword.value || undefined
+      query: keyword.value || undefined,
+      page: page.value,
+      size: size.value
     });
-    if (!error && data) rows.value = data;
+    if (currentRequest !== requestId) return;
+    if (!error && data) {
+      const lastPage = Math.max(1, Math.ceil(data.total / data.size));
+      if (data.page > lastPage) {
+        page.value = lastPage;
+        await load();
+        return;
+      }
+      rows.value = data.items;
+      total.value = data.total;
+      page.value = data.page;
+      size.value = data.size;
+    }
   } finally {
-    loading.value = false;
+    if (currentRequest === requestId) loading.value = false;
   }
+}
+
+function search() {
+  page.value = 1;
+  load();
+}
+
+function changePage(value: number) {
+  page.value = value;
+  load();
+}
+
+function changeSize(value: number) {
+  size.value = value;
+  page.value = 1;
+  load();
 }
 
 onMounted(load);
@@ -85,11 +121,27 @@ onMounted(load);
       <template #header-extra>
         <NSpace>
           <NSelect v-model:value="status" :options="STATUS_OPTIONS" placeholder="全部状态" clearable style="width: 150px" />
-          <NInput v-model:value="keyword" placeholder="标题 / ID" clearable style="width: 180px" @keyup.enter="load" />
-          <NButton type="primary" @click="load">查询</NButton>
+          <NInput v-model:value="keyword" placeholder="标题 / ID" clearable style="width: 180px" @keyup.enter="search" />
+          <NButton type="primary" @click="search">查询</NButton>
         </NSpace>
       </template>
-      <NDataTable :columns="columns" :data="rows" :loading="loading" :bordered="false" />
+      <NDataTable
+        remote
+        :columns="columns"
+        :data="rows"
+        :row-key="row => row.id"
+        :loading="loading"
+        :bordered="false"
+        :pagination="{
+          page,
+          pageSize: size,
+          itemCount: total,
+          showSizePicker: true,
+          pageSizes: [10, 20, 50, 100]
+        }"
+        @update:page="changePage"
+        @update:page-size="changeSize"
+      />
     </NCard>
 
     <NDrawer v-model:show="drawerVisible" :width="520">

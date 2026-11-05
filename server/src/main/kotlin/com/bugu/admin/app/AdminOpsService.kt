@@ -1,12 +1,16 @@
 package com.bugu.admin.app
 
 import com.bugu.admin.api.AdminAppUserView
+import com.bugu.admin.api.AdminAuditLogPage
 import com.bugu.admin.api.AdminAuditLogView
+import com.bugu.admin.api.AdminBondPage
 import com.bugu.admin.api.AdminBondView
 import com.bugu.admin.api.AdminEscalationAction
 import com.bugu.admin.api.AdminEscalationView
 import com.bugu.admin.api.AdminPushStatusView
+import com.bugu.admin.api.AdminReminderPage
 import com.bugu.admin.api.AdminReminderView
+import com.bugu.admin.api.AdminUserPage
 import com.bugu.admin.infra.AdminAuditLogRepository
 import com.bugu.bond.infra.BondMapper
 import com.bugu.bond.infra.BondRepository
@@ -24,7 +28,8 @@ import org.springframework.transaction.support.TransactionTemplate
 import java.time.LocalDateTime
 
 /**
- * 运营查询与处理(E9-S2):个人运营规模,findAll + 内存筛选(数据量 ≤ 千级,如实记录);
+ * 运营查询与处理(E9-S2):个人运营规模,findAll + 内存筛选后按 page/size 切片返回
+ * (千级数据够用,避免引入额外分页查询;数据量继续增长时再下推到 SQL)。
  * 写操作经聚合方法,落审计由控制器负责。
  */
 @Service
@@ -42,11 +47,13 @@ class AdminOpsService(
 
     // ---- 用户 ----
 
-    fun users(query: String?): List<AdminAppUserView> =
-        userService.listAllRaw()
+    fun users(query: String?, page: Int, size: Int): AdminUserPage {
+        val all = userService.listAllRaw()
             .filter { matches(query, it.nickname, it.phone, it.id) }
             .sortedByDescending { it.id }
-            .map {
+        val (rows, total) = slice(all, page, size)
+        return AdminUserPage(
+            items = rows.map {
                 AdminAppUserView(
                     id = requireNotNull(it.id) { "user id 不应为空" },
                     nickname = it.nickname,
@@ -54,7 +61,12 @@ class AdminOpsService(
                     accountType = it.accountType,
                     elderMode = it.elderMode,
                 )
-            }
+            },
+            total = total,
+            page = page,
+            size = size,
+        )
+    }
 
     /** admin 直设长辈模式:越过 bond 校验(管理员语义),落审计由控制器负责。 */
     fun setElderMode(userId: Long, enabled: Boolean): AdminAppUserView {
@@ -74,12 +86,14 @@ class AdminOpsService(
 
     // ---- 绑定 ----
 
-    fun bonds(query: String?): List<AdminBondView> {
+    fun bonds(query: String?, page: Int, size: Int): AdminBondPage {
         val users = userService.listAllRaw().associateBy { it.id }
-        return bondRepository.findAll()
+        val all = bondRepository.findAll()
             .filter { matches(query, it.bindCode, it.id, it.requesterId, it.receiverId) }
             .sortedByDescending { it.id }
-            .map { bond ->
+        val (rows, total) = slice(all, page, size)
+        return AdminBondPage(
+            items = rows.map { bond ->
                 val receiver = bond.receiverId?.let { users[it] }
                 AdminBondView(
                     id = requireNotNull(bond.id) { "bond id 不应为空" },
@@ -90,7 +104,11 @@ class AdminOpsService(
                     receiverName = receiver?.nickname,
                     createdAt = bond.createdAt.toString(),
                 )
-            }
+            },
+            total = total,
+            page = page,
+            size = size,
+        )
     }
 
     /** 管理员解绑:聚合 adminDissolve,即时隔离。 */
@@ -107,14 +125,16 @@ class AdminOpsService(
 
     // ---- 提醒与升级链 ----
 
-    fun reminders(status: String?, kind: String?, query: String?): List<AdminReminderView> {
+    fun reminders(status: String?, kind: String?, query: String?, page: Int, size: Int): AdminReminderPage {
         val users = userService.listAllRaw().associateBy { it.id }
-        return reminderRepository.findAll()
+        val all = reminderRepository.findAll()
             .filter { status == null || it.status == status }
             .filter { kind == null || it.kind == kind }
             .filter { matches(query, it.title, it.id) }
             .sortedByDescending { it.id }
-            .map { row ->
+        val (rows, total) = slice(all, page, size)
+        return AdminReminderPage(
+            items = rows.map { row ->
                 AdminReminderView(
                     id = requireNotNull(row.id) { "reminder id 不应为空" },
                     title = row.title,
@@ -127,7 +147,11 @@ class AdminOpsService(
                     receiverName = users[row.receiverId]?.nickname ?: "?",
                     createdAt = row.createdAt.toString(),
                 )
-            }
+            },
+            total = total,
+            page = page,
+            size = size,
+        )
     }
 
     fun escalations(reminderId: Long): List<AdminEscalationView> {
@@ -157,23 +181,38 @@ class AdminOpsService(
 
     // ---- 审计(E9) ----
 
-    fun auditLogs(adminUserId: Long?): List<AdminAuditLogView> {
+    fun auditLogs(adminUserId: Long?, page: Int, size: Int): AdminAuditLogPage {
         val rows = if (adminUserId == null) {
             auditRepository.findAll().sortedByDescending { it.id }
         } else {
             auditRepository.findByAdminUserIdOrderByCreatedAtDesc(adminUserId)
         }
-        return rows.map {
-            AdminAuditLogView(
-                id = requireNotNull(it.id) { "audit id 不应为空" },
-                adminUserId = it.adminUserId,
-                action = it.action,
-                targetType = it.targetType,
-                targetId = it.targetId,
-                detail = it.detail,
-                createdAt = it.createdAt.toString(),
-            )
-        }
+        val (sliced, total) = slice(rows, page, size)
+        return AdminAuditLogPage(
+            items = sliced.map {
+                AdminAuditLogView(
+                    id = requireNotNull(it.id) { "audit id 不应为空" },
+                    adminUserId = it.adminUserId,
+                    action = it.action,
+                    targetType = it.targetType,
+                    targetId = it.targetId,
+                    detail = it.detail,
+                    createdAt = it.createdAt.toString(),
+                )
+            },
+            total = total,
+            page = page,
+            size = size,
+        )
+    }
+
+    /** 内存分页切片:page 从 1 起,size 1-100,越界页返回空列表(与反馈管理同口径)。 */
+    private fun <T> slice(all: List<T>, page: Int, size: Int): Pair<List<T>, Long> {
+        require(page >= 1 && size in 1..100) { "分页参数非法，page须大于0，size须为1至100" }
+        val total = all.size.toLong()
+        val from = (page - 1) * size
+        val items = if (from >= all.size) emptyList() else all.subList(from, minOf(from + size, all.size))
+        return items to total
     }
 
     private fun matches(query: String?, vararg fields: Any?): Boolean {
