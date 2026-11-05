@@ -12,14 +12,19 @@ import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
 import org.springframework.http.HttpStatus
 import org.springframework.http.MediaType
+import org.springframework.data.repository.findByIdOrNull
 import com.bugu.shared.api.ApiResponse
 import com.bugu.shared.api.ErrorCode
 
 /**
  * JWT 鉴权过滤器:拦截 /api/v1 下的业务路径,放行注册/登录/系统自检与文档路径。
  * 校验通过后把 userId 放入 request attribute,由 [CurrentUserResolver] 注入控制器参数。
+ * 每次请求回查账号:不存在、非 ACTIVE 或 token 版本不一致一律 401(停用/吊销即时生效)。
  */
-class JwtAuthFilter(private val jwt: JwtTokenService) : Filter {
+class JwtAuthFilter(
+    private val jwt: JwtTokenService,
+    private val repository: UserRepository,
+) : Filter {
 
     companion object {
         const val ATTR_USER_ID = "bugu.userId"
@@ -65,14 +70,20 @@ class JwtAuthFilter(private val jwt: JwtTokenService) : Filter {
             return
         }
 
-        val userId = try {
-            jwt.parseUserId(token)
+        val subject = try {
+            jwt.parseUserSubject(token)
         } catch (e: JwtException) {
             respondUnauthorized(res)
             return
         }
 
-        req.setAttribute(ATTR_USER_ID, userId)
+        val user = repository.findByIdOrNull(subject.id)
+        if (user == null || user.accountState != "ACTIVE" || user.tokenVersion != subject.tokenVersion) {
+            respondUnauthorized(res)
+            return
+        }
+
+        req.setAttribute(ATTR_USER_ID, subject.id)
         chain.doFilter(request, response)
     }
 

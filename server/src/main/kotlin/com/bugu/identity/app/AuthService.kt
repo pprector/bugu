@@ -94,7 +94,7 @@ class AuthService(
                     phone = phone.value,
                 ),
             )
-            val token = jwtTokenService.issue(user.id!!, user.phone)
+            val token = jwtTokenService.issue(user.id!!, user.phone, user.tokenVersion)
             LoginResponse(token = token, user = userService.toDto(user))
         }
     }

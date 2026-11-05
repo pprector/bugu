@@ -142,7 +142,9 @@ class AdminAiIntegrationTest @Autowired constructor(
             param("tone", "GENTLE")
         }.andExpect {
             status { isOk() }
-            jsonPath("$.data") { exists() }
+            jsonPath("$.data.items") { exists() }
+            jsonPath("$.data.total") { isNumber() }
+            jsonPath("$.data.page") { value(1) }
         }
     }
 

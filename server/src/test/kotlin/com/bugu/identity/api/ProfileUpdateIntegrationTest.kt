@@ -76,7 +76,7 @@ class ProfileUpdateIntegrationTest @Autowired constructor(
     }
 
     @Test
-    fun `已注销用户_me401_更新404`() {
+    fun `已注销用户_token失效_me与更新均401`() {
         val user = client.register()
         jdbc.update("DELETE FROM app_user WHERE id = ?", user.id)
 
@@ -92,8 +92,8 @@ class ProfileUpdateIntegrationTest @Autowired constructor(
             contentType = MediaType.APPLICATION_JSON
             content = """{"nickname": "已注销"}"""
         }.andExpect {
-            status { isNotFound() }
-            jsonPath("$.code") { value("NOT_FOUND") }
+            status { isUnauthorized() }
+            jsonPath("$.code") { value("UNAUTHORIZED") }
         }
     }
 }

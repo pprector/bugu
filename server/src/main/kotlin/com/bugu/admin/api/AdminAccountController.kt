@@ -13,6 +13,7 @@ import org.springframework.web.bind.annotation.PathVariable
 import org.springframework.web.bind.annotation.PostMapping
 import org.springframework.web.bind.annotation.RequestBody
 import org.springframework.web.bind.annotation.RequestMapping
+import org.springframework.web.bind.annotation.RequestParam
 import org.springframework.web.bind.annotation.RestController
 
 /** 后台账号列表项(不含口令)。 */
@@ -24,6 +25,15 @@ data class AdminAccountView(
     val role: String,
     val enabled: Boolean,
     val createdAt: String,
+)
+
+/** 后台账号分页响应:与反馈管理同口径(page 从 1 起,size 1-100)。 */
+@Serializable
+data class AdminAccountPage(
+    val items: List<AdminAccountView>,
+    val total: Long,
+    val page: Int,
+    val size: Int,
 )
 
 /** 创建后台账号请求。 */
@@ -62,8 +72,20 @@ class AdminAccountController(
 ) {
 
     @GetMapping
-    fun list(): ApiResponse<List<AdminAccountView>> =
-        ApiResponse.ok(service.list().map { it.toAccountView() })
+    fun list(
+        @RequestParam(defaultValue = "1") page: Int,
+        @RequestParam(defaultValue = "20") size: Int,
+    ): ApiResponse<AdminAccountPage> {
+        val (rows, total) = service.list(page, size)
+        return ApiResponse.ok(
+            AdminAccountPage(
+                items = rows.map { it.toAccountView() },
+                total = total,
+                page = page,
+                size = size,
+            ),
+        )
+    }
 
     @PostMapping
     fun create(

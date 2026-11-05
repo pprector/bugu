@@ -21,6 +21,8 @@ data class UserRow(
     val elderMode: Boolean = false,
     val accountType: String = "NORMAL",
     val accountState: String = "ACTIVE",
+    /** JWT 吊销版本:token 内 ver 不一致即被判失效,停用/登出时自增。 */
+    val tokenVersion: Int = 0,
     val createdAt: LocalDateTime = LocalDateTime.now(),
     val updatedAt: LocalDateTime = LocalDateTime.now(),
 )

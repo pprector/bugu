@@ -41,8 +41,8 @@ class IdentityConfig {
     }
 
     @Bean
-    fun jwtAuthFilterRegistration(jwt: JwtTokenService): FilterRegistrationBean<JwtAuthFilter> {
-        val registration = FilterRegistrationBean(JwtAuthFilter(jwt))
+    fun jwtAuthFilterRegistration(jwt: JwtTokenService, userRepository: UserRepository): FilterRegistrationBean<JwtAuthFilter> {
+        val registration = FilterRegistrationBean(JwtAuthFilter(jwt, userRepository))
         registration.addUrlPatterns("/api/v1/*")
         registration.order = 1
         return registration

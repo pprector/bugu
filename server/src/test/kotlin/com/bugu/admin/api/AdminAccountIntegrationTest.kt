@@ -90,7 +90,10 @@ class AdminAccountIntegrationTest @Autowired constructor(
             header("Authorization", "Bearer $ops")
         }.andExpect {
             status { isOk() }
-            jsonPath("$.data[0].username") { exists() }
+            jsonPath("$.data.items[0].username") { exists() }
+            jsonPath("$.data.total") { isNumber() }
+            jsonPath("$.data.page") { value(1) }
+            jsonPath("$.data.size") { value(20) }
         }
 
         mockMvc.post("/api/v1/admin/admin-users") {
@@ -123,6 +126,10 @@ class AdminAccountIntegrationTest @Autowired constructor(
             username, AdminPasswordHasher.hash("victim-pass-1"), "待停用", LocalDateTime.now(),
         )
         val id = jdbc.queryForObject("SELECT id FROM admin_user WHERE username = ?", Long::class.java, username)!!
+        // 停用前先拿一个有效 token,验证停用后该 token 立即失效(不只看登录被拒)
+        val victimToken = adminLogin(username, "victim-pass-1")
+            .andExpect { status { isOk() } }.andReturn().response.contentAsString
+            .let { Regex(""""token"\s*:\s*"([^"]+)"""").find(it)!!.groupValues[1] }
 
         mockMvc.patch("/api/v1/admin/admin-users/$id/enabled") {
             header("Authorization", "Bearer $token")
@@ -135,6 +142,11 @@ class AdminAccountIntegrationTest @Autowired constructor(
 
         // 停用后登录被拒
         adminLogin(username, "victim-pass-1").andExpect { status { isUnauthorized() } }
+
+        // 停用前泄露的旧 token 也被拒(token_version 自增)
+        mockMvc.get("/api/v1/admin/auth/me") {
+            header("Authorization", "Bearer $victimToken")
+        }.andExpect { status { isUnauthorized() } }
 
         // 不能停用自己
         mockMvc.patch("/api/v1/admin/admin-users/${superId()}/enabled") {

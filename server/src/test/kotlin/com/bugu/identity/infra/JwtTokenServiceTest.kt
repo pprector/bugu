@@ -28,6 +28,19 @@ class JwtTokenServiceTest {
     }
 
     @Test
+    fun `token 携带吊销版本`() {
+        val token = service().issue(7L, null, 3)
+        assertEquals(TokenSubject(7L, 3), service().parseUserSubject(token))
+    }
+
+    @Test
+    fun `后台 token 携带吊销版本且与 App token 互斥`() {
+        val token = service().issueAdmin(5L, 2)
+        assertEquals(TokenSubject(5L, 2), service().parseAdminSubject(token))
+        assertThrows<JwtException> { service().parseUserSubject(token) }
+    }
+
+    @Test
     fun `篡改令牌被拒绝`() {
         val token = service().issue(1L, null)
         val tampered = token.dropLast(2) + "xx"

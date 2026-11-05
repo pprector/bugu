@@ -83,4 +83,13 @@ class AdminAuthController(private val service: AdminAuthService) {
             ?: throw IllegalStateException("AdminAuthFilter 未注入 adminId")
         return ApiResponse.ok(service.me(adminId).toView())
     }
+
+    /** 退出登录:服务端吊销该账号已签发的全部 token(前端退出时调用即可生效)。 */
+    @PostMapping("/logout")
+    fun logout(request: HttpServletRequest): ApiResponse<Map<String, Boolean>> {
+        val adminId = request.getAttribute(AdminAuthFilter.ATTR_ADMIN_ID) as? Long
+            ?: throw IllegalStateException("AdminAuthFilter 未注入 adminId")
+        service.logout(adminId)
+        return ApiResponse.ok(mapOf("revoked" to true))
+    }
 }

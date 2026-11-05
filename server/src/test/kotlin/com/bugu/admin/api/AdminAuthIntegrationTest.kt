@@ -18,7 +18,7 @@ import org.springframework.test.web.servlet.post
 
 /**
  * 后台鉴权集成测试(E9-S1):种子登录、错误口令、App/后台 token 互斥、me 视图、登录审计。
- * 种子密码来自默认配置 bugu.admin.seed-password(bugu-admin-2026)。
+ * 种子密码来自测试库配置 bugu.admin.seed-password(测试环境注入固定值,仓库不存真值)。
  */
 @SpringBootTest(properties = ["bugu.sms.provider=console"])
 @AutoConfigureMockMvc
@@ -107,6 +107,18 @@ class AdminAuthIntegrationTest @Autowired constructor(
     @Test
     fun `无token访问后台_401`() {
         mockMvc.get("/api/v1/admin/auth/me").andExpect { status { isUnauthorized() } }
+    }
+
+    @Test
+    fun `登出后旧token立即失效`() {
+        val token = adminToken()
+        mockMvc.post("/api/v1/admin/auth/logout") {
+            header("Authorization", "Bearer $token")
+        }.andExpect { status { isOk() } }
+
+        mockMvc.get("/api/v1/admin/auth/me") {
+            header("Authorization", "Bearer $token")
+        }.andExpect { status { isUnauthorized() } }
     }
 
     @Test

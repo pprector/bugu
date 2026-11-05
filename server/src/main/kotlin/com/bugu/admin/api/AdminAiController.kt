@@ -28,7 +28,12 @@ class AdminAiController(
     fun templates(
         @RequestParam(required = false) tone: String?,
         @RequestParam(required = false) scene: String?,
-    ): ApiResponse<List<AdminTemplateView>> = ApiResponse.ok(service.templates(tone, scene))
+        @RequestParam(defaultValue = "1") page: Int,
+        @RequestParam(defaultValue = "20") size: Int,
+    ): ApiResponse<AdminTemplatePage> {
+        val (items, total) = service.templates(tone, scene, page, size)
+        return ApiResponse.ok(AdminTemplatePage(items = items, total = total, page = page, size = size))
+    }
 
     @PostMapping("/copy-templates")
     fun create(request: HttpServletRequest, @RequestBody body: TemplateCreateRequest): ApiResponse<AdminTemplateView> {

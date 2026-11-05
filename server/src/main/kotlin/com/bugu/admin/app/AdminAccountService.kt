@@ -24,8 +24,15 @@ class AdminAccountService(private val repository: AdminUserRepository) {
         val USERNAME_PATTERN = Regex("^[\\u4E00-\\u9FA5A-Za-z0-9_-]{3,32}$")
     }
 
-    fun list(): List<AdminUserRow> =
-        repository.findAll().sortedBy { requireNotNull(it.id) { "admin id 不应为空" } }
+    /** 内存分页切片:page 从 1 起,size 1-100,越界页返回空列表(与反馈管理同口径)。 */
+    fun list(page: Int, size: Int): Pair<List<AdminUserRow>, Long> {
+        require(page >= 1 && size in 1..100) { "分页参数非法，page须大于0，size须为1至100" }
+        val all = repository.findAll().sortedBy { requireNotNull(it.id) { "admin id 不应为空" } }
+        val total = all.size.toLong()
+        val from = (page - 1) * size
+        val items = if (from >= all.size) emptyList() else all.subList(from, minOf(from + size, all.size))
+        return items to total
+    }
 
     fun create(username: String, password: String, nickname: String, role: String): AdminUserRow {
         if (!USERNAME_PATTERN.matches(username)) {
@@ -63,13 +70,14 @@ class AdminAccountService(private val repository: AdminUserRepository) {
         }
     }
 
-    /** 启停后台账号:不能停用自己——避免最后一个 SUPER 自锁后无人可恢复。 */
+    /** 启停后台账号:不能停用自己——避免最后一个 SUPER 自锁后无人可恢复;停用同时吊销该账号全部 token。 */
     fun setEnabled(operatorId: Long, id: Long, enabled: Boolean): AdminUserRow {
         if (!enabled && operatorId == id) {
             throw BizException(ErrorCode.CONFLICT, HttpStatus.CONFLICT, "不能停用自己")
         }
         val row = repository.findByIdOrNull(id)
             ?: throw BizException(ErrorCode.NOT_FOUND, HttpStatus.NOT_FOUND, "后台账号不存在")
-        return repository.save(row.copy(enabled = enabled))
+        val revokedVersion = if (row.enabled && !enabled) row.tokenVersion + 1 else row.tokenVersion
+        return repository.save(row.copy(enabled = enabled, tokenVersion = revokedVersion))
     }
 }

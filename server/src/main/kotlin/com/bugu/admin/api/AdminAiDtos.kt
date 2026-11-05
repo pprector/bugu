@@ -13,6 +13,15 @@ data class AdminTemplateView(
     val createdAt: String,
 )
 
+/** 模板分页响应:与反馈管理同口径(page 从 1 起,size 1-100)。 */
+@Serializable
+data class AdminTemplatePage(
+    val items: List<AdminTemplateView>,
+    val total: Long,
+    val page: Int,
+    val size: Int,
+)
+
 /** 模板创建请求。 */
 @Serializable
 data class TemplateCreateRequest(

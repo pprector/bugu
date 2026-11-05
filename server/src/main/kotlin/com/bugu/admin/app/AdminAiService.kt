@@ -35,12 +35,19 @@ class AdminAiService(
         private const val MAX_CONTENT = 40
     }
 
-    fun templates(tone: String?, scene: String?): List<AdminTemplateView> =
-        copyTemplateRepository.findAll()
+    /** 内存分页切片:page 从 1 起,size 1-100,越界页返回空列表(与反馈管理同口径)。 */
+    fun templates(tone: String?, scene: String?, page: Int, size: Int): Pair<List<AdminTemplateView>, Long> {
+        require(page >= 1 && size in 1..100) { "分页参数非法，page须大于0，size须为1至100" }
+        val all = copyTemplateRepository.findAll()
             .filter { tone == null || it.tone == tone }
             .filter { scene == null || it.scene == scene }
             .sortedBy { it.id }
             .map { it.toView() }
+        val total = all.size.toLong()
+        val from = (page - 1) * size
+        val items = if (from >= all.size) emptyList() else all.subList(from, minOf(from + size, all.size))
+        return items to total
+    }
 
     fun createTemplate(tone: String, scene: String, content: String): AdminTemplateView {
         validateToneScene(tone, scene)

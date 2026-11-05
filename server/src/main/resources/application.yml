@@ -89,10 +89,11 @@ bugu:
       proxy-host: ""
       proxy-port: 0
   admin:
-    # 后台 SUPER 种子账号(E9):首次启动且无 SUPER 用户时创建,幂等;生产部署前在 compose 覆盖初始密码
+    # 后台 SUPER 种子账号(E9):首次启动且无 SUPER 用户时创建,幂等。
     seed-username: super
-    # 仅本地/测试默认值;prod profile 强制改为 ${BUGU_ADMIN_SEED_PASSWORD},缺失即启动失败
-    seed-password: bugu-admin-2026
+    # 初始口令不入库:生产必须经 BUGU_ADMIN_SEED_PASSWORD 注入(prod 缺失即启动失败);
+    # 本地/测试留空则由启动种子随机生成,并仅在创建当次启动日志中输出一次。
+    seed-password:
   push:
     # console=控制台假实现(默认);jiguang=极光 JPush 真实通道(E8-S5,D4 定案;appKey/master-secret 联验时填入)
     provider: jiguang

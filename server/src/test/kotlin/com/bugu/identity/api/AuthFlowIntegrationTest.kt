@@ -76,6 +76,35 @@ class AuthFlowIntegrationTest @Autowired constructor(
     }
 
     @Test
+    fun `停用账号后旧token立即失效`() {
+        val phone = randomPhone()
+        sendCode(phone).andExpect { status { isOk() } }
+        val code = requireNotNull(smsSender.lastCode) { "假实现应记录验证码" }
+        val token = login(phone, code).andExpect { status { isOk() } }
+            .andReturn().response.contentAsString
+            .let { Regex(""""token"\s*:\s*"([^"]+)"""").find(it)!!.groupValues[1] }
+
+        mockMvc.get("/api/v1/auth/me") {
+            header("Authorization", "Bearer $token")
+        }.andExpect {
+            status { isOk() }
+            jsonPath("$.data.phone") { value(phone) }
+        }
+
+        // 运维/风控停用账号:account_state 非 ACTIVE 后,JWT 过滤器每请求回查即拒绝
+        jdbcClient.sql("UPDATE app_user SET account_state = 'DISABLED' WHERE phone = :phone")
+            .param("phone", phone)
+            .update()
+
+        mockMvc.get("/api/v1/auth/me") {
+            header("Authorization", "Bearer $token")
+        }.andExpect {
+            status { isUnauthorized() }
+            jsonPath("$.code") { value("UNAUTHORIZED") }
+        }
+    }
+
+    @Test
     fun `无token访问me返回401`() {
         mockMvc.get("/api/v1/auth/me").andExpect {
             status { isUnauthorized() }

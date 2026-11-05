@@ -21,13 +21,13 @@ class AdminSeederTest {
     private val args = mock(ApplicationArguments::class.java)
 
     @Test
-    fun `无SUPER时创建种子账号`() {
+    fun `无SUPER时按配置口令创建种子账号`() {
         `when`(repository.existsByRole(AdminRoles.SUPER)).thenReturn(false)
         `when`(repository.save(any(AdminUserRow::class.java))).thenAnswer {
             it.getArgument<AdminUserRow>(0).copy(id = 1)
         }
 
-        AdminSeeder(repository, AdminSeedProperties()).run(args)
+        AdminSeeder(repository, AdminSeedProperties(seedPassword = "seed-pass-1234")).run(args)
 
         val captor = org.mockito.ArgumentCaptor.forClass(AdminUserRow::class.java)
         verify(repository).save(captor.capture())
@@ -36,8 +36,25 @@ class AdminSeederTest {
         assertEquals(AdminRoles.SUPER, saved.role)
         assertEquals("超级管理员", saved.nickname)
         assertTrue(saved.enabled)
-        assertTrue(AdminPasswordHasher.verify("bugu-admin-2026", saved.passwordHash))
+        assertTrue(AdminPasswordHasher.verify("seed-pass-1234", saved.passwordHash))
         assertFalse(AdminPasswordHasher.verify("wrong-password", saved.passwordHash))
+    }
+
+    @Test
+    fun `未配置口令时随机生成_不再回落到仓库默认值`() {
+        `when`(repository.existsByRole(AdminRoles.SUPER)).thenReturn(false)
+        `when`(repository.save(any(AdminUserRow::class.java))).thenAnswer {
+            it.getArgument<AdminUserRow>(0).copy(id = 2)
+        }
+
+        AdminSeeder(repository, AdminSeedProperties()).run(args)
+
+        val captor = org.mockito.ArgumentCaptor.forClass(AdminUserRow::class.java)
+        verify(repository).save(captor.capture())
+        val saved = captor.value
+        assertFalse(saved.passwordHash.isBlank())
+        // 旧默认口令不得再作为兜底真值
+        assertFalse(AdminPasswordHasher.verify("bugu-admin-2026", saved.passwordHash))
     }
 
     @Test

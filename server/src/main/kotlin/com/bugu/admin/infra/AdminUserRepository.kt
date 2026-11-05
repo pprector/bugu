@@ -16,6 +16,8 @@ data class AdminUserRow(
     val nickname: String,
     val role: String = "OPS",
     val enabled: Boolean = true,
+    /** JWT 吊销版本:token 内 ver 不一致即被判失效,停用/登出时自增。 */
+    val tokenVersion: Int = 0,
     val createdAt: LocalDateTime = LocalDateTime.now(),
 )
 

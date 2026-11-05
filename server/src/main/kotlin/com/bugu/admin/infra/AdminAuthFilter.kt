@@ -30,6 +30,8 @@ class AdminAuthFilter(
         const val ATTR_ADMIN_ID = "bugu.adminId"
         const val ATTR_ADMIN_ROLE = "bugu.adminRole"
         const val LOGIN_PATH = "/api/v1/admin/auth/login"
+        /** 登出只吊销自己的 token,不要求 admin:write(OPS 也可安全退出)。 */
+        const val LOGOUT_PATH = "/api/v1/admin/auth/logout"
         private const val PERM_ADMIN_WRITE = com.bugu.admin.app.AdminRoles.PERM_ADMIN_WRITE
         private val json = Json { encodeDefaults = true }
     }
@@ -52,26 +54,26 @@ class AdminAuthFilter(
             return
         }
 
-        val adminId = try {
-            jwt.parseAdminId(token)
+        val subject = try {
+            jwt.parseAdminSubject(token)
         } catch (e: JwtException) {
             respondUnauthorized(res)
             return
         }
 
-        val user = repository.findByIdOrNull(adminId)
-        if (user == null || !user.enabled) {
+        val user = repository.findByIdOrNull(subject.id)
+        if (user == null || !user.enabled || user.tokenVersion != subject.tokenVersion) {
             respondUnauthorized(res)
             return
         }
 
         val mutating = req.method != "GET"
-        if (mutating && PERM_ADMIN_WRITE !in com.bugu.admin.app.AdminRoles.permsOf(user.role)) {
+        if (mutating && req.requestURI != LOGOUT_PATH && PERM_ADMIN_WRITE !in com.bugu.admin.app.AdminRoles.permsOf(user.role)) {
             respond(res, HttpStatus.FORBIDDEN, ErrorCode.FORBIDDEN)
             return
         }
 
-        req.setAttribute(ATTR_ADMIN_ID, adminId)
+        req.setAttribute(ATTR_ADMIN_ID, subject.id)
         req.setAttribute(ATTR_ADMIN_ROLE, user.role)
         chain.doFilter(request, response)
     }
