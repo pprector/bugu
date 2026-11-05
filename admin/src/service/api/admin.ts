@@ -26,8 +26,16 @@ export interface AdminAccount {
   createdAt: string;
 }
 
-export function fetchAdminAccounts() {
-  return request<AdminAccount[]>({ url: '/api/v1/admin/admin-users' });
+/** 分页口径与反馈管理一致:page 从 1 起,size 1-100 */
+export interface AdminAccountPage {
+  items: AdminAccount[];
+  total: number;
+  page: number;
+  size: number;
+}
+
+export function fetchAdminAccounts(params: { page: number; size: number }) {
+  return request<AdminAccountPage>({ url: '/api/v1/admin/admin-users', params });
 }
 
 export function fetchAdminCreateAccount(data: { username: string; password: string; nickname: string; role: string }) {
@@ -195,8 +203,16 @@ export interface AdminTemplate {
   createdAt: string;
 }
 
-export function fetchAdminTemplates(params?: { tone?: string; scene?: string }) {
-  return request<AdminTemplate[]>({ url: '/api/v1/admin/ai/copy-templates', params });
+/** 分页口径与反馈管理一致:page 从 1 起,size 1-100 */
+export interface AdminTemplatePage {
+  items: AdminTemplate[];
+  total: number;
+  page: number;
+  size: number;
+}
+
+export function fetchAdminTemplates(params: { tone?: string; scene?: string; page: number; size: number }) {
+  return request<AdminTemplatePage>({ url: '/api/v1/admin/ai/copy-templates', params });
 }
 
 export function fetchAdminCreateTemplate(data: { tone: string; scene: string; content: string }) {

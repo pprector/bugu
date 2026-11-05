@@ -20,6 +20,9 @@ const loading = ref(false);
 const rows = ref<AdminTemplate[]>([]);
 const filterTone = ref<string | null>(null);
 const filterScene = ref<string | null>(null);
+const page = ref(1);
+const size = ref(20);
+const total = ref(0);
 
 const columns = [
   { title: 'ID', key: 'id', width: 70 },
@@ -56,17 +59,50 @@ const saving = ref(false);
 const editing = ref<AdminTemplate | null>(null);
 const form = ref({ tone: 'GENTLE', scene: 'CREATE', content: '' });
 
+let requestId = 0;
+
 async function load() {
+  const currentRequest = ++requestId;
   loading.value = true;
   try {
     const { data, error } = await fetchAdminTemplates({
       tone: filterTone.value ?? undefined,
-      scene: filterScene.value ?? undefined
+      scene: filterScene.value ?? undefined,
+      page: page.value,
+      size: size.value
     });
-    if (!error && data) rows.value = data;
+    if (currentRequest !== requestId) return;
+    if (!error && data) {
+      const lastPage = Math.max(1, Math.ceil(data.total / data.size));
+      if (data.page > lastPage) {
+        page.value = lastPage;
+        await load();
+        return;
+      }
+      rows.value = data.items;
+      total.value = data.total;
+      page.value = data.page;
+      size.value = data.size;
+    }
   } finally {
-    loading.value = false;
+    if (currentRequest === requestId) loading.value = false;
   }
+}
+
+function search() {
+  page.value = 1;
+  load();
+}
+
+function changePage(value: number) {
+  page.value = value;
+  load();
+}
+
+function changeSize(value: number) {
+  size.value = value;
+  page.value = 1;
+  load();
 }
 
 function openCreate() {
@@ -123,11 +159,27 @@ onMounted(load);
         <NSpace>
           <NSelect v-model:value="filterTone" :options="TONE_OPTIONS" placeholder="全部语气" clearable style="width: 130px" />
           <NSelect v-model:value="filterScene" :options="SCENE_OPTIONS" placeholder="全部场景" clearable style="width: 130px" />
-          <NButton type="primary" @click="load">查询</NButton>
+          <NButton type="primary" @click="search">查询</NButton>
           <NButton v-if="canWrite" type="primary" secondary @click="openCreate">新增模板</NButton>
         </NSpace>
       </template>
-      <NDataTable :columns="columns" :data="rows" :loading="loading" :bordered="false" />
+      <NDataTable
+        remote
+        :columns="columns"
+        :data="rows"
+        :row-key="row => row.id"
+        :loading="loading"
+        :bordered="false"
+        :pagination="{
+          page,
+          pageSize: size,
+          itemCount: total,
+          showSizePicker: true,
+          pageSizes: [10, 20, 50, 100]
+        }"
+        @update:page="changePage"
+        @update:page-size="changeSize"
+      />
     </NCard>
 
     <NModal v-model:show="modalVisible" preset="card" :title="editing ? '编辑模板' : '新增模板'" class="w-480px">
