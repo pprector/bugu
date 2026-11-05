@@ -6,6 +6,7 @@ import com.bugu.ai.domain.DayPart
 import com.bugu.ai.domain.ResponseHabit
 import com.bugu.ai.infra.ResponseStatsQuery
 import com.bugu.identity.infra.DeviceTokenRepository
+import com.bugu.identity.infra.UserRepository
 import com.bugu.push.Platform
 import com.bugu.push.PushGateway
 import com.bugu.push.PushMessage
@@ -35,6 +36,7 @@ class PushService(
     private val responseStatsQuery: ResponseStatsQuery,
     private val clock: Clock,
     private val bondRepository: com.bugu.bond.infra.BondRepository,
+    private val userRepository: UserRepository,
 ) {
 
     private val log = LoggerFactory.getLogger(javaClass)
@@ -55,7 +57,7 @@ class PushService(
             log.warn("no copy for fire={} tone={} scene={}, push skipped", fireId, tone, scene)
             return record(fireId, stage, action, PushResult.Skipped)
         }
-        val result = sendToUser(userId, content, fireId, stage)
+        val result = sendToUser(userId, content, content, fireId, stage)
         return record(fireId, stage, action, result)
     }
 
@@ -71,7 +73,7 @@ class PushService(
             log.warn("no copy for create push fire={}, skipped", fireId)
             return PushResult.Skipped
         }
-        return sendToUser(receiverId, content, fireId, "T0")
+        return sendToUser(receiverId, content, content, fireId, "T0")
     }
 
     /**
@@ -81,10 +83,62 @@ class PushService(
     fun pushRevoked(fireId: Long, creatorId: Long, receiverId: Long, title: String) {
         val elderMsg = "「$title」的完成已被家人撤销,请重新确认"
         val creatorMsg = "已撤销「$title」的误触完成"
-        runCatching { sendToUser(receiverId, elderMsg, fireId, "REVOKE") }
+        runCatching { sendToUser(receiverId, elderMsg, elderMsg, fireId, "REVOKE") }
             .onFailure { log.error("撤销通知长辈失败 fire={}", fireId, it) }
-        runCatching { sendToUser(creatorId, creatorMsg, fireId, "REVOKE") }
+        runCatching { sendToUser(creatorId, creatorMsg, creatorMsg, fireId, "REVOKE") }
             .onFailure { log.error("撤销通知子女失败 fire={}", fireId, it) }
+    }
+
+    /**
+     * fireAt 到点推送(FIRE_AT):只发送,不写 escalation_log。
+     * 幂等 claim 由 [com.bugu.scheduling.FireAtPushScanner] 先插入 (fireId, FIRE_AT) 唯一行完成,
+     * 发送结果再回填同一行;因此本方法不得在未 claim 的情况下直接调用。
+     * 标题/正文都包含发起人昵称与提醒标题,extras 附 deeplink 供端侧点击直达响铃页。
+     */
+    @org.springframework.transaction.annotation.Transactional
+    fun sendFireAt(fireId: Long): PushResult {
+        val fire = reminderFireRepository.findByIdOrNull(fireId) ?: return PushResult.Skipped
+        val reminder = reminderRepository.findByIdOrNull(fire.reminderId) ?: return PushResult.Skipped
+        // 端侧已上报/已取消/静默落库的 fire 不再推,避免和本地闹钟重复打扰
+        if (fire.state !in setOf("PENDING", "FIRED") || fire.reportedAt != null) return PushResult.Skipped
+        if (reminder.status == "CANCELED" || reminder.silent) return PushResult.Skipped
+        if (reminder.bondId != null && bondRepository.lockById(reminder.bondId)?.status != "ACTIVE") return PushResult.Skipped
+
+        val creatorName = userRepository.findByIdOrNull(reminder.creatorId)?.nickname
+            ?.takeIf { it.isNotBlank() } ?: "家人"
+        val copy = composeContent(fireId, "FIRE_AT", reminder.tone, "REPUSH", reminder.title)
+            ?: reminder.title
+        val title = if (reminder.creatorId == reminder.receiverId) {
+            "到点啦：${reminder.title}（你自己的提醒）"
+        } else {
+            "来自$creatorName 的提醒：${reminder.title}"
+        }
+        // 极光通知栏标题固定为应用名,正文必须自带提醒人与内容,用户不打开 App 也能看懂
+        val body = if (reminder.creatorId == reminder.receiverId) {
+            "$copy｜${reminder.title}（你自己的提醒）"
+        } else {
+            "$copy｜${reminder.title}（来自$creatorName）"
+        }
+        return sendToUser(
+            userId = fire.targetUserId,
+            title = title,
+            body = body,
+            fireId = fireId,
+            stage = "FIRE_AT",
+            extraExtras = mapOf(
+                "reminderId" to fire.reminderId.toString(),
+                "deeplink" to "bugu://ring?fireId=$fireId&reminderId=${fire.reminderId}",
+                // 端侧点击通知可直接构造 RingActivity 入参,无需再查一次列表
+                "title" to reminder.title,
+                "fireAt" to fire.fireAt.toString(),
+                "idempotencyKey" to fire.idempotencyKey,
+                "kind" to reminder.kind,
+                // 与端侧 AlarmScheduler.EXTRA_VOICE / EXTRA_SELF 同名,便于直接构造 Intent
+                "voice" to reminder.voiceEnabled.toString(),
+                "selfReminder" to (reminder.creatorId == reminder.receiverId).toString(),
+            ),
+            notificationTitle = title,
+        )
     }
 
     /** 文案生成:要素由 fire→reminder 装配(脱敏,无 note/手机号);AI 不可用时 compose 内部降级模板。 */
@@ -106,7 +160,15 @@ class PushService(
     }
 
     /** 逐令牌发送,任一通道 Accepted 即止;无令牌返回 Skipped,不伪造成功。 */
-    private fun sendToUser(userId: Long, content: String, fireId: Long, stage: String): PushResult {
+    private fun sendToUser(
+        userId: Long,
+        title: String,
+        body: String,
+        fireId: Long,
+        stage: String,
+        extraExtras: Map<String, String> = emptyMap(),
+        notificationTitle: String? = null,
+    ): PushResult {
         val fire = reminderFireRepository.findByIdOrNull(fireId) ?: return PushResult.Skipped
         val reminder = reminderRepository.findByIdOrNull(fire.reminderId) ?: return PushResult.Skipped
         if (reminder.bondId != null && bondRepository.lockById(reminder.bondId)?.status != "ACTIVE") return PushResult.Skipped
@@ -122,9 +184,10 @@ class PushService(
             val message = PushMessage(
                 token = token.pushToken,
                 platform = platform,
-                title = content,
-                body = content,
-                extras = mapOf("fireId" to fireId.toString(), "stage" to stage),
+                title = title,
+                body = body,
+                extras = mapOf("fireId" to fireId.toString(), "stage" to stage) + extraExtras,
+                notificationTitle = notificationTitle,
             )
             last = pushGateway.send(message)
             if (last is PushResult.Accepted) break

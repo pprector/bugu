@@ -90,6 +90,47 @@ class AckFlowIntegrationTest @Autowired constructor(
     }
 
     @Test
+    fun `SNOOZE响应返回新fireId与fireAt`() {
+        val (a, b) = client.boundPair()
+        val reminderId = reminders.createAndGetId(a.token, b.id)
+        val fireId = firstFireId(reminderId)
+
+        val body = ack(b.token, fireId, "SNOOZE", snoozeMinutes = 10)
+            .andExpect { status { isOk() } }.andReturn().response.contentAsString
+
+        val newFire = reminderFireRepository.findByReminderIdOrderByFireAt(reminderId)
+            .first { it.state == "PENDING" }
+        val nextFireId = Regex(""""nextFireId"\s*:\s*(\d+)""").find(body)!!.groupValues[1].toLong()
+        val nextFireAt = Regex(""""nextFireAt"\s*:\s*"([^"]+)"""").find(body)!!.groupValues[1]
+        assertEquals(newFire.id, nextFireId)
+        assertEquals(newFire.fireAt.toString(), nextFireAt)
+    }
+
+    @Test
+    fun `REPEAT_DONE响应返回次日fireId与fireAt`() {
+        val (a, b) = client.boundPair()
+        val fireAt = LocalDateTime.now().plusHours(2).withNano(0)
+        val reminderId = reminders.createAndGetId(
+            a.token, b.id, title = "每天吃降压药", kind = "REPEAT",
+            fireAt = fireAt.toString(), repeatRule = "DAILY",
+        )
+        val fireId = firstFireId(reminderId)
+
+        val body = ack(b.token, fireId, "DONE")
+            .andExpect { status { isOk() } }.andReturn().response.contentAsString
+
+        val nextFire = reminderFireRepository.findByReminderIdOrderByFireAt(reminderId)
+            .first { it.state == "PENDING" }
+        val nextFireId = Regex(""""nextFireId"\s*:\s*(\d+)""").find(body)!!.groupValues[1].toLong()
+        val nextFireAt = Regex(""""nextFireAt"\s*:\s*"([^"]+)"""").find(body)!!.groupValues[1]
+        assertEquals(fireAt.plusDays(1), nextFire.fireAt)
+        assertEquals(nextFire.id, nextFireId)
+        assertEquals(nextFire.fireAt.toString(), nextFireAt)
+        // 现有响应语义不变:本次仍返回 ACKED,由 nextFireAt 指示下一轮
+        assertTrue(body.contains(""""status":"ACKED""""))
+    }
+
+    @Test
     fun `SNOOZE后新fire再DONE_闭环ACKED且两条ack互不覆盖`() {
         val (a, b) = client.boundPair()
         val reminderId = reminders.createAndGetId(a.token, b.id)

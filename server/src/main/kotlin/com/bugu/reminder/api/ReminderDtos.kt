@@ -105,6 +105,8 @@ data class MuteSettingView(
  * (E8 S3 契约补充:客户端此前无法经 API 取得 fireId,ack/report 闭环断裂)。
  * ackId = 提醒已 ACKED 时最早一次 DONE 确认,供发起人撤销误触(E6-S2 / E8 S3 契约补充);其余状态 null。
  * bondId = null 表示自惦记(送给自己)。
+ * nextFireId/nextFireAt = 本次 ack 产生/推进的下一条 fire(SNOOZE 的新 fire、REPEAT DONE 的次日 fire);
+ * 无下一条时为 null(JSON 省略),老版本端侧忽略该字段即可,向后兼容。
  */
 @Serializable
 data class ReminderView(
@@ -124,4 +126,6 @@ data class ReminderView(
     val createdAt: String,
     val fireId: Long? = null,
     val ackId: Long? = null,
+    val nextFireId: Long? = null,
+    val nextFireAt: String? = null,
 )

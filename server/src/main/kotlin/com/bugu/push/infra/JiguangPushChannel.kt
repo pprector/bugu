@@ -60,9 +60,9 @@ class JiguangPushChannel(
             }
             putJsonObject("notification") {
                 putJsonObject("android") {
-                    // 通知栏标题固定应用名(产品定名「布谷」),alert 用正文——PushService 的 title 与 body 同为全文
+                    // 常规提醒标题固定应用名「布谷」;到点强提醒用 notificationTitle 带出提醒人与内容
                     put("alert", message.body)
-                    put("title", APP_NAME)
+                    put("title", message.notificationTitle ?: APP_NAME)
                     putJsonObject("extras") {
                         message.extras.forEach { (k, v) -> put(k, v) }
                     }

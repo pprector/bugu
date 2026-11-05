@@ -8,7 +8,9 @@ import java.time.LocalDateTime
 
 /**
  * escalation_log 行:升级链动作记录(结构见 V1__baseline.sql)。
- * stage=T1/T2/CLOSE;action=REPUSH_RECEIVER/NOTIFY_CREATOR/MARK_MISSED;push_result=ACCEPTED/FAILED/SKIPPED。
+ * stage=T1/T2/CLOSE/FIRE_AT;action=REPUSH_RECEIVER/NOTIFY_CREATOR/MARK_MISSED/RING_RECEIVER;
+ * push_result=CLAIMED/ACCEPTED/FAILED/SKIPPED。
+ * V17 起 (fire_id, stage) 唯一:FIRE_AT 推送以插入该行作为原子幂等 claim。
  */
 @Table("escalation_log")
 data class EscalationLogRow(

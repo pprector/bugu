@@ -12,6 +12,8 @@ data class PushMessage(
     val title: String,
     val body: String,
     val extras: Map<String, String> = emptyMap(),
+    /** Android 通知栏标题;null 时通道使用应用名(常规提醒维持「布谷」,到点强提醒可自带提醒人/内容)。 */
+    val notificationTitle: String? = null,
 )
 
 sealed interface PushResult {

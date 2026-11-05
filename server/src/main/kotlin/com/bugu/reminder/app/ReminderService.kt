@@ -301,6 +301,7 @@ class ReminderService(
         }
 
         val now = LocalDateTime.now(clock)
+        var nextFire: ReminderFireRow? = null
         return transactionTemplate.execute {
             val domain = ReminderMapper.toDomain(reminderRow)
             if (domain.status == ReminderStatus.PENDING || domain.status == ReminderStatus.SNOOZED) {
@@ -337,7 +338,7 @@ class ReminderService(
                     // 截断到毫秒,与 DB DATETIME(3) 存储精度一致,保证 key 与 fire_at 回读一致
                     val snoozeFireAt = now.plusMinutes(snoozeMinutes!!.toLong())
                         .let { it.withNano((it.nano / 1_000_000) * 1_000_000) }
-                    reminderFireRepository.save(
+                    nextFire = reminderFireRepository.save(
                         ReminderFireRow(
                             reminderId = fire.reminderId,
                             targetUserId = fire.targetUserId,
@@ -352,9 +353,12 @@ class ReminderService(
 
             log.info("reminder ack id={} fire={} action={} by={}", fire.reminderId, fireId, action, receiverId)
             val view = toView(saved)
-            // REPEAT:本次已完成即排下一次,系列不因单次确认而终止(E10 决策)
-            if (action == AckAction.DONE) repeatScheduler.scheduleNext(saved, now)
-            view
+            // REPEAT:本次已完成即排下一次,系列不因单次确认而终止(E10 决策);
+            // 次日 fire 一并回传,端侧不再靠「确认时间 +15 分钟」猜时间。
+            if (action == AckAction.DONE) {
+                repeatScheduler.scheduleNext(saved, now)?.let { nextFire = it }
+            }
+            view.copy(nextFireId = nextFire?.id, nextFireAt = nextFire?.fireAt?.toString())
         }
     }
 

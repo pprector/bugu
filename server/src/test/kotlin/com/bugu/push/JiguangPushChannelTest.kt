@@ -77,6 +77,12 @@ class JiguangPushChannelTest {
     }
 
     @Test
+    fun `到点强提醒使用自定义通知栏标题`() {
+        channel().send(message().copy(notificationTitle = "来自家人 的提醒：记得吃药"))
+        assertTrue(lastBody.get().contains("\"title\":\"来自家人 的提醒：记得吃药\""))
+    }
+
+    @Test
     fun `极光业务错误4xx为Failed且不可重试`() {
         responseStatus.set(400)
         responseBody.set("""{"error":{"code":1003,"message":"audience is invalid"}}""")
