@@ -28,6 +28,7 @@ class ConsoleSmsSender : SmsSender {
     override fun send(phone: String, code: String) {
         lastCodeRef.set(code)
         val masked = phone.take(3) + "****" + phone.takeLast(4)
-        log.info("[SMS-FAKE] 发送验证码到 {}: {}", masked, code)
+        // 不打印验证码明文(防日志泄露);本地联调从 sms_code 表或本实例 lastCode 取码
+        log.info("[SMS-FAKE] 验证码已生成 phone={} (明文不入日志,本地请查 sms_code 表)", masked)
     }
 }
