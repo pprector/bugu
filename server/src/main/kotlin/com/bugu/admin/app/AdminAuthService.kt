@@ -23,13 +23,21 @@ class AdminAuthService(
     private val repository: AdminUserRepository,
     private val jwt: JwtTokenService,
     private val audit: AdminAuditService,
+    private val throttle: AdminLoginThrottle,
 ) {
 
-    fun login(username: String, password: String): Pair<AdminUserRow, String> {
+    /**
+     * 登录校验。clientKey 为「IP|用户名」,用于跨账号/IP 的失败限流;
+     * 连续失败 5 次锁定 15 分钟。
+     */
+    fun login(username: String, password: String, clientKey: String): Pair<AdminUserRow, String> {
+        throttle.check(clientKey)
         val user = repository.findByUsername(username)
         if (user == null || !user.enabled || !AdminPasswordHasher.verify(password, user.passwordHash)) {
+            throttle.onFailure(clientKey)
             throw BizException(ErrorCode.UNAUTHORIZED, HttpStatus.UNAUTHORIZED, "用户名或密码错误")
         }
+        throttle.onSuccess(clientKey)
         val adminId = requireNotNull(user.id) { "admin id 不应为空" }
         val token = jwt.issueAdmin(adminId)
         audit.record(adminId, action = "LOGIN", detail = "username=$username")

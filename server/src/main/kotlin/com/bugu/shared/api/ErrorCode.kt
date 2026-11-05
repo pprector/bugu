@@ -13,6 +13,7 @@ enum class ErrorCode(val defaultMessage: String) {
     BOND_INVALID("绑定码无效或已过期"),
     BOND_LIMITED("已存在绑定关系"),
     SMS_RATE_LIMITED("短信发送过于频繁,请稍后再试"),
+    LOGIN_LOCKED("登录失败次数过多,请稍后再试"),
     REMINDER_MUTED("TA 关闭了这类提醒"),
     AI_UNAVAILABLE("AI 服务暂不可用"),
     UPSTREAM_UNAVAILABLE("上游服务不可用"),

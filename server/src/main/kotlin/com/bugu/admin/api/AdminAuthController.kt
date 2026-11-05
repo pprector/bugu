@@ -53,9 +53,28 @@ fun AdminUserRow.toView() = AdminUserView(
 class AdminAuthController(private val service: AdminAuthService) {
 
     @PostMapping("/login")
-    fun login(@RequestBody request: AdminLoginRequest): ApiResponse<AdminLoginResponse> {
-        val (user, token) = service.login(request.username, request.password)
+    fun login(request: HttpServletRequest, @RequestBody body: AdminLoginRequest): ApiResponse<AdminLoginResponse> {
+        val clientKey = clientIp(request) + "|" + body.username
+        val (user, token) = service.login(body.username, body.password, clientKey)
         return ApiResponse.ok(AdminLoginResponse(token = token, user = user.toView()))
+    }
+
+    /**
+     * 取真实客户端 IP:生产 8081 仅绑 127.0.0.1,经 Nginx 转发,此时优先 X-Forwarded-For 首段。
+     * 仅当请求来自本机代理时才信任该头,避免外部直接伪造 XFF 绕过 IP+账号限流。
+     */
+    private fun clientIp(request: HttpServletRequest): String {
+        val remote = request.remoteAddr
+        val fromLocalProxy = remote == "127.0.0.1" || remote == "::1" || remote == "0:0:0:0:0:0:0:1"
+        if (fromLocalProxy) {
+            request.getHeader("X-Forwarded-For")
+                ?.split(',')
+                ?.firstOrNull()
+                ?.trim()
+                ?.takeIf { it.isNotEmpty() }
+                ?.let { return it }
+        }
+        return remote ?: "unknown"
     }
 
     @GetMapping("/me")

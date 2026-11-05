@@ -1,5 +1,6 @@
 package com.bugu.admin.api
 
+import com.bugu.admin.app.AdminLoginThrottle
 import com.bugu.admin.infra.AdminAuditLogRepository
 import com.bugu.bond.api.AuthTestClient
 import com.bugu.identity.infra.ConsoleSmsSender
@@ -58,6 +59,22 @@ class AdminAuthIntegrationTest @Autowired constructor(
     @Test
     fun `错误口令_401`() {
         adminLogin(password = "wrong-password").andExpect { status { isUnauthorized() } }
+    }
+
+    @Test
+    fun `连续失败5次_登录返回429锁定`() {
+        // 用随机账号隔离,避免影响其它用例对 super 的正常登录
+        val username = "lock-${System.nanoTime()}"
+
+        repeat(AdminLoginThrottle.MAX_FAILURES) {
+            adminLogin(username, "wrong-password").andExpect { status { isUnauthorized() } }
+        }
+
+        adminLogin(username, "wrong-password").andExpect {
+            status { isTooManyRequests() }
+            jsonPath("$.code") { value("LOGIN_LOCKED") }
+            jsonPath("$.message") { value(org.hamcrest.Matchers.containsString("分钟后再试")) }
+        }
     }
 
     @Test
