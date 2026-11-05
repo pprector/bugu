@@ -27,6 +27,12 @@ data class JwtProperties(
 @Component
 class JwtTokenService(properties: JwtProperties) {
 
+    init {
+        require(properties.secret.length >= 32) {
+            "JWT 密钥仅 ${properties.secret.length} 字节,不足 32 字节:请通过环境变量 BUGU_JWT_SECRET 注入随机串"
+        }
+    }
+
     private val key: SecretKey = Keys.hmacShaKeyFor(properties.secret.toByteArray(Charsets.UTF_8))
     private val ttl: Duration = Duration.ofDays(properties.expireDays)
 

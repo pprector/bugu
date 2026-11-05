@@ -71,7 +71,7 @@ bugu:
       # api-key 不入库:本地放 server/application-local.yml,生产经 BUGU_LLM_OPENAI_API_KEY 环境变量覆盖
       model: deepseek-v4-1-flash-economy-261017
   jwt:
-    # 生产部署前在 docker-compose.prod.yml 用 BUGU_JWT_SECRET 覆盖(≥32 字节)
+    # 仅本地/测试默认值;prod profile 强制改为 ${BUGU_JWT_SECRET}(≥32 字节),缺失即启动失败
     secret: bugu-dev-secret-key-0123456789abcdef000
     expire-days: 7
   sms:
@@ -90,6 +90,7 @@ bugu:
   admin:
     # 后台 SUPER 种子账号(E9):首次启动且无 SUPER 用户时创建,幂等;生产部署前在 compose 覆盖初始密码
     seed-username: super
+    # 仅本地/测试默认值;prod profile 强制改为 ${BUGU_ADMIN_SEED_PASSWORD},缺失即启动失败
     seed-password: bugu-admin-2026
   push:
     # console=控制台假实现(默认);jiguang=极光 JPush 真实通道(E8-S5,D4 定案;appKey/master-secret 联验时填入)

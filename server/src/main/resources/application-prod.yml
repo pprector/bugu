@@ -1,0 +1,9 @@
+# 生产 profile:镜像(Dockerfile)与 docker-compose.prod.yml 均显式激活。
+# 下面两个值必须由 BUGU_JWT_SECRET / BUGU_ADMIN_SEED_PASSWORD 环境变量注入(relaxed binding);
+# 缺失时由 com.bugu.shared.infra.ProdConfigGuard 在启动期直接拒绝并报出变量名。
+# 这里显式写成空默认值,避免 `${VAR}` 未解析时被原样当作密钥使用。
+bugu:
+  jwt:
+    secret: ${BUGU_JWT_SECRET:}
+  admin:
+    seed-password: ${BUGU_ADMIN_SEED_PASSWORD:}
