@@ -1,0 +1,12 @@
+[
+  {
+    "relation": ["delegate_permission/common.handle_all_urls"],
+    "target": {
+      "namespace": "android_app",
+      "package_name": "com.bugu",
+      "sha256_cert_fingerprints": [
+        "2A:8C:34:2C:FB:0F:C4:22:B0:6C:3F:75:AA:27:8D:A2:F6:92:38:A7:43:9C:9C:2E:AB:95:A0:5A:C5:38:B6:79"
+      ]
+    }
+  }
+]

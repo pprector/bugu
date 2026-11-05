@@ -15,11 +15,13 @@
           <a href="#companion">有人惦记你</a>
           <a href="#promise">不鸽保证</a>
           <a href="#download">下载 App</a>
+          <a href="./privacy.html">隐私政策</a>
+          <a href="./terms.html">用户协议</a>
         </nav>
       </div>
 
       <div class="bottom">
-        <span>© 2026 布谷 BUGU · v1.0.0</span>
+        <span>© 2026 布谷 BUGU · v1.1.0</span>
         <span>布谷布谷，有人惦记你。</span>
       </div>
     </div>

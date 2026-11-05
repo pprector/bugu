@@ -59,7 +59,7 @@ onUnmounted(() => window.clearInterval(timer))
           <a class="btn btn-primary" href="#download">下载 Android 版</a>
           <a class="btn btn-ghost" href="#how">看看它怎么叫你</a>
         </div>
-        <p class="free-note" v-reveal="360">提醒、闹钟、看板，永久免费。</p>
+        <p class="free-note" v-reveal="360">提醒、闹钟、看板，当前全部免费。</p>
       </div>
 
       <div class="stage" v-reveal="150">
@@ -144,7 +144,7 @@ onUnmounted(() => window.clearInterval(timer))
 
 .headline {
   margin-top: 18px;
-  font-size: clamp(40px, 6.4vw, 76px);
+  font-size: clamp(40px, 6.4vw, 70px);
   font-weight: 800;
   line-height: 1.16;
   letter-spacing: -0.025em;
