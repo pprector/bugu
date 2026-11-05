@@ -41,7 +41,8 @@ management:
   endpoints:
     web:
       exposure:
-        include: health,info,metrics
+        # 运维端点只保留 health;info/metrics/env 等一律不暴露(此前匿名可读)
+        include: health
   endpoint:
     health:
       show-details: when-authorized
