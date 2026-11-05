@@ -92,6 +92,13 @@ class FeedbackIntegrationTest @Autowired constructor(
             jsonPath("$.data.status") { value("RESOLVED") }
             jsonPath("$.data.reply") { value("已协助处理") }
         }
+        // 反馈处理与其余写操作一致,必须落审计
+        val auditCount = jdbc.queryForObject(
+            "SELECT COUNT(*) FROM admin_audit_log WHERE action = 'FEEDBACK_UPDATE' AND target_id = ?",
+            Long::class.java,
+            id,
+        )!!
+        assertTrue(auditCount >= 1, "反馈处理应有 FEEDBACK_UPDATE 审计记录")
         val mine = mockMvc.get("/api/v1/feedback") {
             header("Authorization", "Bearer ${user.token}")
         }.andExpect { status { isOk() } }.andReturn().response.contentAsString
