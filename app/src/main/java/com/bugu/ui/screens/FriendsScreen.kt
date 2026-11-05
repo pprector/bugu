@@ -56,6 +56,9 @@ import com.bugu.ui.theme.H
 import java.time.format.DateTimeFormatter
 import kotlinx.coroutines.launch
 
+/** 邀请落地页(带尾斜杠,避免依赖 Nginx 301);与 Manifest 的 App Links 过滤器一致。 */
+private const val INVITE_LINK_BASE = "https://www.yzhzhaohao.cn/bond/?code="
+
 @Composable
 fun FriendsScreen(
     api: GeitaApi,
@@ -67,6 +70,9 @@ fun FriendsScreen(
     onOpenBond: (Long) -> Unit,
     bondsLoading: Boolean,
     bondsError: Boolean,
+    /** 深链带入的邀请码(App 消费后回传清空,避免重复预填)。 */
+    prefillCode: String? = null,
+    onPrefillConsumed: () -> Unit = {},
 ) {
     BackHandler(onBack = onBack)
     val scope = rememberCoroutineScope()
@@ -76,6 +82,22 @@ fun FriendsScreen(
     var inviteError by remember { mutableStateOf(false) }
     var code by remember { mutableStateOf("") }
     var invitation by remember { mutableStateOf<InvitationDto?>(null) }
+    var querying by remember { mutableStateOf(false) }
+
+    fun lookup(codeValue: String, fromLink: Boolean = false) {
+        if (codeValue.length != 6 || querying) return
+        scope.launch {
+            querying = true
+            try {
+                invitation = api.invitation(codeValue)
+            } catch (e: Exception) {
+                val reason = e.message ?: "邀请码无效"
+                onSnack(if (fromLink) "邀请链接无法使用：$reason" else reason)
+            } finally {
+                querying = false
+            }
+        }
+    }
 
     fun initiate() {
         if (busy) return
@@ -106,7 +128,7 @@ fun FriendsScreen(
                     type = "text/plain"
                     putExtra(
                         Intent.EXTRA_TEXT,
-                        "和我一起用布谷互相惦记吧，邀请码：${inv.bindCode}，${inv.deeplink}",
+                        "和我一起用布谷互相惦记吧，邀请码：${inv.bindCode}，$INVITE_LINK_BASE${inv.bindCode}",
                     )
                 },
                 "分享邀请",
@@ -115,6 +137,18 @@ fun FriendsScreen(
     }
 
     LaunchedEffect(Unit) { initiate() }
+
+    // 深链进入:自动填入邀请码并直接查询,用户只需确认;查询失败给出可读提示,仍保留已填的码
+    LaunchedEffect(prefillCode) {
+        val incoming = prefillCode ?: return@LaunchedEffect
+        code = incoming.filter { it in '0'..'9' }.take(6)
+        onPrefillConsumed()
+        if (code.length == 6) {
+            lookup(code, fromLink = true)
+        } else {
+            onSnack("邀请链接里的邀请码不完整，请手动输入 6 位邀请码")
+        }
+    }
 
     Column(
         Modifier
@@ -241,22 +275,11 @@ fun FriendsScreen(
                     )
                     Spacer(Modifier.size(10.dp))
                     BuguButton(
-                        text = if (busy) "查询中…" else "下一步",
-                        onClick = {
-                            scope.launch {
-                                busy = true
-                                try {
-                                    invitation = api.invitation(code)
-                                } catch (e: Exception) {
-                                    onSnack(e.message ?: "邀请查询失败，请重试")
-                                } finally {
-                                    busy = false
-                                }
-                            }
-                        },
+                        text = if (querying) "查询中…" else "下一步",
+                        onClick = { lookup(code) },
                         modifier = Modifier.fillMaxWidth(),
-                        enabled = code.length == 6 && !busy,
-                        loading = busy && code.length == 6,
+                        enabled = code.length == 6 && !querying,
+                        loading = querying,
                     )
                     Spacer(Modifier.size(8.dp))
                     Text(

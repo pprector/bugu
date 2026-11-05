@@ -86,6 +86,7 @@ import com.bugu.client.api.GeitaApi
 import com.bugu.client.api.GeitaApiException
 import com.bugu.client.api.UserDto
 import com.bugu.ApiFactory
+import com.bugu.deeplink.InviteDeepLink
 import com.bugu.PushReporter
 import com.bugu.SharedPrefsTokenStore
 import com.bugu.schedule.ReminderSync
@@ -178,6 +179,48 @@ fun AppRoot() {
     val snackbar = remember { SnackbarHostState() }
     val scope = rememberCoroutineScope()
     val showSnack: (String) -> Unit = { msg -> scope.launch { snackbar.showSnackbar(msg) } }
+
+    // ---- 邀请深链 bugu://bond?code=xxxxxx ----
+    // 预填码随导航传递;取走即清空,避免返回后再次进入时重复填入
+    var friendPrefillCode by remember { mutableStateOf<String?>(null) }
+    var inviteEvent by remember { mutableStateOf<InviteDeepLink.Event?>(null) }
+    LaunchedEffect(Unit) {
+        InviteDeepLink.events.collect { event ->
+            if (event != null) {
+                inviteEvent = event
+                InviteDeepLink.clearEvent()
+            }
+        }
+    }
+    // 冷/热启动统一出口:登录态就绪后消费事件或待处理码;未登录只提示,码留在本地等登录续用
+    LaunchedEffect(booted, user?.id, inviteEvent) {
+        if (!booted) return@LaunchedEffect
+        when (val event = inviteEvent) {
+            is InviteDeepLink.Event.Invalid -> {
+                inviteEvent = null
+                showSnack(event.message)
+            }
+
+            is InviteDeepLink.Event.Code -> {
+                inviteEvent = null
+                if (user == null) {
+                    showSnack("登录后会继续帮你填好邀请码")
+                } else {
+                    friendPrefillCode = event.code
+                    screen = Screen.Friends
+                    InviteDeepLink.clearPending(context)
+                }
+            }
+
+            null -> if (user != null) {
+                InviteDeepLink.pendingCode(context)?.let { code ->
+                    friendPrefillCode = code
+                    screen = Screen.Friends
+                    InviteDeepLink.clearPending(context)
+                }
+            }
+        }
+    }
 
     // 系统返回(对齐主流安卓应用):子页面 → 主界面;非看板 Tab → 看板;看板再按一次才退出
     var exitArmed by remember { mutableStateOf(false) }
@@ -311,6 +354,8 @@ fun AppRoot() {
                     onSnack = showSnack,
                     onCreateFor = ::createFor,
                     onOpenBond = { screen = Screen.Companion(it) },
+                    prefillCode = friendPrefillCode,
+                    onPrefillConsumed = { friendPrefillCode = null },
                 )
 
                 s is Screen.Companion -> CompanionDetailScreen(

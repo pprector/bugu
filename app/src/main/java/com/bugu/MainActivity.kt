@@ -1,6 +1,7 @@
 package com.bugu
 
 import android.Manifest
+import android.content.Intent
 import android.content.pm.PackageManager
 import android.os.Build
 import android.os.Bundle
@@ -8,6 +9,7 @@ import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.core.content.ContextCompat
+import com.bugu.deeplink.InviteDeepLink
 import com.bugu.schedule.ReportWorker
 import com.bugu.ui.AppRoot
 import com.bugu.ui.theme.BuguTheme
@@ -28,11 +30,20 @@ class MainActivity : ComponentActivity() {
             requestPermissions(arrayOf(Manifest.permission.POST_NOTIFICATIONS), REQUEST_NOTIFICATIONS)
         }
         ReportWorker.flush(this)
+        // 冷启动深链:先解析进事件流,AppRoot 组合后消费(未登录则缓存待处理)
+        InviteDeepLink.handle(this, intent)
         setContent {
             BuguTheme {
                 AppRoot()
             }
         }
+    }
+
+    override fun onNewIntent(intent: Intent) {
+        super.onNewIntent(intent)
+        setIntent(intent)
+        // 热启动深链:App 已在前台/已登录,直接进绑定页
+        InviteDeepLink.handle(this, intent)
     }
 
     private companion object {

@@ -55,10 +55,30 @@
         <activity
             android:name=".MainActivity"
             android:exported="true"
+            android:launchMode="singleTop"
             android:windowSoftInputMode="adjustResize">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+            <!-- 邀请深链:服务端 InitiateResponse.deeplink 固定为 bugu://bond?code=xxxxxx。
+                 singleTop 保证 App 已在前台时走 onNewIntent,而不是再叠一个实例。 -->
+            <intent-filter>
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+                <data android:scheme="bugu" android:host="bond" />
+            </intent-filter>
+            <!-- 官网邀请落地页 https://www.yzhzhaohao.cn/bond/?code=xxxxxx。
+                 autoVerify 依赖该域名已上线 /.well-known/assetlinks.json(App Links 校验)。 -->
+            <intent-filter android:autoVerify="true">
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+                <data
+                    android:scheme="https"
+                    android:host="www.yzhzhaohao.cn"
+                    android:pathPrefix="/bond" />
             </intent-filter>
         </activity>
 
