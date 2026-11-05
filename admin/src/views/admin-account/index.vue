@@ -7,6 +7,8 @@ import {
   fetchAdminSetAccountEnabled,
   type AdminAccount
 } from '@/service/api';
+import { REG_USER_NAME } from '@/constants/reg';
+import { $t } from '@/locales';
 
 const loading = ref(false);
 const rows = ref<AdminAccount[]>([]);
@@ -63,6 +65,11 @@ function openCreate() {
 async function save() {
   if (!form.username.trim() || !form.password.trim()) {
     window.$message?.error('用户名和密码不能为空');
+    return;
+  }
+  // 与后端 AdminAccountService.USERNAME_PATTERN 同一口径:3-32 位,超长/非法字符直接拦住
+  if (!REG_USER_NAME.test(form.username.trim())) {
+    window.$message?.error($t('form.userName.invalid'));
     return;
   }
   saving.value = true;

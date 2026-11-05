@@ -1,4 +1,5 @@
-export const REG_USER_NAME = /^[\u4E00-\u9FA5a-zA-Z0-9_-]{4,16}$/;
+/** 用户名:3-32 位中文、字母、数字、下划线或短横线,与后端 AdminAccountService.USERNAME_PATTERN 一致 */
+export const REG_USER_NAME = /^[\u4E00-\u9FA5a-zA-Z0-9_-]{3,32}$/;
 
 /** Phone reg */
 export const REG_PHONE =

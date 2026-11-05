@@ -19,12 +19,21 @@ import java.time.LocalDateTime
 @Service
 class AdminAccountService(private val repository: AdminUserRepository) {
 
+    companion object {
+        /** 与前端 admin/src/constants/reg.ts 的 REG_USER_NAME 保持同一口径。 */
+        val USERNAME_PATTERN = Regex("^[\\u4E00-\\u9FA5A-Za-z0-9_-]{3,32}$")
+    }
+
     fun list(): List<AdminUserRow> =
         repository.findAll().sortedBy { requireNotNull(it.id) { "admin id 不应为空" } }
 
     fun create(username: String, password: String, nickname: String, role: String): AdminUserRow {
-        if (username.length < 3 || username.length > 32) {
-            throw BizException(ErrorCode.INVALID_ARGUMENT, HttpStatus.BAD_REQUEST, "用户名需为 3-32 个字符")
+        if (!USERNAME_PATTERN.matches(username)) {
+            throw BizException(
+                ErrorCode.INVALID_ARGUMENT,
+                HttpStatus.BAD_REQUEST,
+                "用户名需为 3-32 位中文、字母、数字、下划线或短横线",
+            )
         }
         if (password.length < 8) {
             throw BizException(ErrorCode.INVALID_ARGUMENT, HttpStatus.BAD_REQUEST, "密码至少 8 位")

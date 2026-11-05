@@ -167,6 +167,17 @@ class AdminAccountIntegrationTest @Autowired constructor(
                 jsonPath("$.code") { value("INVALID_ARGUMENT") }
             }
         }
+
+        // 超长账号(33 位)创建时直接拦住,不再出现「建得出来但登不进去」
+        mockMvc.post("/api/v1/admin/admin-users") {
+            header("Authorization", "Bearer $token")
+            contentType = MediaType.APPLICATION_JSON
+            content = createBody("u".repeat(33))
+        }.andExpect {
+            status { isBadRequest() }
+            jsonPath("$.code") { value("INVALID_ARGUMENT") }
+            jsonPath("$.message") { value("用户名需为 3-32 位中文、字母、数字、下划线或短横线") }
+        }
     }
 
     @Test

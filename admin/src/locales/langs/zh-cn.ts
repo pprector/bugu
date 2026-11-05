@@ -300,7 +300,7 @@ const local: App.I18n.Schema = {
     required: '不能为空',
     userName: {
       required: '请输入用户名',
-      invalid: '用户名格式不正确'
+      invalid: '用户名需为 3-32 位中文、字母、数字、下划线或短横线'
     },
     phone: {
       required: '请输入手机号',
