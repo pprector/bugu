@@ -12,12 +12,13 @@
     <uses-permission android:name="android.permission.USE_FULL_SCREEN_INTENT" />
     <uses-permission android:name="android.permission.VIBRATE" />
 
+    <!-- 接口全部为 https(见 ApiFactory.BASE_URL),禁止明文流量 -->
     <application
         android:name=".BuguApp"
         android:label="布谷"
         android:icon="@mipmap/ic_launcher"
         android:supportsRtl="true"
-        android:usesCleartextTraffic="true"
+        android:usesCleartextTraffic="false"
         android:theme="@style/Theme.Bugu">
 
         <!-- 极光 SDK AAR 自带 JPUSH_APPKEY/JPUSH_CHANNEL meta-data(均引用占位符),
