@@ -86,7 +86,6 @@ fun AlarmScreen(
     isSelf: Boolean = false,
     confirmLabel: String = "向右滑动：我已完成",
 ) {
-    val peerLabel = if (isSelf) "自己" else peerName
     // 响铃时钟从当前时刻起走;按秒累加,格式化为时分(此前按分钟初值每秒 +1,导致时钟快 60 倍)
     var countdown by remember { mutableIntStateOf(40) }
     val now = remember { LocalTime.now() }
@@ -181,7 +180,7 @@ fun AlarmScreen(
             }
         }
 
-        Spacer(Modifier.height(18.dp))
+        Spacer(Modifier.height(8.dp))
 
         // 大时钟
         Text(
@@ -203,7 +202,7 @@ fun AlarmScreen(
             textAlign = TextAlign.Center,
         )
 
-        Spacer(Modifier.height(20.dp))
+        Spacer(Modifier.height(8.dp))
 
         // 叫醒卡片
         Column(
@@ -212,7 +211,7 @@ fun AlarmScreen(
                 .clip(RoundedCornerShape(16.dp))
                 .background(Color.White)
                 .border(1.dp, H.Hairline, RoundedCornerShape(16.dp))
-                .padding(vertical = 22.dp, horizontal = 18.dp),
+                .padding(vertical = 18.dp, horizontal = 18.dp),
             horizontalAlignment = Alignment.CenterHorizontally,
         ) {
             Box {
@@ -241,7 +240,11 @@ fun AlarmScreen(
                     .padding(horizontal = 12.dp, vertical = 6.dp),
                 verticalAlignment = Alignment.CenterVertically,
             ) {
-                Text("来自${peerLabel}的惦记", style = MaterialTheme.typography.titleSmall, color = H.CoralInk)
+                Text(
+                    if (isSelf) "来自自己的提醒" else "来自 $peerName 的提醒",
+                    style = MaterialTheme.typography.titleSmall,
+                    color = H.CoralInk,
+                )
             }
             Spacer(Modifier.height(10.dp))
             Text(
@@ -267,7 +270,7 @@ fun AlarmScreen(
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Icon(Icons.Outlined.RecordVoiceOver, null, Modifier.size(17.dp), tint = H.Coral)
                     Spacer(Modifier.width(6.dp))
-                    Text(if (isSelf) "留给自己的话" else "${peerName}的留言", style = MaterialTheme.typography.titleMedium, color = H.Ink)
+                    Text(if (isSelf) "留给自己的话" else "$peerName 的留言", style = MaterialTheme.typography.titleMedium, color = H.Ink)
                     Spacer(Modifier.weight(1f))
                     Text(
                         "00:%02d / 00:15".format((progress * 15).toInt()),
@@ -343,9 +346,7 @@ fun AlarmScreen(
             Text("小憩 15 分钟 · 等咕咕再叫你", style = MaterialTheme.typography.titleMedium, color = H.IndigoInk)
         }
 
-        Spacer(Modifier.height(20.dp))
-
-        Spacer(Modifier.height(16.dp))
+        Spacer(Modifier.height(8.dp))
         Row(verticalAlignment = Alignment.Top) {
             Icon(Icons.Outlined.Info, null, Modifier.size(15.dp), tint = H.Ink3)
             Spacer(Modifier.width(6.dp))
@@ -353,10 +354,11 @@ fun AlarmScreen(
                 if (isSelf) {
                     "确认后，咕咕会记下这次完成。若 40 秒未确认，咕咕会再轻轻叫你一次。"
                 } else {
-                    "确认后，咕咕会把回执告诉${peerName}。若 40 秒未确认，咕咕会再轻轻叫你一次。"
+                    "确认后，咕咕会把回执告诉 $peerName。若 40 秒未确认，咕咕会再轻轻叫你一次。"
                 },
                 style = MaterialTheme.typography.bodySmall,
                 color = H.Ink3Strong,
+                modifier = Modifier.weight(1f),
             )
         }
         Spacer(Modifier.height(20.dp))

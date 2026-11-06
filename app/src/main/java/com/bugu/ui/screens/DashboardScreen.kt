@@ -336,7 +336,7 @@ fun DashboardScreen(
                     mood = mood,
                     modifier = Modifier.size(52.dp),
                     onTap = { refresh() }, // 轻点咕咕即可整页刷新
-                    pokeLines = listOf("咕咕!", "布谷布谷～", "今天也要布谷布谷哦!", "在呢在呢～", "别忘了惦记你的人呀"),
+                    pokeLines = listOf("咕咕!", "布谷布谷～", "今天也要布谷布谷哦!", "在呢在呢～", "别忘了给自己留个提醒呀"),
                     bubbleOffset = 54.dp, // 鸟贴近屏幕顶部,气泡放到下方
                 )
                 Spacer(Modifier.width(10.dp))
@@ -348,7 +348,7 @@ fun DashboardScreen(
                     }
                     val week = arrayOf("一", "二", "三", "四", "五", "六", "日")[today.dayOfWeek.value - 1]
                     Text(
-                        "${today.monthValue}月${today.dayOfMonth}日 周$week · 今日 $todayCount 份惦记",
+                        "${today.monthValue}月${today.dayOfMonth}日 周$week · 今日 $todayCount 份提醒",
                         style = MaterialTheme.typography.bodySmall,
                         color = H.Ink3Strong,
                     )
@@ -363,7 +363,7 @@ fun DashboardScreen(
                     )
                     HeaderIconButton(
                         icon = Icons.Outlined.History,
-                        contentDescription = "惦记历史",
+                        contentDescription = "提醒历史",
                         onClick = onOpenHistory,
                     )
                 }
@@ -452,7 +452,7 @@ fun DashboardScreen(
                         Row(verticalAlignment = Alignment.CenterVertically) {
                             Icon(Icons.Outlined.Bolt, null, Modifier.size(18.dp), tint = H.Coral)
                             Spacer(Modifier.width(6.dp))
-                            Text("进行中的惦记", style = MaterialTheme.typography.titleMedium, color = H.CoralInk)
+                            Text("进行中的提醒", style = MaterialTheme.typography.titleMedium, color = H.CoralInk)
                             Spacer(Modifier.weight(1f))
                             TagChip(text = stageText, tint = H.Coral, solid = true)
                         }
@@ -498,7 +498,7 @@ fun DashboardScreen(
                 val syncText = when {
                     refreshing -> "同步中…"
                     error != null -> "同步失败"
-                    else -> "惦记同步就绪"
+                    else -> "提醒同步就绪"
                 }
                 val syncBg = when {
                     refreshing -> H.IndigoTint
@@ -549,7 +549,7 @@ fun DashboardScreen(
                             Icon(Icons.Outlined.Alarm, null, Modifier.size(16.dp), tint = H.Mint)
                             Spacer(Modifier.width(5.dp))
                             Text(
-                                "未来 7 天 $weekCount 份惦记",
+                                "未来 7 天 $weekCount 份提醒",
                                 style = MaterialTheme.typography.bodySmall,
                                 color = H.Ink2,
                             )
@@ -582,8 +582,8 @@ fun DashboardScreen(
                         .background(Color.White),
                 )
                 Row(Modifier.fillMaxWidth()) {
-                    SegTab("我的惦记 (${myActive.size})", tab == 0, Modifier.weight(1f)) { tab = 0 }
-                    SegTab("TA 的惦记 (${incomingActive.size})", tab == 1, Modifier.weight(1f)) { tab = 1 }
+                    SegTab("我的提醒 (${myActive.size})", tab == 0, Modifier.weight(1f)) { tab = 0 }
+                    SegTab("TA 的提醒 (${incomingActive.size})", tab == 1, Modifier.weight(1f)) { tab = 1 }
                 }
             }
         }
@@ -599,9 +599,9 @@ fun DashboardScreen(
             // 真正无数据才展示首用空态;大字关怀模式、已结束历史都不会再把看板清空
             item {
                 EmptyState(
-                    title = "还没有任何惦记",
-                    subtitle = "设一条惦记,让咕咕替你记挂重要的人",
-                    actionText = "设第一条惦记",
+                    title = "还没有任何提醒",
+                    subtitle = "设一条提醒,让咕咕替你记挂重要的人",
+                    actionText = "设第一条提醒",
                     onAction = onGoCreate,
                 )
             }
@@ -619,14 +619,14 @@ fun DashboardScreen(
                         horizontalAlignment = Alignment.CenterHorizontally,
                     ) {
                         Text(
-                            if (hasEnded) "没有待处理的惦记" else "你还没有发出惦记",
+                            if (hasEnded) "没有待处理的提醒" else "你还没有发出提醒",
                             style = MaterialTheme.typography.titleMedium,
                             color = H.Ink,
                         )
                         Spacer(Modifier.height(4.dp))
                         Text(
-                            if (hasEnded) "已结束的惦记都收在历史里,可随时回看"
-                            else "设一条惦记,到点咕咕替你呼唤亲友",
+                            if (hasEnded) "已结束的提醒都收在历史里,可随时回看"
+                            else "设一条提醒,到点咕咕替你呼唤亲友",
                             style = MaterialTheme.typography.bodySmall,
                             color = H.Ink3Strong,
                         )
@@ -709,7 +709,7 @@ fun DashboardScreen(
                         horizontalAlignment = Alignment.CenterHorizontally,
                     ) {
                         Text(
-                            if (hasEnded) "没有待回应的惦记" else "亲友还没给你设惦记",
+                            if (hasEnded) "没有待回应的提醒" else "亲友还没给你设提醒",
                             style = MaterialTheme.typography.titleMedium,
                             color = H.Ink,
                         )
@@ -794,7 +794,7 @@ fun DashboardScreen(
                     verticalAlignment = Alignment.CenterVertically,
                 ) {
                     Text(
-                        "$endedCount 条惦记已结束",
+                        "已结束 $endedCount 条提醒",
                         style = MaterialTheme.typography.titleSmall,
                         color = H.Ink2,
                     )

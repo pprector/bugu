@@ -472,7 +472,7 @@ fun CreateReminderScreen(
         val intent = Intent(RecognizerIntent.ACTION_RECOGNIZE_SPEECH).apply {
             putExtra(RecognizerIntent.EXTRA_LANGUAGE_MODEL, RecognizerIntent.LANGUAGE_MODEL_FREE_FORM)
             putExtra(RecognizerIntent.EXTRA_LANGUAGE, "zh-CN")
-            putExtra(RecognizerIntent.EXTRA_PROMPT, "说说要惦记的事")
+            putExtra(RecognizerIntent.EXTRA_PROMPT, "说说要提醒的事")
         }
         when {
             !voiceAvailable || intent.resolveActivity(context.packageManager) == null ->
@@ -513,7 +513,7 @@ fun CreateReminderScreen(
         val past = !fireAtValue.isAfter(LocalDateTime.now())
         when {
             title.isBlank() -> {
-                titleError = "给惦记起个名字吧"
+                titleError = "给提醒起个名字吧"
                 return
             }
             title.length > MAX_TITLE -> {
@@ -567,9 +567,9 @@ fun CreateReminderScreen(
                 // 创建成功即同步并注册精确闹钟:否则新提醒只出现在列表,到点不会响/不会全屏
                 runCatching { ReminderSync.sync(context, api) }
                 onSnack(
-                    if (receiverIds.size > 1) "已为 ${receiverIds.size} 人分别设好惦记"
-                    else if (selfSelected) "已设好惦记,到点咕咕会准时唤你"
-                    else "已设好惦记,到点咕咕会准时唤$receiverName",
+                    if (receiverIds.size > 1) "已为 ${receiverIds.size} 人分别设好提醒"
+                    else if (selfSelected) "已设好提醒,到点咕咕会准时唤你"
+                    else "已设好提醒,到点咕咕会准时唤$receiverName",
                 )
                 resetForm()
                 onCreated()
@@ -591,7 +591,7 @@ fun CreateReminderScreen(
     ) {
     Column(Modifier.fillMaxSize()) {
         TopBar(
-            title = "新建惦记",
+            title = "新建提醒",
             onBack = onBack,
             guguMood = GuguMood.CHEER,
             actions = {
@@ -663,7 +663,7 @@ fun CreateReminderScreen(
                         verticalAlignment = Alignment.CenterVertically,
                     ) {
                         Column(Modifier.weight(1f)) {
-                            Text("把惦记送给谁", style = MaterialTheme.typography.titleMedium, color = H.Ink)
+                            Text("把提醒送给谁", style = MaterialTheme.typography.titleMedium, color = H.Ink)
                             Text("可多选 · 已选 ${selectedRecipientIds.size} 人", style = MaterialTheme.typography.bodySmall, color = H.Ink3Strong)
                         }
                     }
@@ -706,7 +706,7 @@ fun CreateReminderScreen(
                             .fillMaxWidth()
                             .padding(horizontal = 18.dp, vertical = 14.dp),
                     ) {
-                        Text("惦记标题", style = MaterialTheme.typography.titleSmall, color = H.Ink3Strong)
+                        Text("提醒标题", style = MaterialTheme.typography.titleSmall, color = H.Ink3Strong)
                         Spacer(Modifier.height(2.dp))
                         BasicTextField(
                             value = title,
@@ -833,7 +833,7 @@ fun CreateReminderScreen(
                         ) { inner ->
                             Box {
                                 if (note.isEmpty()) {
-                                    Text("写一句暖心的惦记…", style = MaterialTheme.typography.titleMedium, color = H.Ink3Strong)
+                                    Text("写一句暖心的话…", style = MaterialTheme.typography.titleMedium, color = H.Ink3Strong)
                                 }
                                 inner()
                             }
@@ -900,7 +900,7 @@ fun CreateReminderScreen(
                         needsPermission -> "开启提醒权限并创建"
                         title.isBlank() -> "填写标题后创建"
                         isPast -> "改到明天再创建"
-                        else -> "创建惦记"
+                        else -> "创建提醒"
                     },
                     onClick = {
                         when {
@@ -1380,7 +1380,7 @@ private fun WhoRow(
             }
             else -> {
                 Text(
-                    "绑定互伴,把惦记送给 TA",
+                    "绑定互伴,把提醒送给 TA",
                     style = MaterialTheme.typography.titleSmall,
                     color = H.Ink3Strong,
                     modifier = Modifier.padding(start = 8.dp),

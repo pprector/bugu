@@ -170,7 +170,7 @@ fun FriendsScreen(
             verticalArrangement = Arrangement.spacedBy(14.dp),
         ) {
             Text(
-                "多一份惦记。双方确认后，就能互相发惦记。",
+                "双方确认后，就能互相发提醒。",
                 style = MaterialTheme.typography.bodySmall,
                 color = H.Ink3Strong,
             )
@@ -207,7 +207,7 @@ fun FriendsScreen(
                             Text(inv.bindCode, style = MaterialTheme.typography.displayMedium, color = H.CoralInk)
                             Spacer(Modifier.size(2.dp))
                             Text(
-                                "把这串数字发给家人朋友，就能开始互相惦记。",
+                                "把这串数字发给家人朋友，就能开始互相提醒。",
                                 style = MaterialTheme.typography.bodySmall,
                                 color = H.Ink3Strong,
                             )
@@ -261,7 +261,7 @@ fun FriendsScreen(
                     Text("接受对方的邀请", style = MaterialTheme.typography.titleLarge, color = H.Ink)
                     Spacer(Modifier.size(4.dp))
                     Text(
-                        "输入对方给你的 6 位邀请码，确认后就能互相惦记。",
+                        "输入对方给你的 6 位邀请码，确认后就能互相提醒。",
                         style = MaterialTheme.typography.bodySmall,
                         color = H.Ink3Strong,
                     )
@@ -318,7 +318,7 @@ fun FriendsScreen(
                 }
                 bonds.none { it.status == "ACTIVE" } -> EmptyState(
                     title = "还没有关联亲友",
-                    subtitle = "把邀请码发给家人，开始互相惦记",
+                    subtitle = "把邀请码发给家人，开始互相提醒",
                     actionText = "刷新邀请码",
                     onAction = ::initiate,
                 )
@@ -339,13 +339,13 @@ fun FriendsScreen(
                                 Column(Modifier.weight(1f)) {
                                     Text(bond.displayName, style = MaterialTheme.typography.titleMedium, color = H.Ink)
                                     Text(
-                                        "查看双方的惦记与设置",
+                                        "查看双方的提醒与设置",
                                         style = MaterialTheme.typography.bodySmall,
                                         color = H.Ink3Strong,
                                     )
                                 }
                                 BuguButton(
-                                    text = "发惦记",
+                                    text = "发提醒",
                                     onClick = { onCreateFor(bond.id) },
                                     modifier = Modifier.width(84.dp),
                                     style = BuguButtonStyle.Secondary,
@@ -382,7 +382,7 @@ fun FriendsScreen(
                         color = H.CoralInk,
                     )
                     Text(
-                        "确认后你们可以互相发惦记，也可以各自设置只有自己能看见的私人备注。",
+                        "确认后你们可以互相发提醒，也可以各自设置只有自己能看见的私人备注。",
                         style = MaterialTheme.typography.bodyMedium,
                         color = H.Ink3Strong,
                     )

@@ -411,7 +411,7 @@ fun EmptyState(
             GuguMood.SLEEP,
             Modifier.size(104.dp),
             onTap = {},
-            pokeLines = listOf("咕咕…这里空空的", "等你来设第一个惦记"),
+            pokeLines = listOf("咕咕…这里空空的", "等你来设第一个提醒"),
         )
         Spacer(Modifier.height(16.dp))
         Text(

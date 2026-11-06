@@ -55,7 +55,7 @@ fun CompanionScreen(
                 mood = GuguMood.RING,
                 modifier = Modifier.size(44.dp),
                 onTap = { onRefreshBonds() },
-                pokeLines = listOf("咕咕!", "谁在惦记你呀?", "去看看吧～"),
+                pokeLines = listOf("咕咕!", "谁在等你呀?", "去看看吧～"),
                 bubbleOffset = (-8).dp,
             )
             Spacer(Modifier.width(10.dp))
@@ -121,7 +121,7 @@ fun CompanionScreen(
             active.isEmpty() -> {
                 EmptyState(
                     title = "还没有互伴",
-                    subtitle = "绑定家人朋友,开始互相惦记",
+                    subtitle = "绑定家人朋友，就能互相发提醒",
                     actionText = "添加第一位亲友",
                     onAction = onOpenFriends,
                 )
@@ -151,7 +151,7 @@ fun CompanionScreen(
                             Column(Modifier.weight(1f)) {
                                 Text(bond.displayName, style = MaterialTheme.typography.titleMedium, color = H.Ink)
                                 Text(
-                                    "查看双方的惦记与独立设置",
+                                    "查看双方的提醒与独立设置",
                                     style = MaterialTheme.typography.bodySmall,
                                     color = H.Ink3Strong,
                                 )
@@ -167,7 +167,7 @@ fun CompanionScreen(
                 }
                 Spacer(Modifier.height(8.dp))
                 Text(
-                    "备注仅自己可见。点击一位亲友查看双方的惦记。",
+                    "备注仅自己可见。点击一位亲友查看双方的提醒。",
                     style = MaterialTheme.typography.bodySmall,
                     color = H.Ink3Strong,
                 )
@@ -261,16 +261,16 @@ fun CompanionDetailScreen(
                     .border(1.dp, H.Hairline, RoundedCornerShape(16.dp))
                     .padding(16.dp),
             ) {
-                Text("为 $name 设一条惦记", style = MaterialTheme.typography.titleMedium, color = H.Ink)
+                Text("为 $name 设一条提醒", style = MaterialTheme.typography.titleMedium, color = H.Ink)
                 Spacer(Modifier.height(4.dp))
                 Text("到点咕咕会替你准时呼唤 TA", style = MaterialTheme.typography.bodySmall, color = H.Ink3Strong)
                 Spacer(Modifier.height(12.dp))
-                GradientButton("给${name}发个惦记", { onCreateFor(bondId) }, modifier = Modifier.fillMaxWidth())
+                GradientButton("给${name}发个提醒", { onCreateFor(bondId) }, modifier = Modifier.fillMaxWidth())
             }
         }
 
         Spacer(Modifier.height(20.dp))
-        Text("双方的惦记", style = MaterialTheme.typography.titleLarge, color = H.Ink)
+        Text("双方的提醒", style = MaterialTheme.typography.titleLarge, color = H.Ink)
         Spacer(Modifier.height(8.dp))
         if (error) {
             Column(
@@ -278,7 +278,7 @@ fun CompanionDetailScreen(
                     .border(1.dp, H.Hairline, RoundedCornerShape(16.dp)).padding(vertical = 24.dp),
                 horizontalAlignment = Alignment.CenterHorizontally,
             ) {
-                Text("惦记与设置加载失败", style = MaterialTheme.typography.titleMedium, color = H.Ink)
+                Text("提醒与设置加载失败", style = MaterialTheme.typography.titleMedium, color = H.Ink)
                 Spacer(Modifier.height(8.dp))
                 TextButton(onClick = { retry++ }) { Text("重试", color = H.CoralInk) }
             }
@@ -292,9 +292,9 @@ fun CompanionDetailScreen(
                     .border(1.dp, H.Hairline, RoundedCornerShape(16.dp)).padding(vertical = 24.dp),
                 horizontalAlignment = Alignment.CenterHorizontally,
             ) {
-                Text("还没有双方的惦记", style = MaterialTheme.typography.titleMedium, color = H.Ink)
+                Text("还没有双方的提醒", style = MaterialTheme.typography.titleMedium, color = H.Ink)
                 Spacer(Modifier.height(4.dp))
-                Text("发出第一份惦记吧", style = MaterialTheme.typography.bodySmall, color = H.Ink3Strong)
+                Text("发出第一条提醒吧", style = MaterialTheme.typography.bodySmall, color = H.Ink3Strong)
             }
         }
         reminders.orEmpty().forEachIndexed { index, (byMe, r) ->
@@ -342,8 +342,8 @@ fun CompanionDetailScreen(
             verticalAlignment = Alignment.CenterVertically,
         ) {
             Column(Modifier.weight(1f)) {
-                Text("暂停接收单次惦记", color = H.Ink, style = MaterialTheme.typography.titleMedium)
-                Text("仅影响此亲友的单次惦记，循环惦记不受影响", color = H.Ink3Strong, style = MaterialTheme.typography.bodySmall)
+                Text("暂停接收单次提醒", color = H.Ink, style = MaterialTheme.typography.titleMedium)
+                Text("仅影响此亲友的单次提醒，循环提醒不受影响", color = H.Ink3Strong, style = MaterialTheme.typography.bodySmall)
             }
             if (muted != null && !error && !busy) {
                 BrandSwitch(
@@ -355,7 +355,7 @@ fun CompanionDetailScreen(
                                 val peerId = bond.counterpartId ?: return@launch
                                 if (next) api.mute(peerId, "ONCE") else api.unmute(peerId, "ONCE")
                                 muted = next
-                                onSnack(if (next) "已暂停此人的单次惦记" else "已恢复此人的单次惦记")
+                                onSnack(if (next) "已暂停此人的单次提醒" else "已恢复此人的单次提醒")
                             } catch (_: Exception) {
                                 onSnack("设置失败,请重试")
                             } finally {
@@ -363,7 +363,7 @@ fun CompanionDetailScreen(
                             }
                         }
                     },
-                    modifier = Modifier.semantics { contentDescription = "暂停接收${name}的单次惦记" },
+                    modifier = Modifier.semantics { contentDescription = "暂停接收${name}的单次提醒" },
                 )
             }
         }
@@ -456,11 +456,11 @@ fun CompanionDetailScreen(
         mood = GuguMood.SLEEP,
         tag = "需要确认",
         tagTint = H.Rose,
-        subtitle = "解除后就不能再互相惦记了",
+        subtitle = "解除后就不能再互发提醒了",
         dismissible = !busy,
         content = {
             Text(
-                "这段关联里还没完成的惦记会停下，之后也无法再互发惦记。",
+                "这段关联里还没完成的提醒会停下，之后也无法再互发提醒。",
                 style = MaterialTheme.typography.bodyMedium,
                 color = H.Ink3Strong,
             )

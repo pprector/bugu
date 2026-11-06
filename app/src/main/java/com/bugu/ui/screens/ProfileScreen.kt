@@ -355,7 +355,7 @@ fun ProfileScreen(
         // 我的惦记(历史回执)
         MenuRow(
             icon = Icons.Outlined.Alarm,
-            title = "我的惦记",
+            title = "我的提醒",
             subtitle = "发出与收到的历史回执",
             tint = H.Mint,
             onClick = onOpenHistory,
@@ -440,7 +440,7 @@ fun ProfileScreen(
             subtitle = "下次回来，需要重新验证手机号",
             content = {
                 Text(
-                    "退出后，这台设备不会再收到呼唤；你的惦记和资料都还在。",
+                    "退出后，这台设备不会再收到呼唤；你创建的提醒和资料都还在。",
                     style = MaterialTheme.typography.bodyMedium,
                     color = H.Ink3Strong,
                 )

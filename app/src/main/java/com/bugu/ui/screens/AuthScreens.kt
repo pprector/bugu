@@ -677,11 +677,12 @@ internal fun AgreementDialog(which: String, onDismiss: () -> Unit) {
     )
 }
 
+// 待法务确认：协议正文的功能表述统一为「提醒」；如法务另有术语定义口径，需与官网协议文本同步后再调整。
 private val USER_AGREEMENT_TEXT = """
     欢迎使用布谷!本协议是你与布谷之间就使用本应用服务所订立的约定,开始使用前请仔细阅读。
 
     一、服务内容
-    布谷为家人之间提供「惦记」提醒服务:创建提醒、到点送达、确认与互叫等。部分功能需要与家人完成绑定后使用。
+    布谷为家人之间提供提醒服务:创建提醒、到点送达、确认与互叫等。部分功能需要与家人完成绑定后使用。
 
     二、账号与安全
     1. 你可以使用手机号验证码登录/注册布谷账号,请妥善保管验证码,勿告知他人。
@@ -838,7 +839,7 @@ fun PermissionsScreen(onBack: () -> Unit, onDone: (Boolean) -> Unit) {
             )
             Spacer(Modifier.height(8.dp))
             Text(
-                "开启 2 项核心守护权限，惦记才不会错过",
+                "开启 2 项核心守护权限，提醒才不会错过",
                 style = MaterialTheme.typography.bodyMedium,
                 color = H.Ink3Strong,
                 modifier = Modifier.fillMaxWidth(),
@@ -913,7 +914,7 @@ fun PermissionsScreen(onBack: () -> Unit, onDone: (Boolean) -> Unit) {
                     Icon(Icons.Outlined.Shield, null, Modifier.size(20.dp), tint = H.Ink3)
                     Spacer(Modifier.width(10.dp))
                     Text(
-                        "权限仅用于准时送达惦记；没有授权也能先用，随时可回到本页开启",
+                        "权限仅用于准时送达提醒；没有授权也能先用，随时可回到本页开启",
                         style = MaterialTheme.typography.bodySmall,
                         color = H.Ink3Strong,
                     )

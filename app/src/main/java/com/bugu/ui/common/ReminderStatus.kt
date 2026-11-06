@@ -56,8 +56,8 @@ fun statusColor(status: String): Color = when (status) {
 
 /** 提醒类型 → 中文短标。 */
 fun kindLabel(kind: String): String = when (kind) {
-    "ONCE" -> "单次惦记"
-    "REPEAT" -> "循环惦记"
+    "ONCE" -> "单次提醒"
+    "REPEAT" -> "循环提醒"
     "MUTUAL_ALARM" -> "互叫闹钟"
     else -> kind
 }

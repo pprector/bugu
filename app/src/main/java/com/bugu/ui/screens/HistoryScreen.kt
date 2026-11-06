@@ -110,7 +110,7 @@ fun HistoryScreen(
             .navigationBarsPadding(),
     ) {
         TopBar(
-            title = "惦记历史回执",
+            title = "提醒历史回执",
             onBack = onBack,
             guguMood = GuguMood.CHEER,
         )
@@ -121,7 +121,7 @@ fun HistoryScreen(
         ) {
             item {
                 Row(verticalAlignment = Alignment.CenterVertically) {
-                    Text("每一次惦记，都有回音", style = MaterialTheme.typography.bodySmall, color = H.Ink3Strong)
+                    Text("每一次提醒，都有回音", style = MaterialTheme.typography.bodySmall, color = H.Ink3Strong)
                     Spacer(Modifier.weight(1f))
                     TagChip(text = "共 ${entries.size} 条", tint = H.Ink2)
                 }
@@ -141,8 +141,8 @@ fun HistoryScreen(
             item {
                 EmptyState(
                     title = "还没有回执",
-                    subtitle = "第一条惦记送达后,回执会记在这里",
-                    actionText = "设第一条惦记",
+                    subtitle = "第一条提醒送达后,回执会记在这里",
+                    actionText = "设第一条提醒",
                     onAction = onGoCreate,
                 )
             }

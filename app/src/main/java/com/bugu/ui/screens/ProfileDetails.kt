@@ -213,7 +213,7 @@ private fun PermissionDiagnostics(onSnack: (String) -> Unit) {
             PermissionCard(
                 title = "通知渠道 · ${channel.name}",
                 description = if (channel.id == LocalNotificationTest.CHANNEL) {
-                    "仅用于本机测试，不代表正式惦记的送达渠道"
+                    "仅用于本机测试，不代表正式提醒的送达渠道"
                 } else {
                     if (channel.importance == NotificationManager.IMPORTANCE_NONE) "这个渠道被关掉了" else "重要性 ${channel.importance}"
                 },
@@ -269,7 +269,7 @@ private fun PermissionDiagnostics(onSnack: (String) -> Unit) {
         DetailCard {
             Text("本地测试提醒", style = MaterialTheme.typography.titleLarge, color = H.Ink)
             Text(
-                "点击后约 5 秒发送一条真实 Android 通知，可以退到桌面观察。只测试本机调度和通知，不创建、确认或修改正式惦记。",
+                "点击后约 5 秒发送一条真实 Android 通知，可以退到桌面观察。只测试本机调度和通知，不创建、确认或修改正式提醒。",
                 style = MaterialTheme.typography.bodySmall,
                 color = H.Ink3Strong,
             )

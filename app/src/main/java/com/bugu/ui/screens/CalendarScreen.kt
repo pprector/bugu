@@ -148,7 +148,7 @@ fun CalendarScreen(api: GeitaApi, bonds: List<BondDto>, onBack: () -> Unit) {
                     )
                     Spacer(Modifier.weight(1f))
                     Text(
-                        "${month.year}年${month.monthValue}月 · ${if (inMonth) "共${monthEntries.size}天有惦记" else "暂无惦记"}",
+                        "${month.year}年${month.monthValue}月 · ${if (inMonth) "共${monthEntries.size}天有提醒" else "暂无提醒"}",
                         style = MaterialTheme.typography.titleMedium,
                         color = H.Ink,
                     )
@@ -225,7 +225,7 @@ fun CalendarScreen(api: GeitaApi, bonds: List<BondDto>, onBack: () -> Unit) {
                     }
                     Spacer(Modifier.weight(1f))
                     Text(
-                        if (count == 0) "没有惦记" else "$count 份惦记",
+                        if (count == 0) "没有提醒" else "$count 份提醒",
                         style = MaterialTheme.typography.titleSmall,
                         color = if (count == 0) H.Ink3Strong else H.CoralInk,
                     )
@@ -320,7 +320,7 @@ private fun DayCell(day: Int, count: Int, isToday: Boolean, selected: Boolean, o
                     CircleShape,
                 )
                 .semantics {
-                    contentDescription = "$day 日${if (count > 0) "，$count 份惦记" else ""}"
+                    contentDescription = "$day 日${if (count > 0) "，$count 份提醒" else ""}"
                     this.selected = selected
                 }
                 .clickable(onClick = onClick),
