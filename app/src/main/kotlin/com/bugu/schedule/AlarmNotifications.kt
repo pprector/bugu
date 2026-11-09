@@ -72,6 +72,7 @@ object AlarmNotifications {
         voiceEnabled: Boolean,
         kind: String,
         selfReminder: Boolean,
+        creatorId: Long,
     ): Boolean {
         if (!canPost(context)) {
             Log.w(TAG, "POST_NOTIFICATIONS unavailable; full-screen fallback skipped fire=$fireId")
@@ -88,6 +89,8 @@ object AlarmNotifications {
             putExtra(AlarmScheduler.EXTRA_VOICE, voiceEnabled)
             putExtra(AlarmScheduler.EXTRA_KIND, kind)
             putExtra(AlarmScheduler.EXTRA_SELF, selfReminder)
+            // 点通知进响铃页与全屏路径共用同一份 extra,昵称链路不能只修一边
+            putExtra(AlarmScheduler.EXTRA_CREATOR_ID, creatorId)
             addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
         }
         val notificationId = notificationId(fireId)

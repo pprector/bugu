@@ -390,6 +390,7 @@ class RingActivity : ComponentActivity() {
             ?: return "亲友"
         return runCatching { org.json.JSONObject(raw).optString(creatorId.toString(), "亲友") }
             .getOrDefault("亲友")
+            .ifBlank { "亲友" }
     }
 
     private fun elderModeEnabled(): Boolean =

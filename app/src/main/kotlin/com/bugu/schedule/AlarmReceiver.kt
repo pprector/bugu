@@ -32,6 +32,7 @@ class AlarmReceiver : BroadcastReceiver() {
                 val voiceEnabled = intent.getBooleanExtra(AlarmScheduler.EXTRA_VOICE, false)
                 val kind = intent.getStringExtra(AlarmScheduler.EXTRA_KIND) ?: "ONCE"
                 val selfReminder = intent.getBooleanExtra(AlarmScheduler.EXTRA_SELF, false)
+                val creatorId = intent.getLongExtra(AlarmScheduler.EXTRA_CREATOR_ID, 0L)
 
                 // 先发 CATEGORY_ALARM 高优先级通知:即使 startActivity 被 BAL_BLOCK,
                 // setFullScreenIntent 仍可拉起 RingActivity;全屏不可用时至少可点通知进入。
@@ -45,6 +46,7 @@ class AlarmReceiver : BroadcastReceiver() {
                     voiceEnabled = voiceEnabled,
                     kind = kind,
                     selfReminder = selfReminder,
+                    creatorId = creatorId,
                 )
                 val ring = Intent(context, RingActivity::class.java).apply {
                     putExtra(AlarmScheduler.EXTRA_FIRE_ID, fireId)
@@ -55,6 +57,7 @@ class AlarmReceiver : BroadcastReceiver() {
                     putExtra(AlarmScheduler.EXTRA_VOICE, voiceEnabled)
                     putExtra(AlarmScheduler.EXTRA_KIND, kind)
                     putExtra(AlarmScheduler.EXTRA_SELF, selfReminder)
+                    putExtra(AlarmScheduler.EXTRA_CREATOR_ID, creatorId)
                     addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
                 }
                 // 后台直接启动受系统限制;只尝试一次,不循环重试,失败交给通知兜底。
