@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="utf-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="24" height="24" role="img" aria-label="咕咕通知栏剪影">
+  <title>咕咕 · 24dp 通知栏单色剪影（纯白 + 透明底，保留双眼；系统自动染色）</title>
+  <defs>
+    <mask id="gugu-notif-cut" maskUnits="userSpaceOnUse" x="0" y="0" width="24" height="24">
+      <g>
+        <g fill="#FFFFFF">
+          <circle cx="10.2" cy="6.6" r="1.0"/>
+          <circle cx="12.6" cy="5.7" r="1.05"/>
+          <g transform="rotate(-18 8.4 13.8)"><ellipse cx="8.4" cy="13.8" rx="1.9" ry="3.0"/></g>
+          <g transform="rotate(18 15.6 13.8)"><ellipse cx="15.6" cy="13.8" rx="1.9" ry="3.0"/></g>
+          <ellipse cx="12" cy="12.4" rx="4.9" ry="4.9"/>
+        </g>
+        <g fill="#000000">
+          <circle cx="9.9" cy="11.2" r="1.15"/>
+          <circle cx="14.1" cy="11.2" r="1.15"/>
+          <path d="M10.5,12.6 L13.5,12.6 L12,15.0 Z"/>
+        </g>
+      </g>
+    </mask>
+  </defs>
+  <rect width="24" height="24" fill="#FFFFFF" mask="url(#gugu-notif-cut)"/>
+</svg>

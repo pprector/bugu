@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" width="32" height="32" role="img" aria-label="布谷">
+  <title>布谷 · favicon 16/32 光学字形（原色板）</title>
+  <rect width="32" height="32" rx="7" fill="#FFEDE6"/>
+  <circle cx="13.2" cy="4.2" r="1.7" fill="#E0523F"/>
+  <circle cx="19.0" cy="3.2" r="1.9" fill="#E0523F"/>
+  <ellipse cx="16" cy="18" rx="11" ry="10.5" fill="#FA5E38"/>
+  <ellipse cx="16" cy="20.5" rx="7.2" ry="6.2" fill="#FFF3EC"/>
+  <circle cx="12.4" cy="15.4" r="2.2" fill="#1C1917"/>
+  <circle cx="19.6" cy="15.4" r="2.2" fill="#1C1917"/>
+  <path d="M13.4,18.5 L18.6,18.5 L16,22.6 Z" fill="#FFB020"/>
+</svg>

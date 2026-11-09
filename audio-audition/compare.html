@@ -1,0 +1,731 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>布谷 · 响铃音源改前 / 改后对照</title>
+<style>
+  :root {
+    --paper: #f2ede4;
+    --card: #fbf8f2;
+    --ink: #211d18;
+    --muted: #6d6357;
+    --line: #ded4c4;
+    --green: #2f6b4f;
+    --green-soft: #e4ece5;
+    --amber: #b5652a;
+    --amber-soft: #f2e5d7;
+    --track: #e6ddcf;
+    --shadow: 0 1px 0 rgba(33, 29, 24, .05), 0 18px 40px -28px rgba(33, 29, 24, .35);
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; }
+  body {
+    background:
+      radial-gradient(1200px 600px at 82% -8%, #e8efe6 0%, rgba(232, 239, 230, 0) 60%),
+      var(--paper);
+    color: var(--ink);
+    font-family: -apple-system, BlinkMacSystemFont, "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", sans-serif;
+    line-height: 1.6;
+    -webkit-font-smoothing: antialiased;
+  }
+  main { max-width: 1080px; margin: 0 auto; padding: 56px 24px 72px; }
+  code {
+    font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+    font-size: .92em;
+    background: rgba(33, 29, 24, .06);
+    padding: 1px 5px;
+    border-radius: 4px;
+  }
+  .eyebrow {
+    margin: 0 0 14px;
+    font: 600 11px/1 ui-monospace, SFMono-Regular, Menlo, monospace;
+    letter-spacing: .16em;
+    text-transform: uppercase;
+    color: var(--green);
+  }
+  h1 {
+    margin: 0;
+    font-family: "Iowan Old Style", "Songti SC", "STSong", Georgia, serif;
+    font-size: clamp(34px, 5vw, 58px);
+    line-height: 1.08;
+    letter-spacing: -.02em;
+    font-weight: 600;
+  }
+  h1 span { color: var(--green); }
+  .lede {
+    max-width: 720px;
+    margin: 18px 0 0;
+    color: var(--muted);
+    font-size: 15px;
+    line-height: 1.8;
+  }
+  .chips { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 22px; }
+  .chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 5px 10px;
+    border: 1px solid var(--line);
+    border-radius: 999px;
+    background: rgba(251, 248, 242, .7);
+    color: var(--muted);
+    font-size: 12px;
+    white-space: nowrap;
+  }
+  .chip.ok { color: var(--green); border-color: #bfd2c5; background: var(--green-soft); }
+
+  .section-head {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 16px;
+    margin: 52px 0 18px;
+    padding-bottom: 12px;
+    border-bottom: 1px solid var(--line);
+  }
+  .section-head h2 {
+    margin: 0;
+    font-family: "Iowan Old Style", "Songti SC", "STSong", Georgia, serif;
+    font-size: 24px;
+    font-weight: 600;
+    letter-spacing: -.01em;
+  }
+  .section-head p { margin: 0; color: var(--muted); font-size: 12px; }
+
+  .cards {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 16px;
+  }
+  .card {
+    --accent: var(--green);
+    --accent-soft: var(--green-soft);
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+    padding: 20px 20px 18px;
+    background: var(--card);
+    border: 1px solid var(--line);
+    border-top: 3px solid var(--accent);
+    border-radius: 14px;
+    box-shadow: var(--shadow);
+  }
+  .card.old { --accent: var(--amber); --accent-soft: var(--amber-soft); }
+  .card-top { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+  .badge {
+    display: inline-block;
+    padding: 3px 8px;
+    border-radius: 999px;
+    background: var(--accent-soft);
+    color: var(--accent);
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: .04em;
+  }
+  .fmt {
+    font: 600 10px/1 ui-monospace, SFMono-Regular, Menlo, monospace;
+    letter-spacing: .08em;
+    color: var(--muted);
+  }
+  .card h3 {
+    margin: 0;
+    font-size: 17px;
+    font-weight: 600;
+    letter-spacing: -.01em;
+    word-break: break-all;
+  }
+  .meta { margin: -8px 0 0; color: var(--muted); font-size: 12px; font-variant-numeric: tabular-nums; }
+
+  .player { display: flex; align-items: center; gap: 10px; }
+  .play {
+    flex: 0 0 auto;
+    width: 40px; height: 40px;
+    display: grid; place-items: center;
+    border: 0; border-radius: 50%;
+    background: var(--accent);
+    color: #fff;
+    cursor: pointer;
+    transition: transform .15s ease, filter .15s ease;
+  }
+  .play:hover { filter: brightness(1.08); transform: translateY(-1px); }
+  .play:active { transform: translateY(0); }
+  .play svg { width: 15px; height: 15px; }
+  .track-wrap { flex: 1 1 auto; min-width: 0; display: flex; flex-direction: column; gap: 5px; }
+  .track {
+    position: relative;
+    height: 8px;
+    border-radius: 999px;
+    background: var(--track);
+    cursor: pointer;
+    touch-action: none;
+  }
+  .track:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; }
+  .fill {
+    position: absolute; inset: 0 auto 0 0;
+    width: 0%;
+    border-radius: 999px;
+    background: var(--accent);
+  }
+  .knob {
+    position: absolute; top: 50%; left: 0%;
+    width: 13px; height: 13px;
+    margin: -6.5px 0 0 -6.5px;
+    border-radius: 50%;
+    background: #fff;
+    border: 2px solid var(--accent);
+    box-shadow: 0 1px 3px rgba(0, 0, 0, .18);
+    pointer-events: none;
+  }
+  .time {
+    font: 500 11px/1 ui-monospace, SFMono-Regular, Menlo, monospace;
+    color: var(--muted);
+    letter-spacing: .02em;
+    font-variant-numeric: tabular-nums;
+    white-space: nowrap;
+  }
+  .loop {
+    flex: 0 0 auto;
+    border: 1px solid var(--line);
+    border-radius: 999px;
+    background: transparent;
+    color: var(--muted);
+    font-size: 11px;
+    font-weight: 600;
+    padding: 7px 10px;
+    cursor: pointer;
+    white-space: nowrap;
+  }
+  .loop[aria-pressed="true"] {
+    color: var(--accent);
+    border-color: var(--accent);
+    background: var(--accent-soft);
+  }
+  .helpers { display: flex; flex-wrap: wrap; gap: 6px; margin-top: -2px; }
+  .ghost {
+    border: 1px dashed var(--line);
+    border-radius: 8px;
+    background: transparent;
+    color: var(--muted);
+    font-size: 11px;
+    padding: 5px 8px;
+    cursor: pointer;
+  }
+  .ghost:hover { color: var(--accent); border-color: var(--accent); }
+  .note {
+    margin: auto 0 0;
+    padding-top: 12px;
+    border-top: 1px solid var(--line);
+    color: var(--muted);
+    font-size: 12px;
+    line-height: 1.7;
+  }
+  .note strong { color: var(--ink); font-weight: 600; }
+
+  .seam-panel {
+    display: grid;
+    grid-template-columns: 1.1fr 1fr;
+    gap: 16px;
+    padding: 20px;
+    background: var(--card);
+    border: 1px solid var(--line);
+    border-radius: 14px;
+  }
+  .seam-panel h3 {
+    margin: 0 0 6px;
+    font-size: 15px;
+    font-weight: 600;
+  }
+  .seam-panel p { margin: 0; color: var(--muted); font-size: 13px; line-height: 1.75; }
+  .seam-graph {
+    display: flex;
+    align-items: center;
+    gap: 0;
+    margin: 16px 0 10px;
+    padding: 14px 12px;
+    border-radius: 10px;
+    background: #f1ece2;
+    border: 1px solid var(--line);
+  }
+  .seam-block {
+    flex: 0 0 68px;
+    text-align: center;
+    font: 600 10px/1.4 ui-monospace, SFMono-Regular, Menlo, monospace;
+    color: var(--muted);
+  }
+  .seam-block b {
+    display: block;
+    color: var(--green);
+    font-size: 13px;
+  }
+  .seam-bar {
+    flex: 1 1 auto;
+    height: 26px;
+    border-radius: 6px;
+    background:
+      repeating-linear-gradient(90deg, rgba(47, 107, 79, .22) 0 2px, transparent 2px 5px),
+      var(--green-soft);
+    border: 1px dashed #b9cdc0;
+  }
+  .seam-arrow {
+    flex: 0 0 auto;
+    padding: 0 8px;
+    color: var(--green);
+    font: 600 15px/1 ui-monospace, monospace;
+  }
+  .kv { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
+  .kv div {
+    padding: 10px 12px;
+    border-radius: 9px;
+    background: #f1ece2;
+    border: 1px solid var(--line);
+  }
+  .kv span { display: block; color: var(--muted); font-size: 10px; letter-spacing: .06em; text-transform: uppercase; }
+  .kv b { display: block; margin-top: 3px; font: 600 15px/1.2 ui-monospace, SFMono-Regular, Menlo, monospace; }
+
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    background: var(--card);
+    border: 1px solid var(--line);
+    border-radius: 12px;
+    overflow: hidden;
+    font-size: 12.5px;
+  }
+  th, td { padding: 10px 12px; text-align: left; border-bottom: 1px solid var(--line); vertical-align: top; }
+  th {
+    background: #efe9de;
+    color: var(--muted);
+    font-size: 10.5px;
+    font-weight: 600;
+    letter-spacing: .05em;
+    text-transform: uppercase;
+    white-space: nowrap;
+  }
+  tr:last-child td { border-bottom: 0; }
+  td.num { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-variant-numeric: tabular-nums; white-space: nowrap; }
+  td.new { color: var(--green); }
+  td.old { color: var(--amber); }
+  .table-scroll { overflow-x: auto; }
+
+  .callout {
+    display: flex;
+    gap: 14px;
+    align-items: flex-start;
+    margin-top: 16px;
+    padding: 16px 18px;
+    border-radius: 12px;
+    background: var(--green-soft);
+    border: 1px solid #bfd2c5;
+    color: #2b4a38;
+    font-size: 13px;
+    line-height: 1.75;
+  }
+  .callout b { color: var(--green); }
+  .callout .mark {
+    flex: 0 0 auto;
+    width: 26px; height: 26px;
+    display: grid; place-items: center;
+    border-radius: 50%;
+    background: var(--green);
+    color: #fff;
+    font-size: 13px;
+    font-weight: 700;
+  }
+  .foot {
+    margin-top: 34px;
+    padding-top: 16px;
+    border-top: 1px solid var(--line);
+    color: var(--muted);
+    font-size: 11.5px;
+    line-height: 1.8;
+  }
+  .foot code { font-size: .9em; }
+  .warn { color: var(--amber); }
+  @media (max-width: 860px) {
+    .cards { grid-template-columns: 1fr; }
+    .seam-panel { grid-template-columns: 1fr; }
+  }
+  @media (max-width: 520px) {
+    main { padding: 36px 16px 56px; }
+    .section-head { flex-direction: column; gap: 4px; }
+    .card { padding: 16px; }
+    .kv { grid-template-columns: 1fr 1fr; }
+  }
+</style>
+</head>
+<body>
+<main>
+  <header>
+    <p class="eyebrow">Bugu · Ring audio A/B · 2026-11-05</p>
+    <h1>改前 / 改后<br><span>响铃音源对照试听</span></h1>
+    <p class="lede">
+      左边是线上正在用的 <code>bugu_call.wav</code>，右边是这次做好的通知动机与循环响铃母带。
+      循环段可以单独开关循环；建议先点「从接缝前 0.5 s 起播」，再开循环连听 3–5 圈，判断接缝是否干净。
+    </p>
+    <div class="chips">
+      <span class="chip">旧 122.35 KiB</span>
+      <span class="chip">新两条 141.64 KiB</span>
+      <span class="chip">净增 +19.29 KiB</span>
+      <span class="chip ok">公共响度 -19.7 LUFS</span>
+      <span class="chip ok">接缝 200 ms 等功率</span>
+    </div>
+  </header>
+
+  <div class="section-head">
+    <h2>三条音源，单独听</h2>
+    <p id="codec-note">OGG 直出 · 浏览器不支持时自动切 WAV 无损源</p>
+  </div>
+
+  <section class="cards" aria-label="音源对照试听">
+    <article class="card old">
+      <div class="card-top">
+        <span class="badge">现状</span>
+        <span class="fmt">WAV · 44.1 kHz mono</span>
+      </div>
+      <h3>bugu_call.wav</h3>
+      <p class="meta">1.42 s · 125,286 B · 线上 isLooping=true</p>
+      <div class="player"
+           data-src-ogg=""
+           data-src-wav="audio/current_bugu_call.wav"
+           data-dur="1.4199">
+        <button class="play" type="button" aria-label="播放 bugu_call.wav">
+          <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path class="i-play" d="M8 5.5v13l11-6.5z"/><path class="i-pause" d="M7 5h3.6v14H7zM13.4 5H17v14h-3.6z" style="display:none"/></svg>
+        </button>
+        <div class="track-wrap">
+          <div class="track" role="slider" tabindex="0" aria-label="播放进度" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0">
+            <div class="fill"></div><div class="knob"></div>
+          </div>
+          <span class="time">0:00.0 / 0:01.4</span>
+        </div>
+        <button class="loop" type="button" aria-pressed="false">循环 关</button>
+      </div>
+      <p class="note"><strong>旧文件。</strong>现网在响铃页用 <code>isLooping = true</code> 循环；开循环即可听到当前线上的接缝。它与通知渠道的系统闹铃同时发声，是这次要修的双重响问题。</p>
+    </article>
+
+    <article class="card">
+      <div class="card-top">
+        <span class="badge">新 · 通知动机</span>
+        <span class="fmt">OGG · 96 kbps</span>
+      </div>
+      <h3>alarm_notice.ogg</h3>
+      <p class="meta">1.25 s · 15,950 B · -19.7 LUFS</p>
+      <div class="player"
+           data-src-ogg="masters/alarm_notice.ogg"
+           data-src-wav="masters/alarm_notice.wav"
+           data-dur="1.2478">
+        <button class="play" type="button" aria-label="播放 alarm_notice.ogg">
+          <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path class="i-play" d="M8 5.5v13l11-6.5z"/><path class="i-pause" d="M7 5h3.6v14H7zM13.4 5H17v14h-3.6z" style="display:none"/></svg>
+        </button>
+        <div class="track-wrap">
+          <div class="track" role="slider" tabindex="0" aria-label="播放进度" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0">
+            <div class="fill"></div><div class="knob"></div>
+          </div>
+          <span class="time">0:00.0 / 0:01.2</span>
+        </div>
+        <button class="loop" type="button" aria-pressed="false">循环 关</button>
+      </div>
+      <p class="note"><strong>一次性提示音。</strong>两声布谷，约 1.25 s，适合非循环场景（普通通知 / iOS 本地通知）。真峰值 -6.6 dBTP，不抢循环段。</p>
+    </article>
+
+    <article class="card">
+      <div class="card-top">
+        <span class="badge">新 · 循环响铃</span>
+        <span class="fmt">OGG · 96 kbps</span>
+      </div>
+      <h3>alarm_loop.ogg</h3>
+      <p class="meta">10.16 s · 129,087 B · -19.7 LUFS</p>
+      <div class="player"
+           data-src-ogg="masters/alarm_loop.ogg"
+           data-src-wav="masters/alarm_loop.wav"
+           data-dur="10.16">
+        <button class="play" type="button" aria-label="播放 alarm_loop.ogg">
+          <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path class="i-play" d="M8 5.5v13l11-6.5z"/><path class="i-pause" d="M7 5h3.6v14H7zM13.4 5H17v14h-3.6z" style="display:none"/></svg>
+        </button>
+        <div class="track-wrap">
+          <div class="track" role="slider" tabindex="0" aria-label="播放进度" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0">
+            <div class="fill"></div><div class="knob"></div>
+          </div>
+          <span class="time">0:00.0 / 0:10.1</span>
+        </div>
+        <button class="loop" type="button" aria-pressed="false">循环 关</button>
+      </div>
+      <div class="helpers">
+        <button class="ghost seam" type="button">从接缝前 0.5 s 起播</button>
+        <button class="ghost seam-loop" type="button">开循环从头播</button>
+      </div>
+      <p class="note"><strong>循环母带。</strong>十二声布谷钟，尾部约 3.5 s 静音已裁掉；接缝在安静段做 200 ms 等功率交叉淡化，不压首声报时，也不会出现音量凹陷。</p>
+    </article>
+  </section>
+
+  <div class="section-head">
+    <h2>接缝听辨</h2>
+    <p>第 10.16 s 处为循环接缝 · 建议戴耳机</p>
+  </div>
+
+  <section class="seam-panel" aria-label="接缝指标">
+    <div>
+      <h3>接缝两侧的 10 ms 电平</h3>
+      <p>首尾都落在安静的底噪段，拼接处没有突然的电平跳变；等功率交叉淡化保证两段功率相加恒定，不会像线性淡化那样在中间“凹”下去。</p>
+      <div class="seam-graph" aria-hidden="true">
+        <div class="seam-block">首 10 ms<b>-46.4 dB</b></div>
+        <div class="seam-bar"></div>
+        <div class="seam-arrow">⟲</div>
+        <div class="seam-block">末 10 ms<b>-46.2 dB</b></div>
+      </div>
+      <p style="font-size:12px">听感重点：报时之间是否自然、最后一声衰减后是否直接进入下一轮第一声，而不是先出现一段空白。</p>
+    </div>
+    <div>
+      <h3>实测</h3>
+      <div class="kv">
+        <div><span>首尾拼接跳变</span><b>0.00183</b></div>
+        <div><span>内部相邻差 p99</span><b>0.0952</b></div>
+        <div><span>交叉淡化</span><b>200 ms</b></div>
+        <div><span>曲线</span><b>cos / sin</b></div>
+        <div><span>接缝处峰值</span><b>-46 dB</b></div>
+        <div><span>OGG 解码复核</b><b>通过</b></div>
+      </div>
+      <p style="margin-top:10px;font-size:12px">数据取自 OGG 解码后的样本；WAV 母带同口径为 0.00193 / 0.0968。</p>
+    </div>
+  </section>
+
+  <div class="section-head">
+    <h2>数据对照</h2>
+    <p>响度按 EBU R128 积分值 · 真峰值 4× 过采样</p>
+  </div>
+
+  <div class="table-scroll">
+    <table>
+      <thead>
+        <tr>
+          <th>文件</th><th>用途</th><th>时长</th><th>采样率 / 声道</th><th>编码</th>
+          <th>字节</th><th>响度</th><th>真峰值</th><th>循环</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td class="old"><code>bugu_call.wav</code></td>
+          <td>现网循环</td>
+          <td class="num">1.42 s</td>
+          <td class="num">44.1 kHz / mono</td>
+          <td>WAV PCM 16-bit</td>
+          <td class="num">125,286</td>
+          <td class="num">-14.9 LUFS</td>
+          <td class="num">-3.1 dBTP</td>
+          <td>线上 <code>isLooping=true</code></td>
+        </tr>
+        <tr>
+          <td class="new"><code>alarm_notice.ogg</code></td>
+          <td>通知动机（一次性）</td>
+          <td class="num">1.25 s</td>
+          <td class="num">44.1 kHz / mono</td>
+          <td>OGG Vorbis 96 kbps</td>
+          <td class="num">15,950</td>
+          <td class="num">-19.7 LUFS</td>
+          <td class="num">-6.6 dBTP</td>
+          <td>否</td>
+        </tr>
+        <tr>
+          <td class="new"><code>alarm_loop.ogg</code></td>
+          <td>循环响铃</td>
+          <td class="num">10.16 s</td>
+          <td class="num">44.1 kHz / mono</td>
+          <td>OGG Vorbis 96 kbps</td>
+          <td class="num">129,087</td>
+          <td class="num">-19.7 LUFS</td>
+          <td class="num">-1.8 dBTP</td>
+          <td>是 · 200 ms 等功率接缝</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="callout">
+    <span class="mark">Δ</span>
+    <div>
+      <b>包体增量：+19,751 B（+19.29 KiB）。</b>
+      旧 <code>bugu_call.wav</code> 125,286 B（122.35 KiB）→ 新两条 OGG 合计 145,037 B（141.64 KiB）。
+      前提是接入时删除旧 wav；若保留旧文件，则实际占用为 +141.64 KiB。无损 WAV 源只留在本目录，不参与打包。
+    </div>
+  </div>
+
+  <p class="foot">
+    代码接入待 App 文案会话收尾（版本 4 / 1.1.2）后再排。本页与 <code>masters/</code> 均为试听/母带材料，不在 <code>app/</code> 内，Gradle 不会扫描，也不进入 APK。
+    接入时需要一并处理：响铃页接管后撤掉通知渠道响铃、新建渠道 <code>bugu_alarm_ring_v2</code> 并删除旧渠道 <code>bugu_alarm_ring</code>、<code>android.resource://</code> 优先并准备 <code>content://</code> 兜底。
+    母带源为 Freesound 官方预览 MP3（CC0），许可与哈希见 <code>LICENSES.md</code>，处理细节见 <code>masters/MASTERING.md</code>。
+  </p>
+</main>
+
+<script>
+(function () {
+  var supportsOgg = !!document.createElement('audio').canPlayType('audio/ogg; codecs="vorbis"');
+  var codecNote = document.getElementById('codec-note');
+  if (!supportsOgg && codecNote) {
+    codecNote.textContent = '当前浏览器不支持 OGG Vorbis · 已自动改用 WAV 无损源试听';
+  }
+  var players = [];
+
+  function fmt(t) {
+    if (!isFinite(t) || t < 0) t = 0;
+    var m = Math.floor(t / 60);
+    var s = t - m * 60;
+    return m + ':' + (s < 10 ? '0' : '') + s.toFixed(1);
+  }
+
+  function setup(el) {
+    var ogg = el.getAttribute('data-src-ogg') || '';
+    var wav = el.getAttribute('data-src-wav') || '';
+    var src = (supportsOgg && ogg) ? ogg : (wav || ogg);
+    var fallback = (supportsOgg && ogg && wav) ? wav : '';
+    var durHint = parseFloat(el.getAttribute('data-dur')) || 0;
+    var playBtn = el.querySelector('.play');
+    var loopBtn = el.querySelector('.loop');
+    var track = el.querySelector('.track');
+    var fill = el.querySelector('.fill');
+    var knob = el.querySelector('.knob');
+    var timeEl = el.querySelector('.time');
+    var audio = null;
+    var loopOn = false;
+    var failed = false;
+
+    function ensure() {
+      if (audio) return audio;
+      audio = new Audio();
+      audio.preload = 'none';
+      audio.loop = loopOn;
+      audio.src = src;
+      audio.addEventListener('loadedmetadata', function () {
+        timeEl.textContent = fmt(audio.currentTime) + ' / ' + fmt(audio.duration);
+      });
+      audio.addEventListener('timeupdate', function () {
+        var d = audio.duration || durHint || 0;
+        var p = d ? (audio.currentTime / d) * 100 : 0;
+        fill.style.width = p + '%';
+        knob.style.left = p + '%';
+        track.setAttribute('aria-valuenow', Math.round(p));
+        timeEl.textContent = fmt(audio.currentTime) + ' / ' + fmt(d);
+      });
+      audio.addEventListener('play', function () {
+        el.querySelector('.i-play').style.display = 'none';
+        el.querySelector('.i-pause').style.display = '';
+        playBtn.setAttribute('aria-label', '暂停');
+      });
+      audio.addEventListener('pause', function () {
+        el.querySelector('.i-play').style.display = '';
+        el.querySelector('.i-pause').style.display = 'none';
+        playBtn.setAttribute('aria-label', '播放');
+      });
+      audio.addEventListener('ended', function () {
+        if (!audio.loop) {
+          audio.currentTime = 0;
+          fill.style.width = '0%';
+          knob.style.left = '0%';
+        }
+      });
+      audio.addEventListener('error', function () {
+        if (!failed && fallback && audio.src.indexOf(fallback) === -1) {
+          failed = true;
+          audio.src = fallback;
+          audio.load();
+          var p = audio.play();
+          if (p && p.catch) p.catch(function () {});
+          if (codecNote) codecNote.textContent = 'OGG 播放失败 · 已回退到 WAV 无损源';
+        } else if (codecNote) {
+          codecNote.textContent = '音频加载失败，请确认通过本地 HTTP 服务打开本页';
+        }
+      });
+      return audio;
+    }
+
+    function play() {
+      var a = ensure();
+      var p = a.play();
+      if (p && p.catch) {
+        p.catch(function () {
+          if (codecNote) codecNote.textContent = '播放被浏览器拦截，请再点一次播放';
+        });
+      }
+    }
+
+    playBtn.addEventListener('click', function () {
+      var a = ensure();
+      if (a.paused) {
+        players.forEach(function (other) {
+          if (other !== api && other.audio && !other.audio.paused) other.audio.pause();
+        });
+        play();
+      } else {
+        a.pause();
+      }
+    });
+
+    loopBtn.addEventListener('click', function () {
+      loopOn = !loopOn;
+      loopBtn.setAttribute('aria-pressed', loopOn ? 'true' : 'false');
+      loopBtn.textContent = loopOn ? '循环 开' : '循环 关';
+      if (audio) audio.loop = loopOn;
+    });
+
+    function seekAt(clientX) {
+      var rect = track.getBoundingClientRect();
+      var p = Math.max(0, Math.min(1, (clientX - rect.left) / rect.width));
+      var a = ensure();
+      var d = a.duration || durHint;
+      if (d) {
+        a.currentTime = p * d;
+        fill.style.width = p * 100 + '%';
+        knob.style.left = p * 100 + '%';
+        timeEl.textContent = fmt(a.currentTime) + ' / ' + fmt(d);
+      }
+    }
+    track.addEventListener('click', function (e) { seekAt(e.clientX); });
+    track.addEventListener('keydown', function (e) {
+      if (e.key === 'ArrowLeft' || e.key === 'ArrowRight') {
+        e.preventDefault();
+        var a = ensure();
+        var d = a.duration || durHint || 0;
+        a.currentTime = Math.max(0, Math.min(d, a.currentTime + (e.key === 'ArrowRight' ? 0.5 : -0.5)));
+      }
+    });
+
+    var api = { el: el, get audio() { return audio; } };
+
+    var seam = el.querySelector('.seam');
+    if (seam) seam.addEventListener('click', function () {
+      var a = ensure();
+      loopOn = true;
+      loopBtn.setAttribute('aria-pressed', 'true');
+      loopBtn.textContent = '循环 开';
+      a.loop = true;
+      play();
+      var start = function () {
+        a.currentTime = Math.max(0, (a.duration || durHint) - 0.5);
+        a.removeEventListener('loadedmetadata', start);
+      };
+      if (a.readyState >= 1 && a.duration) start();
+      else a.addEventListener('loadedmetadata', start);
+      if (codecNote) codecNote.textContent = '从接缝前 0.5 s 起播 · 循环已打开';
+    });
+
+    var seamLoop = el.querySelector('.seam-loop');
+    if (seamLoop) seamLoop.addEventListener('click', function () {
+      var a = ensure();
+      loopOn = true;
+      loopBtn.setAttribute('aria-pressed', 'true');
+      loopBtn.textContent = '循环 开';
+      a.loop = true;
+      a.currentTime = 0;
+      play();
+      if (codecNote) codecNote.textContent = '循环已打开 · 从头播放';
+    });
+
+    players.push(api);
+    return api;
+  }
+
+  document.querySelectorAll('.player').forEach(setup);
+})();
+</script>
+</body>
+</html>

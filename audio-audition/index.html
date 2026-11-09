@@ -1,0 +1,777 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>布谷 · 响铃音源试听</title>
+<style>
+:root{
+  --paper:#F5F0E5;
+  --paper-2:#EFE8D8;
+  --card:#FFFCF5;
+  --ink:#1E2320;
+  --ink-2:#48504A;
+  --muted:#7C8179;
+  --line:#E2D9C7;
+  --line-strong:#D2C6AE;
+  --mint:#2E7B5E;
+  --indigo:#4C5C8A;
+  --amber:#A9792A;
+  --coral:#BC5B45;
+  --rose:#9E4E61;
+  --shadow:0 1px 2px rgba(30,35,32,.05), 0 10px 30px rgba(30,35,32,.06);
+}
+*{box-sizing:border-box}
+html{-webkit-text-size-adjust:100%}
+body{
+  margin:0;
+  background:
+    radial-gradient(1200px 600px at 8% -10%, rgba(46,123,94,.10), transparent 60%),
+    radial-gradient(900px 500px at 100% 0%, rgba(169,121,42,.09), transparent 55%),
+    var(--paper);
+  color:var(--ink);
+  font-family:"PingFang SC","Hiragino Sans GB","Microsoft YaHei",system-ui,-apple-system,sans-serif;
+  font-size:16px;
+  line-height:1.65;
+  -webkit-font-smoothing:antialiased;
+}
+.wrap{max-width:1160px;margin:0 auto;padding:0 28px}
+a{color:inherit}
+button{font:inherit;color:inherit}
+
+/* ---------- masthead ---------- */
+.masthead{
+  padding:34px 0 26px;
+  border-bottom:1px solid var(--line);
+  position:relative;
+  overflow:hidden;
+}
+.masthead::after{
+  content:"";
+  position:absolute;right:-120px;top:-140px;width:460px;height:460px;border-radius:50%;
+  border:1px solid rgba(46,123,94,.18);
+  box-shadow:0 0 0 34px rgba(46,123,94,.055),0 0 0 68px rgba(46,123,94,.035),0 0 0 102px rgba(46,123,94,.02);
+  pointer-events:none;
+}
+.topline{display:flex;align-items:center;justify-content:space-between;gap:16px;flex-wrap:wrap}
+.brand{display:flex;align-items:center;gap:10px;font-weight:700;letter-spacing:.14em;font-size:12px;color:var(--mint);text-transform:uppercase}
+.brand .bird{width:26px;height:26px;display:block}
+.safety{
+  display:inline-flex;align-items:center;gap:8px;
+  border:1px solid var(--line-strong);border-radius:999px;
+  padding:6px 12px;font-size:12px;color:var(--ink-2);background:rgba(255,252,245,.7);
+}
+.safety .dot{width:6px;height:6px;border-radius:50%;background:var(--mint)}
+h1{
+  margin:26px 0 10px;
+  font-size:clamp(30px,4.4vw,54px);
+  line-height:1.15;
+  letter-spacing:-.02em;
+  font-weight:800;
+}
+h1 .accent{color:var(--mint)}
+.lede{max-width:720px;margin:0;color:var(--ink-2);font-size:16px}
+.stats{display:flex;gap:10px;flex-wrap:wrap;margin-top:22px}
+.stat{
+  background:rgba(255,252,245,.72);border:1px solid var(--line);border-radius:14px;
+  padding:10px 14px;min-width:130px;
+}
+.stat b{display:block;font-size:20px;line-height:1.2;letter-spacing:-.01em}
+.stat span{font-size:12px;color:var(--muted)}
+
+/* ---------- section scaffolding ---------- */
+section{padding:54px 0 10px}
+.section-label{
+  display:flex;align-items:center;gap:10px;
+  font-size:11px;letter-spacing:.18em;text-transform:uppercase;color:var(--muted);
+  margin-bottom:14px;
+}
+.section-label::before{content:"";width:26px;height:1px;background:var(--line-strong)}
+h2{margin:0 0 10px;font-size:clamp(22px,2.6vw,30px);line-height:1.3;letter-spacing:-.01em}
+.sub{color:var(--ink-2);margin:0;max-width:760px}
+
+/* ---------- baseline ---------- */
+.baseline-grid{display:grid;grid-template-columns:1.15fr .85fr;gap:26px;align-items:start}
+.findings{list-style:none;margin:18px 0 0;padding:0;display:grid;gap:12px}
+.findings li{
+  display:grid;grid-template-columns:30px 1fr;gap:12px;
+  padding:14px 16px;background:rgba(255,252,245,.6);border:1px solid var(--line);border-radius:14px;
+}
+.findings .n{
+  width:30px;height:30px;border-radius:9px;background:var(--paper-2);
+  display:grid;place-items:center;font-size:12px;font-weight:700;color:var(--ink-2);
+}
+.findings b{display:block;font-size:14px;margin-bottom:2px}
+.findings p{margin:0;font-size:13px;color:var(--ink-2)}
+.findings code{
+  font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:12px;
+  background:rgba(46,123,94,.08);color:var(--mint);padding:1px 5px;border-radius:5px;
+}
+.now-card{
+  background:var(--card);border:1px solid var(--line);border-radius:20px;padding:22px;
+  box-shadow:var(--shadow);
+}
+.now-tag{font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:var(--coral);font-weight:700}
+.now-card h3{margin:6px 0 2px;font-size:22px;letter-spacing:-.01em}
+.now-card .meta-line{margin:0 0 14px;font-size:13px;color:var(--muted)}
+.now-note{
+  margin:14px 0 0;padding:11px 13px;border-left:2px solid var(--coral);
+  background:rgba(188,91,69,.06);font-size:13px;color:var(--ink-2);border-radius:0 8px 8px 0;
+}
+
+/* ---------- filters ---------- */
+.filterbar{
+  display:flex;align-items:center;justify-content:space-between;gap:14px;flex-wrap:wrap;
+  padding:18px 0 18px;border-bottom:1px solid var(--line);
+}
+.filters{display:flex;gap:8px;flex-wrap:wrap}
+.chip{
+  border:1px solid var(--line);background:transparent;border-radius:999px;
+  padding:7px 13px;font-size:13px;cursor:pointer;color:var(--ink-2);
+  transition:.18s ease;
+}
+.chip:hover{border-color:var(--line-strong);background:rgba(255,252,245,.7)}
+.chip.on{background:var(--ink);border-color:var(--ink);color:#FBF7EE}
+.count{font-size:12px;color:var(--muted);letter-spacing:.04em}
+
+/* ---------- cards ---------- */
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(330px,1fr));gap:18px;padding-top:22px}
+.card{
+  background:var(--card);border:1px solid var(--line);border-radius:20px;
+  padding:18px 18px 16px;box-shadow:var(--shadow);
+  transition:transform .2s ease, box-shadow .2s ease, border-color .2s ease;
+  display:flex;flex-direction:column;
+}
+.card:hover{transform:translateY(-2px);border-color:var(--line-strong);box-shadow:0 2px 4px rgba(30,35,32,.05),0 18px 40px rgba(30,35,32,.08)}
+.card-head{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:8px}
+.idx{font-size:11px;letter-spacing:.08em;color:var(--muted);font-variant-numeric:tabular-nums}
+.group-dot{display:inline-flex;align-items:center;gap:6px;font-size:11px;color:var(--ink-2)}
+.group-dot i{width:8px;height:8px;border-radius:50%;display:block}
+.card h3{margin:0;font-size:20px;line-height:1.35;letter-spacing:-.01em}
+.en{margin:1px 0 10px;font-size:12px;color:var(--muted)}
+.tags{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:14px}
+.tag{
+  font-size:11px;padding:3px 8px;border-radius:6px;border:1px solid var(--line);
+  color:var(--ink-2);background:rgba(245,240,229,.6);white-space:nowrap;
+}
+.tag.cc0{color:var(--mint);border-color:rgba(46,123,94,.28);background:rgba(46,123,94,.07);font-weight:700}
+.tag.mk{color:var(--amber);border-color:rgba(169,121,42,.3);background:rgba(169,121,42,.07);font-weight:700}
+.tag.role{color:var(--indigo);border-color:rgba(76,92,138,.25);background:rgba(76,92,138,.06)}
+.tag.rec{color:#fff;background:var(--mint);border-color:var(--mint);font-weight:700}
+
+/* player */
+.player{display:flex;align-items:center;gap:10px}
+.play{
+  width:44px;height:44px;flex:0 0 44px;border-radius:50%;border:0;cursor:pointer;
+  background:var(--ink);color:#fff;display:grid;place-items:center;
+  transition:.18s ease;position:relative;
+}
+.play:hover{background:var(--mint)}
+.play:focus-visible{outline:2px solid var(--mint);outline-offset:3px}
+.play svg{width:18px;height:18px;display:block}
+.play .ico-pause{display:none}
+.play.playing .ico-play{display:none}
+.play.playing .ico-pause{display:block}
+.bar{flex:1;height:22px;display:flex;align-items:center;cursor:pointer;position:relative}
+.bar::before{content:"";position:absolute;left:0;right:0;height:4px;border-radius:99px;background:var(--paper-2)}
+.fill{position:absolute;left:0;height:4px;width:0%;border-radius:99px;background:var(--mint);pointer-events:none}
+.time{font-size:11px;color:var(--muted);font-variant-numeric:tabular-nums;white-space:nowrap;min-width:74px;text-align:right}
+.loopbtn{
+  border:1px solid var(--line);background:transparent;border-radius:8px;cursor:pointer;
+  padding:4px 7px;font-size:10.5px;color:var(--muted);display:inline-flex;align-items:center;gap:4px;
+}
+.loopbtn.on{color:var(--mint);border-color:rgba(46,123,94,.4);background:rgba(46,123,94,.08);font-weight:700}
+.loopbtn[hidden]{display:none}
+.loopbtn.hide{display:none}
+.meta-line{margin:10px 0 0;font-size:11.5px;color:var(--muted);font-variant-numeric:tabular-nums}
+.seam{
+  margin-top:10px;padding-top:10px;border-top:1px dashed var(--line);
+  font-size:12px;color:var(--ink-2);display:grid;grid-template-columns:16px 1fr;gap:7px;
+}
+.seam svg{width:14px;height:14px;margin-top:3px;color:var(--amber)}
+.note{margin:9px 0 0;font-size:12.5px;color:var(--ink-2)}
+.links{margin-top:auto;padding-top:12px;display:flex;gap:14px;flex-wrap:wrap}
+.links a{
+  font-size:11.5px;color:var(--muted);text-decoration:none;border-bottom:1px solid transparent;
+  display:inline-flex;align-items:center;gap:3px;
+}
+.links a:hover{color:var(--mint);border-bottom-color:rgba(46,123,94,.35)}
+.links svg{width:11px;height:11px}
+
+/* ---------- two-stage ---------- */
+.stage-head{display:grid;grid-template-columns:1fr .9fr;gap:28px;align-items:end}
+.stage-quote{
+  border-left:2px solid var(--mint);padding:4px 0 4px 16px;color:var(--ink-2);font-size:14px;
+}
+.pairs{display:grid;grid-template-columns:1fr 1fr;gap:18px;margin-top:26px}
+.pair{
+  background:var(--card);border:1px solid var(--line);border-radius:22px;padding:20px;
+  box-shadow:var(--shadow);
+}
+.pair-top{display:flex;align-items:baseline;justify-content:space-between;gap:10px;margin-bottom:4px}
+.pair-kicker{font-size:11px;letter-spacing:.16em;text-transform:uppercase;color:var(--mint);font-weight:700}
+.pair h3{margin:0;font-size:22px}
+.pair .why{margin:2px 0 16px;font-size:12.5px;color:var(--muted)}
+.layer{display:grid;grid-template-columns:26px 1fr;gap:10px;padding:12px 0;border-top:1px solid var(--line)}
+.layer:first-of-type{border-top:0;padding-top:0}
+.layer-no{
+  width:24px;height:24px;border-radius:50%;border:1px solid var(--line-strong);
+  display:grid;place-items:center;font-size:10px;color:var(--muted);margin-top:2px;
+}
+.layer h4{margin:0 0 2px;font-size:13.5px}
+.layer p{margin:0 0 8px;font-size:12px;color:var(--muted)}
+.layer .player .time{min-width:70px}
+
+.seam-box{
+  margin-top:20px;padding:22px;border-radius:20px;
+  background:var(--ink);color:#F3EEE2;
+}
+.seam-box h3{margin:0 0 4px;font-size:18px;color:#fff}
+.seam-box .lead{color:rgba(243,238,226,.68);font-size:13px;margin:0 0 16px}
+.seam-list{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin:0;padding:0;list-style:none}
+.seam-list li{border-top:1px solid rgba(255,255,255,.16);padding-top:10px}
+.seam-list b{display:block;font-size:12.5px;margin-bottom:4px;color:#fff}
+.seam-list span{font-size:12px;color:rgba(243,238,226,.7)}
+.caveat{
+  margin:18px 0 0;padding-top:14px;border-top:1px solid rgba(255,255,255,.16);
+  font-size:12.5px;color:rgba(243,238,226,.78);
+}
+.caveat strong{color:#fff}
+
+/* ---------- decisions ---------- */
+.decisions{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin-top:22px}
+.decision{
+  background:rgba(255,252,245,.65);border:1px solid var(--line);border-radius:18px;padding:18px;
+}
+.decision .no{font-size:11px;letter-spacing:.1em;color:var(--muted)}
+.decision h3{margin:6px 0 8px;font-size:17px}
+.decision p{margin:0;font-size:12.5px;color:var(--ink-2)}
+.decision .ask{
+  margin-top:10px;padding-top:10px;border-top:1px dashed var(--line);
+  font-size:12px;color:var(--mint);font-weight:600;
+}
+
+footer{
+  margin-top:56px;border-top:1px solid var(--line);padding:24px 0 44px;
+  font-size:11.5px;color:var(--muted);display:flex;justify-content:space-between;gap:16px;flex-wrap:wrap;
+}
+footer code{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:11px}
+
+@media (max-width:900px){
+  .baseline-grid,.stage-head,.pairs{grid-template-columns:1fr}
+  .seam-list{grid-template-columns:1fr 1fr}
+  .decisions{grid-template-columns:1fr}
+}
+@media (max-width:620px){
+  .wrap{padding:0 18px}
+  .grid{grid-template-columns:1fr}
+  .seam-list{grid-template-columns:1fr}
+  .time{min-width:64px}
+}
+</style>
+</head>
+<body>
+
+<header class="masthead">
+  <div class="wrap">
+    <div class="topline">
+      <div class="brand">
+        <svg class="bird" viewBox="0 0 32 32" fill="none" aria-hidden="true">
+          <circle cx="16" cy="16" r="15" stroke="currentColor" stroke-width="1.2" opacity=".35"/>
+          <path d="M9 19.5c3.2-.4 5.2-2.1 6.3-4.8 1-2.4 2.6-3.8 4.7-4.2-1.1 1.4-1.4 2.6-.9 3.6 1 .3 2.1.4 3.3.2-1.3 1.3-2.9 2-4.8 2-.7 1.6-1.9 2.9-3.6 3.9-1.8 1-3.5 1.5-5 1.5z" fill="currentColor"/>
+        </svg>
+        BUGU / AUDIO
+      </div>
+      <span class="safety"><span class="dot"></span>内部选型材料 · 不参与 App 打包</span>
+    </div>
+
+    <h1>把叫醒，<span class="accent">做得温柔一点</span></h1>
+    <p class="lede">12 个真实可用的候选音源，覆盖布谷鸟、鸟鸣、柔和铃声、木质风铃、极简叮咚与人声呼唤。全部可商用、免署名；试听文件已落到本目录，断网双击也能听。</p>
+
+    <div class="stats">
+      <div class="stat"><b>12</b><span>候选音源</span></div>
+      <div class="stat"><b>5</b><span>气质分组</span></div>
+      <div class="stat"><b>0</b><span>需署名素材</span></div>
+      <div class="stat"><b>2</b><span>处现网音源</span></div>
+    </div>
+  </div>
+</header>
+
+<main class="wrap">
+
+  <section id="baseline">
+    <div class="section-label">01 / 现状</div>
+    <div class="baseline-grid">
+      <div>
+        <h2>用户现在听到的，其实是两路声音</h2>
+        <p class="sub">响铃页和通知渠道各自发声，音源不同、触发方式也不同。这也解释了为什么单纯“换一个铃声文件”不一定能解决问题。</p>
+        <ul class="findings">
+          <li>
+            <span class="n">1</span>
+            <div>
+              <b>响铃页：项目自带的 <code>res/raw/bugu_call.wav</code></b>
+              <p><code>RingActivity.kt</code> L199–210 用 <code>MediaPlayer</code> 读取 <code>android.resource://…/R.raw.bugu_call</code>，<code>isLooping = true</code>。文件 1.42 s、单声道 44.1 kHz、122 KB。</p>
+            </div>
+          </li>
+          <li>
+            <span class="n">2</span>
+            <div>
+              <b>通知渠道：系统默认闹铃，不是上面这个 wav</b>
+              <p><code>AlarmNotifications.kt</code> L32–49 用 <code>RingtoneManager.TYPE_ALARM</code>，<code>IMPORTANCE_HIGH</code> + <code>USAGE_ALARM</code>，只响一次；渠道 id <code>bugu_alarm_ring</code>。</p>
+            </div>
+          </li>
+          <li>
+            <span class="n">3</span>
+            <div>
+              <b>两者可能同时响，形成“系统闹铃 + 布谷 wav”的混音</b>
+              <p>通知音无法循环，也无法被 App 停止；全屏页拉起后自带 MediaPlayer 又开始循环。真机上很可能叠加，这是“不好听”的一部分原因，需真机复听确认。</p>
+            </div>
+          </li>
+        </ul>
+      </div>
+
+      <div class="now-card">
+        <span class="now-tag">现网响铃 · 对照</span>
+        <h3>bugu_call.wav</h3>
+        <p class="meta-line">1.42 s · 单声道 · 44.1 kHz · 峰值 -3.1 dBFS · RMS -14.5 dBFS</p>
+        <div class="player" data-file="audio/current_bugu_call.wav" data-dur="0:01" data-loop="true"></div>
+        <p class="now-note">1.42 s 的短周期循环，每 1.4 秒重来一次；叠加通知渠道音后，听感容易从“提醒”变成“催促”。</p>
+      </div>
+    </div>
+  </section>
+
+  <section id="candidates">
+    <div class="section-label">02 / 候选</div>
+    <h2>按气质分组试听</h2>
+    <p class="sub">“适合通知音”指一次性、短、可裁到 1–3 s；“适合循环响铃”指 10–20 s 内接缝可处理、长听不躁。接缝与电平数据来自本地文件实测。</p>
+
+    <div class="filterbar">
+      <div class="filters" role="group" aria-label="按气质筛选">
+        <button class="chip on" data-filter="all">全部</button>
+        <button class="chip" data-filter="bird">布谷与鸟鸣</button>
+        <button class="chip" data-filter="bell">柔和铃声</button>
+        <button class="chip" data-filter="wood">木质与风铃</button>
+        <button class="chip" data-filter="ding">极简叮咚</button>
+        <button class="chip" data-filter="voice">人声呼唤</button>
+      </div>
+      <div class="count" id="count">显示 12 / 12</div>
+    </div>
+
+    <div class="grid" id="grid"></div>
+  </section>
+
+  <section id="two-stage">
+    <div class="section-label">03 / 两段式</div>
+    <div class="stage-head">
+      <div>
+        <h2>一声呼唤，一段陪伴</h2>
+        <p class="sub">通知音负责“叫一下”，响铃音负责“陪着直到确认”。两段不要用同一个长音频：通知音必须短，响铃音必须能无缝循环。</p>
+      </div>
+      <p class="stage-quote">产品层建议：通知动机 1–3 s，循环响铃 12–15 s。你要求的 5–8 s 完整乐句可以保留，但应放在响铃文件开头，而不是塞进通知渠道。</p>
+    </div>
+
+    <div class="pairs">
+      <article class="pair">
+        <div class="pair-top"><span class="pair-kicker">组合 A</span><span class="tag cc0">全 CC0</span></div>
+        <h3>布谷身份</h3>
+        <p class="why">与品牌同名，辨识度最高；两声布谷起头，再用 14 s 报时声陪伴。</p>
+        <div class="layer">
+          <span class="layer-no">01</span>
+          <div>
+            <h4>通知动机 · 1.5 s</h4>
+            <p>Vocal Cuckoos (2x) · 裁掉首尾静音，增益 +8 dB</p>
+            <div class="player" data-file="audio/fs_vocal_cuckoo_2x.mp3" data-dur="0:01"></div>
+          </div>
+        </div>
+        <div class="layer">
+          <span class="layer-no">02</span>
+          <div>
+            <h4>循环响铃 · 14.1 s</h4>
+            <p>Cuckoo Clock Chimes 12 · 默认循环，直接听接缝</p>
+            <div class="player" data-file="audio/fs_cuckoo_clock_12.mp3" data-dur="0:14" data-loop="true" data-loop-default="true"></div>
+          </div>
+        </div>
+      </article>
+
+      <article class="pair">
+        <div class="pair-top"><span class="pair-kicker">组合 B</span><span class="tag mk">CC0 + Mixkit</span></div>
+        <h3>安静陪伴</h3>
+        <p class="why">不打扰同住人，适合“温柔不催”的底线；接缝最自然，但响度需要补。</p>
+        <div class="layer">
+          <span class="layer-no">01</span>
+          <div>
+            <h4>通知动机 · 1.7 s</h4>
+            <p>Relaxing bell chime · 裁到 0.9 s，留自然衰减</p>
+            <div class="player" data-file="audio/mk_3109.mp3" data-dur="0:01"></div>
+          </div>
+        </div>
+        <div class="layer">
+          <span class="layer-no">02</span>
+          <div>
+            <h4>循环响铃 · 9.6 s</h4>
+            <p>Soft simple bell loop · 默认循环；先增益 +12 dB 再判断</p>
+            <div class="player" data-file="audio/fs_soft_bell_loop.mp3" data-dur="0:09" data-loop="true" data-loop-default="true"></div>
+          </div>
+        </div>
+      </article>
+    </div>
+
+    <div class="seam-box">
+      <h3>循环接缝：四个必须做的动作</h3>
+      <p class="lead">MediaPlayer 的 <code>isLooping = true</code> 只是“播完回到 0”，不会帮你补静音、补混响，也不会消除编码器首尾延迟。</p>
+      <ul class="seam-list">
+        <li><b>1 · 裁静音</b><span>首尾静音全部切掉；实测多数候选尾部 ≥ 0.5 s 静音，直接循环会有明显空拍。</span></li>
+        <li><b>2 · 等功率交叉</b><span>用 150–300 ms 等功率（equal-power）交叉淡化，让尾与头在电平上连续，避免“咔”声。</span></li>
+        <li><b>3 · 避开语义断点</b><span>鸟鸣/报时不要切在一声中间；循环周期内保留完整的“句”，听感才不碎。</span></li>
+        <li><b>4 · 编码选型</b><span>优先 OGG/Vorbis 或 WAV 母带；MP3 有编码器延迟，AAC 也可能留 1 帧缝隙。</span></li>
+      </ul>
+      <p class="caveat"><strong>通知渠道音的现实：</strong>渠道音只播一次、App 停不下来，也不能循环。若按 5–8 s 做，会和响铃页的 MediaPlayer 明显叠音。建议通知渠道只放 <strong>1–3 s 的品牌动机</strong>，完整 5–8 s 乐句作为响铃文件的开头段。</p>
+    </div>
+  </section>
+
+  <section id="decisions">
+    <div class="section-label">04 / 待拍板</div>
+    <h2>三个选择，定了就能开工</h2>
+    <p class="sub">技术方案已收敛为“新渠道 id + res/raw 新音源 + 循环母带预处理”；剩下的是产品气质与取舍。</p>
+    <div class="decisions">
+      <div class="decision">
+        <span class="no">01</span>
+        <h3>主音色走哪条</h3>
+        <p>真实布谷/鸟鸣，品牌辨识强，但自然声有环境底噪、音量偏轻；柔和铃声/木风铃更稳、更不打扰，但个性弱。</p>
+        <p class="ask">建议：先用组合 A 做真机 AB，再决定是否退到组合 B。</p>
+      </div>
+      <div class="decision">
+        <span class="no">02</span>
+        <h3>循环周期多长</h3>
+        <p>12–15 s 慢呼吸更“温柔”，但存在感低；8–10 s 更容易叫醒，但重复感强、更像催促。</p>
+        <p class="ask">建议：12–15 s；用渐强而非加速来提升叫醒力。</p>
+      </div>
+      <div class="decision">
+        <span class="no">03</span>
+        <h3>要不要人声呼唤</h3>
+        <p>候选 12 是英文「Wake Up」，且峰值削波，只适合做气质参考。中文「该起床啦」需重新配音并保留书面授权。</p>
+        <p class="ask">建议：本轮先不做人声；若要做，单独录音、单独授权、单独渠道。</p>
+      </div>
+    </div>
+  </section>
+
+  <footer>
+    <span>许可与来源逐条记录在 <code>LICENSES.md</code>；试听文件在 <code>audio/</code>，均为本地相对路径。</span>
+    <span>检索日期 2026-11-05 · 本页不参与 APK 打包</span>
+  </footer>
+</main>
+
+<script>
+const GROUPS = {
+  bird: {label:'布谷与鸟鸣', color:'var(--mint)'},
+  bell: {label:'柔和铃声', color:'var(--indigo)'},
+  wood: {label:'木质与风铃', color:'var(--amber)'},
+  ding: {label:'极简叮咚', color:'var(--coral)'},
+  voice:{label:'人声呼唤', color:'var(--rose)'}
+};
+
+const ITEMS = [
+  {
+    id:'01', group:'bird', name:'布谷钟·十二声报时', en:'Cuckoo Clock Chimes 12',
+    src:'Freesound', author:'DiArchangeli', license:'CC0', licClass:'cc0',
+    page:'https://freesound.org/people/DiArchangeli/sounds/462930/',
+    direct:'https://cdn.freesound.org/previews/462/462930_1779874-hq.mp3',
+    file:'audio/fs_cuckoo_clock_12.mp3', dur:'0:14', roles:['note','loop'], rec:true,
+    tech:'44.1 kHz · 立体声 · HQ 预览 MP3 · 峰值 -0.6 dBFS',
+    seam:'尾静音 ≥ 0.5 s；12 声报时连播，整段循环偏密',
+    note:'品牌同名鸟，叙事感最强。建议截 2–3 声做通知动机，整段留给响铃。'
+  },
+  {
+    id:'02', group:'bird', name:'两声布谷', en:'Vocal Cuckoos (2x)',
+    src:'Freesound', author:'se2001', license:'CC0', licClass:'cc0',
+    page:'https://freesound.org/people/se2001/sounds/478670/',
+    direct:'https://cdn.freesound.org/previews/478/478670_8472935-hq.mp3',
+    file:'audio/fs_vocal_cuckoo_2x.mp3', dur:'0:01', roles:['note'], rec:true,
+    tech:'44.1 kHz · 立体声 · HQ 预览 MP3 · 峰值 -19.2 dBFS',
+    seam:'首 68 ms / 尾 239 ms 静音；电平偏轻',
+    note:'最短的品牌动机，两声干净利落，最适合通知渠道。上线前 +8–10 dB 并裁静音。'
+  },
+  {
+    id:'03', group:'bird', name:'欢快鸟鸣', en:'Happy Bird Singing',
+    src:'Freesound', author:'se2001', license:'CC0', licClass:'cc0',
+    page:'https://freesound.org/people/se2001/sounds/511094/',
+    direct:'https://cdn.freesound.org/previews/511/511094_8472935-hq.mp3',
+    file:'audio/fs_happy_bird.mp3', dur:'0:02', roles:['note'],
+    tech:'44.1 kHz · 立体声 · HQ 预览 MP3 · 峰值 -10.6 dBFS',
+    seam:'尾 35 ms 自然收尾，几乎不用处理',
+    note:'明亮但不尖，单鸟鸣有“早安”感；适合 2–3 s 通知音。'
+  },
+  {
+    id:'04', group:'bird', name:'林间小鸟', en:'Little birds singing in the trees',
+    src:'Mixkit', author:'Mixkit', license:'Mixkit Free', licClass:'mk',
+    page:'https://mixkit.co/free-sound-effects/bird/',
+    direct:'https://assets.mixkit.co/active_storage/sfx/17/17.wav',
+    file:'audio/mk_17.mp3', dur:'0:08', roles:['loop'], rec:true,
+    tech:'44.1 kHz · 立体声 · 原始 WAV 1.47 MB · 峰值 -13.9 dBFS',
+    seam:'首 62 ms / 尾 339 ms 静音；有环境底噪',
+    note:'空间感好，安静房间很舒服；嘈杂环境存在感弱。适合做柔和循环，需裁尾。'
+  },
+  {
+    id:'05', group:'bell', name:'舒缓铃音', en:'Relaxing bell chime',
+    src:'Mixkit', author:'Mixkit', license:'Mixkit Free', licClass:'mk',
+    page:'https://mixkit.co/free-sound-effects/bell/',
+    direct:'https://assets.mixkit.co/active_storage/sfx/3109/3109.wav',
+    file:'audio/mk_3109.mp3', dur:'0:01', roles:['note'], rec:true,
+    tech:'44.1 kHz · 立体声 · 原始 WAV 298 KB · 峰值 -6.8 dBFS',
+    seam:'尾静音 ≥ 0.5 s；掐到约 0.9 s 更利落',
+    note:'极简单铃，最不打扰同住人；作为“安静陪伴”组合的通知动机。'
+  },
+  {
+    id:'06', group:'bell', name:'长笛提示音', en:'Melodical flute music notification',
+    src:'Mixkit', author:'Mixkit', license:'Mixkit Free', licClass:'mk',
+    page:'https://mixkit.co/free-sound-effects/notification/',
+    direct:'https://assets.mixkit.co/active_storage/sfx/2310/2310.wav',
+    file:'audio/mk_2310.mp3', dur:'0:07', roles:['note'],
+    tech:'44.1 kHz · 立体声 · 原始 WAV 1.33 MB · 峰值 -4.0 dBFS',
+    seam:'首 297 ms / 尾 ≥ 0.5 s 静音；完整乐句',
+    note:'温柔的长笛句，适合 5–8 s 的“完整呼唤”；但放通知渠道会与响铃叠音。'
+  },
+  {
+    id:'07', group:'bell', name:'柔铃循环', en:'Soft simple bell loop',
+    src:'Freesound', author:'ZHRØ', license:'CC0', licClass:'cc0',
+    page:'https://freesound.org/people/ZHR%C3%98/sounds/620003/',
+    direct:'https://cdn.freesound.org/previews/620/620003_10859468-hq.mp3',
+    file:'audio/fs_soft_bell_loop.mp3', dur:'0:09', roles:['loop'], rec:true,
+    tech:'48 kHz · 立体声 · HQ 预览 MP3 · 峰值 -23.9 dBFS',
+    seam:'首 5 ms / 尾 267 ms；明确为 loop 设计，接缝最自然',
+    note:'为循环而生，接缝几乎不用救；但整体很轻（RMS -39.4 dB），必须 +12 dB 并检查底噪。'
+  },
+  {
+    id:'08', group:'wood', name:'风铃一击', en:'Wind chimes',
+    src:'Mixkit', author:'Mixkit', license:'Mixkit Free', licClass:'mk',
+    page:'https://mixkit.co/free-sound-effects/chime/',
+    direct:'https://assets.mixkit.co/active_storage/sfx/2014/2014.wav',
+    file:'audio/mk_2014.mp3', dur:'0:02', roles:['note'],
+    tech:'44.1 kHz · 立体声 · 原始 WAV 433 KB · 峰值 -1.0 dBFS',
+    seam:'尾静音 ≥ 0.5 s；峰值在开头，循环会突兀',
+    note:'清亮的一击，适合一次性提示；不适合直接循环。'
+  },
+  {
+    id:'09', group:'wood', name:'木质风铃', en:'Antique wood chime bell ring',
+    src:'Mixkit', author:'Mixkit', license:'Mixkit Free', licClass:'mk',
+    page:'https://mixkit.co/free-sound-effects/bell/',
+    direct:'https://assets.mixkit.co/active_storage/sfx/1065/1065.wav',
+    file:'audio/mk_1065.mp3', dur:'0:25', roles:['note','loop'], rec:true,
+    tech:'44.1 kHz · 立体声 · 原始 WAV 4.55 MB · 峰值 -6.4 dBFS',
+    seam:'首 35 ms / 尾 ≥ 0.5 s；建议截 15–18 s 做循环',
+    note:'木质敲击，暖、不刺耳；25 s 素材足够裁出自然的 15–18 s 循环，是“温柔但不弱”的中间选项。'
+  },
+  {
+    id:'10', group:'wood', name:'单次风铃', en:'wind chimes - single 04',
+    src:'Freesound', author:'Anthousai', license:'CC0', licClass:'cc0',
+    page:'https://freesound.org/people/Anthousai/sounds/398496/',
+    direct:'https://cdn.freesound.org/previews/398/398496_5923045-hq.mp3',
+    file:'audio/fs_wind_chime_single.mp3', dur:'0:04', roles:['note'],
+    tech:'48 kHz · 立体声 · HQ 预览 MP3（源 96 kHz）· 峰值 -26.3 dBFS',
+    seam:'首 37 ms / 尾 ≥ 0.5 s；整体极轻（RMS -46.8 dB）',
+    note:'气质最“轻”的一只风铃；单次使用，需大幅增益，注意底噪会被一起放大。'
+  },
+  {
+    id:'11', group:'ding', name:'电梯叮', en:'Elevator tone',
+    src:'Mixkit', author:'Mixkit', license:'Mixkit Free', licClass:'mk',
+    page:'https://mixkit.co/free-sound-effects/notification/',
+    direct:'https://assets.mixkit.co/active_storage/sfx/2863/2863.wav',
+    file:'audio/mk_2863.mp3', dur:'0:01', roles:['note'],
+    tech:'44.1 kHz · 立体声 · 原始 WAV 243 KB · 峰值 -2.2 dBFS',
+    seam:'尾静音 ≥ 0.5 s；掐到 0.9 s 更利落',
+    note:'经典电梯叮，指向性明确、存在感最低；适合“只提示一下”的极简方案。'
+  },
+  {
+    id:'12', group:'voice', name:'人声·该起床了', en:'Wake Up 02',
+    src:'Freesound', author:'LilMati', license:'CC0', licClass:'cc0',
+    page:'https://freesound.org/people/LilMati/sounds/516856/',
+    direct:'https://cdn.freesound.org/previews/516/516856_6142149-hq.mp3',
+    file:'audio/fs_wake_up_02.mp3', dur:'0:05', roles:['note','voice'],
+    tech:'44.1 kHz · 立体声 · HQ 预览 MP3 · 峰值 0.0 dBFS（削波）',
+    seam:'首 0.5 s 静音；结尾 0 dBFS 削波且突然收尾',
+    note:'英文人声，只作“人声呼唤”气质参考。中文产品建议重新配音并保留书面授权，不建议直接上线。'
+  }
+];
+
+const ROLE_LABEL = {note:'通知音', loop:'循环响铃', voice:'气质参考'};
+
+function fmt(sec){
+  if(!isFinite(sec) || sec < 0) return '0:00';
+  const m = Math.floor(sec/60), s = Math.floor(sec%60);
+  return m + ':' + String(s).padStart(2,'0');
+}
+
+function esc(s){
+  return String(s).replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+}
+
+function playerHTML(item, extra){
+  const loop = item.roles.includes('loop');
+  return `<button class="play" type="button" aria-label="播放 ${esc(item.name)}">
+      <svg class="ico-play" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M8 5.5v13l11-6.5z"/></svg>
+      <svg class="ico-pause" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M7 5h4v14H7zM13 5h4v14h-4z"/></svg>
+    </button>
+    <div class="bar" role="slider" tabindex="0" aria-label="播放进度"><span class="fill"></span></div>
+    <span class="time">0:00 / ${esc(item.dur)}</span>
+    <button class="loopbtn${loop ? '' : ' hide'}" type="button" aria-pressed="false" title="循环播放">循环</button>
+    <audio preload="none" src="${item.file}"></audio>`;
+}
+
+function cardHTML(item){
+  const g = GROUPS[item.group];
+  const roles = item.roles.map(r => `<span class="tag role">${ROLE_LABEL[r]}</span>`).join('');
+  const lic = `<span class="tag ${item.licClass}">${item.license}</span>`;
+  const rec = item.rec ? '<span class="tag rec">推荐</span>' : '';
+  return `<article class="card" data-group="${item.group}">
+    <div class="card-head">
+      <span class="idx">${item.id}</span>
+      <span class="group-dot"><i style="background:${g.color}"></i>${g.label}</span>
+    </div>
+    <h3>${esc(item.name)}</h3>
+    <p class="en">${esc(item.en)} · ${esc(item.src)} · ${esc(item.author)}</p>
+    <div class="tags">${lic}${rec}${roles}</div>
+    <div class="player" data-file="${item.file}" data-dur="${item.dur}"${item.roles.includes('loop') ? ' data-loop="true"' : ''}>${playerHTML(item)}</div>
+    <p class="meta-line">${esc(item.tech)}</p>
+    <div class="seam">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><path d="M12 3v18M3 12h18" opacity=".55"/><circle cx="12" cy="12" r="9"/></svg>
+      <span><b>接缝：</b>${esc(item.seam)}</span>
+    </div>
+    <p class="note">${esc(item.note)}</p>
+    <div class="links">
+      <a href="${item.page}" target="_blank" rel="noopener">来源页
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M14 4h6v6M20 4l-9 9M10 5H5v14h14v-5"/></svg>
+      </a>
+      <a href="${item.direct}" target="_blank" rel="noopener">原始直链
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M12 3v12m0 0l-4-4m4 4l4-4M4 19h16"/></svg>
+      </a>
+    </div>
+  </article>`;
+}
+
+const grid = document.getElementById('grid');
+grid.innerHTML = ITEMS.map(cardHTML).join('');
+
+function setupPlayer(container){
+  const file = container.dataset.file;
+  const item = ITEMS.find(x => x.file === file) || {name:'音频', dur:container.dataset.dur || '0:00', roles:[]};
+  if(!container.innerHTML.trim()){
+    // static containers (pairs / baseline) reuse the same player markup
+    const preset = {
+      name: container.dataset.label || item.name || '音频',
+      dur: container.dataset.dur || item.dur,
+      roles: container.dataset.loop === 'true' ? ['loop'] : [],
+      file: container.dataset.file
+    };
+    container.innerHTML = playerHTML(preset);
+  }
+  const playBtn = container.querySelector('.play');
+  const bar = container.querySelector('.bar');
+  const fill = container.querySelector('.fill');
+  const timeEl = container.querySelector('.time');
+  const loopBtn = container.querySelector('.loopbtn');
+  const audio = container.querySelector('audio');
+  const total = container.dataset.dur || item.dur || '0:00';
+  let resetTimer = null;
+
+  const setPlaying = on => {
+    playBtn.classList.toggle('playing', on);
+    playBtn.setAttribute('aria-label', (on ? '暂停 ' : '播放 ') + (item.name || '音频'));
+  };
+
+  const resetOthers = () => {
+    document.querySelectorAll('audio').forEach(a => {
+      if(a !== audio && !a.paused) a.pause();
+    });
+    document.querySelectorAll('.play.playing').forEach(b => {
+      if(b !== playBtn) b.classList.remove('playing');
+    });
+  };
+
+  if(Object.prototype.hasOwnProperty.call(container.dataset, 'loopDefault') && container.dataset.loopDefault === 'true'){
+    audio.loop = true;
+    loopBtn.classList.add('on');
+    loopBtn.setAttribute('aria-pressed','true');
+  }
+
+  playBtn.addEventListener('click', () => {
+    if(audio.paused){
+      resetOthers();
+      const p = audio.play();
+      if(p && p.catch) p.catch(() => setPlaying(false));
+    } else {
+      audio.pause();
+    }
+  });
+
+  audio.addEventListener('play', () => {
+    window.clearTimeout(resetTimer);
+    setPlaying(true);
+  });
+  audio.addEventListener('pause', () => setPlaying(false));
+  audio.addEventListener('ended', () => {
+    if(audio.loop) return;
+    setPlaying(false);
+    audio.currentTime = 0;
+  });
+  audio.addEventListener('timeupdate', () => {
+    const d = audio.duration || 0;
+    const cur = audio.currentTime || 0;
+    fill.style.width = d ? (cur/d*100).toFixed(2) + '%' : '0%';
+    timeEl.textContent = fmt(cur) + ' / ' + (d ? fmt(d) : total);
+  });
+  audio.addEventListener('loadedmetadata', () => {
+    timeEl.textContent = '0:00 / ' + fmt(audio.duration);
+    if(!audio.loop && audio.duration > 0 && container.dataset.dur === undefined){
+      timeEl.textContent = '0:00 / ' + fmt(audio.duration);
+    }
+  });
+  audio.addEventListener('error', () => {
+    timeEl.textContent = '文件缺失';
+    playBtn.disabled = true;
+    playBtn.style.opacity = '.4';
+  });
+
+  bar.addEventListener('click', e => {
+    if(!audio.duration) return;
+    const r = bar.getBoundingClientRect();
+    audio.currentTime = Math.max(0, Math.min(1, (e.clientX - r.left)/r.width)) * audio.duration;
+  });
+  bar.addEventListener('keydown', e => {
+    if(!audio.duration) return;
+    if(e.key === 'ArrowRight'){ audio.currentTime = Math.min(audio.duration, audio.currentTime + 1); e.preventDefault(); }
+    if(e.key === 'ArrowLeft'){ audio.currentTime = Math.max(0, audio.currentTime - 1); e.preventDefault(); }
+  });
+
+  if(loopBtn){
+    loopBtn.hidden = !(item.roles.includes('loop') || container.dataset.loop === 'true');
+    loopBtn.addEventListener('click', () => {
+      audio.loop = !audio.loop;
+      loopBtn.classList.toggle('on', audio.loop);
+      loopBtn.setAttribute('aria-pressed', String(audio.loop));
+    });
+  }
+}
+
+document.querySelectorAll('.player').forEach(setupPlayer);
+
+// filters
+const chips = [...document.querySelectorAll('.chip')];
+const countEl = document.getElementById('count');
+chips.forEach(chip => {
+  chip.addEventListener('click', () => {
+    chips.forEach(c => c.classList.remove('on'));
+    chip.classList.add('on');
+    const f = chip.dataset.filter;
+    let shown = 0;
+    document.querySelectorAll('.card').forEach(card => {
+      const ok = f === 'all' || card.dataset.group === f;
+      card.style.display = ok ? '' : 'none';
+      if(ok) shown++;
+    });
+    countEl.textContent = '显示 ' + shown + ' / ' + ITEMS.length;
+    document.querySelectorAll('audio').forEach(a => { if(!a.paused) a.pause(); });
+  });
+});
+</script>
+</body>
+</html>

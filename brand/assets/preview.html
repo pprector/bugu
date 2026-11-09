@@ -1,0 +1,134 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>咕咕资产预览 · 冻结版</title>
+<style>
+  :root{--body:#FA5E38;--wing:#E0523F;--belly:#FFF3EC;--ink:#1C1917;--surface:#FFEDE6;--paper:#FFFBF8;--line:#EADFD8}
+  *{box-sizing:border-box}
+  body{margin:0;padding:40px 32px 72px;background:var(--paper);color:var(--ink);
+    font:14px/1.6 -apple-system,"PingFang SC","Noto Sans SC",system-ui,sans-serif}
+  .wrap{max-width:1080px;margin:0 auto}
+  header{border-bottom:1px solid var(--line);padding-bottom:20px;margin-bottom:32px}
+  h1{margin:0 0 6px;font-size:22px;font-weight:700;letter-spacing:-.2px}
+  h1 b{color:var(--body)}
+  .sub{margin:0;color:#7a716b;font-size:13px}
+  .tag{display:inline-block;margin-top:10px;padding:2px 8px;border-radius:6px;
+    background:var(--surface);color:var(--wing);font-size:12px;font-weight:600}
+  h2{font-size:15px;font-weight:700;margin:36px 0 12px;padding-left:9px;border-left:3px solid var(--body)}
+  .note{margin:-4px 0 14px;color:#7a716b;font-size:12.5px}
+  .row{display:flex;flex-wrap:wrap;gap:16px}
+  .card{background:#fff;border:1px solid var(--line);border-radius:12px;padding:16px;
+    display:flex;flex-direction:column;align-items:center;gap:8px;min-width:120px}
+  .card.dark{background:#101317;border-color:#26292e;color:#fff}
+  .card .name{font-size:12px;color:#7a716b}
+  .card.dark .name{color:#8b939d}
+  .stage{display:flex;align-items:center;justify-content:center}
+  .s512{width:180px;height:180px}
+  .s216{width:140px;height:140px}
+  .s128{width:110px;height:110px}
+  .s96{width:96px;height:96px}
+  .s64{width:64px;height:64px}
+  .s48{width:48px;height:48px}
+  .s32{width:32px;height:32px}
+  .s24{width:24px;height:24px}
+  .s16{width:16px;height:16px}
+  img,.stage svg{display:block;max-width:100%;max-height:100%}
+  .stack{position:relative;width:100%;height:100%}
+  .stack img{position:absolute;inset:0;width:100%;height:100%}
+  .sizes{display:flex;align-items:flex-end;gap:18px;padding:14px 4px 0}
+  .sizes .item{display:flex;flex-direction:column;align-items:center;gap:6px;font-size:11px;color:#7a716b}
+  .num{font-family:ui-monospace,Menlo,monospace;font-size:11px;color:#7a716b}
+  table{border-collapse:collapse;width:100%;margin-top:8px;font-size:12.5px}
+  th,td{border-bottom:1px solid var(--line);padding:7px 10px;text-align:left}
+  th{font-weight:600;color:#5f5852}
+  code{font-family:ui-monospace,Menlo,monospace;font-size:12px;background:#fff;padding:1px 5px;border-radius:4px;border:1px solid var(--line)}
+  footer{margin-top:44px;padding-top:16px;border-top:1px solid var(--line);color:#7a716b;font-size:12px}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <h1>咕咕 <b>Gugu</b> · 资产预览</h1>
+    <p class="sub">唯一母版 = App 现有 <code>drawable/ic_launcher_foreground.xml</code> 的真实造型与实测色值；含双呆毛与声波，无描边、无新增色。</p>
+    <span class="tag">2026-11-06 冻结，不再做改版</span>
+  </header>
+
+  <h2>母版</h2>
+  <p class="note">彩色 1:1 复刻；单色版为实心剪影 + 眼睛/嘴负形；compact 仅用于 16–32px 光学补偿。</p>
+  <div class="row">
+    <div class="card"><div class="stage s216"><img src="gugu-master.svg" alt="彩色母版" /></div><span class="name">gugu-master.svg</span></div>
+    <div class="card"><div class="stage s216"><img src="gugu-master-mono.svg" alt="单色母版" /></div><span class="name">gugu-master-mono.svg</span></div>
+    <div class="card"><div class="stage s128"><img src="gugu-compact.svg" alt="16–32 光学字形" /></div><span class="name">gugu-compact.svg</span></div>
+  </div>
+
+  <h2>通知栏剪影</h2>
+  <p class="note">纯白 + 透明负形，系统自动染色；保留双眼，避免读成禁止符号。</p>
+  <div class="row">
+    <div class="card dark">
+      <div class="stage s96"><img src="gugu-notification.svg" alt="24dp 通知剪影" /></div>
+      <span class="name">gugu-notification.svg · 24dp</span>
+    </div>
+    <div class="card dark">
+      <div class="sizes">
+        <div class="item"><div class="stage s24"><img src="app/ic_notification-24.png" alt="24" /></div><span class="num">24</span></div>
+        <div class="item"><div class="stage s32"><img src="app/ic_notification-36.png" alt="36" /></div><span class="num">36</span></div>
+        <div class="item"><div class="stage s48"><img src="app/ic_notification-48.png" alt="48" /></div><span class="num">48</span></div>
+        <div class="item"><div class="stage s64"><img src="app/ic_notification-72.png" alt="72" /></div><span class="num">72</span></div>
+        <div class="item"><div class="stage s96"><img src="app/ic_notification-96.png" alt="96" /></div><span class="num">96</span></div>
+      </div>
+      <span class="name">实拍像素（mdpi → xxxhdpi）</span>
+    </div>
+  </div>
+
+  <h2>App 图标</h2>
+  <p class="note">adaptive 前景层与背景层合成（108dp 画布）、传统方形图标、商店 512。</p>
+  <div class="row">
+    <div class="card">
+      <div class="stage s216"><div class="stack">
+        <img src="app/ic_launcher_background-432.png" alt="背景层" />
+        <img src="app/ic_launcher_foreground-432.png" alt="前景层" />
+      </div></div>
+      <span class="name">adaptive 前景 + 背景</span>
+    </div>
+    <div class="card"><div class="stage s128"><img src="app/ic_launcher-192.png" alt="方形图标" /></div><span class="name">ic_launcher 192</span></div>
+    <div class="card"><div class="stage s216"><img src="app/ic_launcher-512.png" alt="商店 512" /></div><span class="name">ic_launcher 512</span></div>
+  </div>
+
+  <h2>favicon</h2>
+  <p class="note">16/32 用 compact 光学字形，48/180/512 用母版；16px 仍可辨圆脸、双眼、琥珀嘴与双呆毛。</p>
+  <div class="row">
+    <div class="card"><div class="sizes">
+      <div class="item"><div class="stage s16"><img src="favicon/favicon-16.png" alt="16" /></div><span class="num">16</span></div>
+      <div class="item"><div class="stage s32"><img src="favicon/favicon-32.png" alt="32" /></div><span class="num">32</span></div>
+      <div class="item"><div class="stage s48"><img src="favicon/favicon-48.png" alt="48" /></div><span class="num">48</span></div>
+      <div class="item"><div class="stage s128"><img src="favicon/apple-touch-icon-180.png" alt="180" /></div><span class="num">180</span></div>
+      <div class="item"><div class="stage s216"><img src="favicon/favicon-512.png" alt="512" /></div><span class="num">512</span></div>
+    </div></div>
+  </div>
+
+  <h2>官网 / 后台</h2>
+  <p class="note">横版页头 Logo 图形与母版一致，字标形状未动；后台为单色版，跟随主题色。</p>
+  <div class="row">
+    <div class="card"><div class="stage" style="width:416px;height:112px"><img src="web/bugu-logo-header@2x.png" alt="官网页头 Logo" /></div><span class="name">bugu-logo-header @2x</span></div>
+    <div class="card"><div class="stage s64"><img src="admin/bugu-admin-mark-ink-64.png" alt="后台单色 Logo" /></div><span class="name">admin mark · ink 64</span></div>
+    <div class="card"><div class="stage" style="width:360px;height:189px"><img src="web/og-1200x630.png" alt="OG 1200×630" /></div><span class="name">og-1200x630</span></div>
+  </div>
+
+  <h2>色板</h2>
+  <table>
+    <tr><th>用途</th><th>Hex</th><th>说明</th></tr>
+    <tr><td>身体 / 心形</td><td><code>#FA5E38</code></td><td>圆身、肚皮上的心</td></tr>
+    <tr><td>双翅 / 双呆毛</td><td><code>#E0523F</code></td><td>原图标中与身体是两个红</td></tr>
+    <tr><td>肚皮 / 脸</td><td><code>#FFF3EC</code></td><td></td></tr>
+    <tr><td>上嘴 / 下嘴</td><td><code>#FFB020</code> / <code>#F59E0B</code></td><td></td></tr>
+    <tr><td>眼睛 / 声波 / 墨</td><td><code>#1C1917</code></td><td>声波 45% 不透明度</td></tr>
+    <tr><td>腮红</td><td><code>#FFB8A8</code></td><td>装饰</td></tr>
+    <tr><td>图标底</td><td><code>#FFEDE6</code></td><td>adaptive 背景、方形底、favicon 底</td></tr>
+  </table>
+
+  <footer>绿色呆毛与描边方案已全部作废；<code>brand/variants/</code> 仅作历史存档，任何端都不再引用。详见 <code>palette.md</code>、<code>apply-plan.md</code>。</footer>
+</div>
+</body>
+</html>
