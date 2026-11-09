@@ -17,6 +17,15 @@
 #   KUIKLY_UI_DIR   KuiklyUI 工程目录(全链路模式需要)
 #   APP_JAVA_HOME   app 工程使用的 JDK(默认沿用当前 JAVA_HOME)
 #
+# 已验证范围:
+#   本机(macOS)执行 --full 与 --app-only 均通过;故障注入(KUIKLY_UI_DIR 指向不存在目录)
+#   确认整体以非 0 退出。
+#
+# 未验证范围:
+#   本脚本没有被 GitHub Actions 真实执行过。配套 workflow 的 full-chain job 从未跑过,
+#   其中「删除 KuiklyUI 本机 aapt2 覆盖」一步是推测性处理,未在 Linux 验证。
+#   首次启用 CI 时请先手动触发一次,并优先怀疑该步骤。
+#
 set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
@@ -28,7 +37,7 @@ MODE="full"
 case "${1:-}" in
   ""|--full)   MODE="full" ;;
   --app-only)  MODE="app-only" ;;
-  -h|--help)   sed -n '2,24p' "${BASH_SOURCE[0]}"; exit 0 ;;
+  -h|--help)   sed -n '2,28p' "${BASH_SOURCE[0]}"; exit 0 ;;
   *)           printf 'ERROR: 未知参数 %s(可用 --full / --app-only)\n' "$1" >&2; exit 2 ;;
 esac
 

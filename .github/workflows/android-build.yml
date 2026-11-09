@@ -16,6 +16,14 @@
 # 说明:
 #   KuiklyUI 工程不在本仓库内。默认 job 用仓库里已提交的 AAR(app/repo)做 app-only 构建;
 #   全链路 job 只在手动触发且填了 kuikly_repository 时运行,避免默认红。
+#
+# !!! 未验证事项(首次真实跑 CI 时重点看)!!!
+#   1. 本文件里的 full-chain job 从未在 GitHub 上真正跑过,只在本机(macOS)用
+#      scripts/ci-build.sh --full 做过等价验证。首次启用时请先手动触发一次。
+#   2. 「去掉 KuiklyUI 里本机专用的 aapt2 路径覆盖」那一步是推测性处理:
+#      KuiklyUI/gradle.properties 里的 android.aapt2FromMavenOverride 指向 macOS 本机
+#      绝对路径,Linux runner 上大概率无效,故用 sed 删掉该行。该处理未在 Linux 验证,
+#      如果 CI 在 aapt2 相关步骤失败,先看这里。
 name: android-build
 
 on:
@@ -104,7 +112,9 @@ jobs:
           token: ${{ secrets.BUGU_KUIKLY_TOKEN }}
           path: kuikly-ui
 
-      - name: 去掉 KuiklyUI 里本机专用的 aapt2 路径覆盖
+      # 未在 Linux 验证:KuiklyUI/gradle.properties 的 aapt2 覆盖是 macOS 本机绝对路径,
+      # 这里靠删行规避。若本步骤之后 aapt2 报错,优先怀疑这里。
+      - name: 去掉 KuiklyUI 里本机专用的 aapt2 路径覆盖(未验证)
         run: sed -i '/aapt2FromMavenOverride/d' kuikly-ui/gradle.properties
 
       - name: 从 secrets 写入 app/local.properties
