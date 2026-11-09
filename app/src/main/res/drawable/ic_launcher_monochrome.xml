@@ -1,12 +1,27 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- 咕咕 adaptive monochrome 层：实心剪影 + 眼睛/嘴负形（evenOdd，子路径不重叠） -->
+<!-- 咕咕单色层：Material You 主题图标用，负形眼嘴 + 嫩芽剪影 -->
 <vector xmlns:android="http://schemas.android.com/apk/res/android"
     android:width="108dp"
     android:height="108dp"
     android:viewportWidth="108"
     android:viewportHeight="108">
-    <path
-        android:fillColor="#FFFFFF"
-        android:fillType="evenOdd"
-        android:pathData="M54,34 C 66.5,34 75,44 75,55.5 C 75,67 66.5,76 54,76 C 41.5,76 33,67 33,55.5 C 33,44 41.5,34 54,34 Z M46.5,30.5 A3.2,3.2 0 1,1 46.4,30.4 Z M55,27.5 A3.6,3.6 0 1,1 54.9,27.4 Z M46.4,48.5 A2.1,2.1 0 1,1 46.3,48.4 Z M61.6,48.5 A2.1,2.1 0 1,1 61.5,48.4 Z M50,53 L58,53 L54,58.5 Z M52,59.5 L56,59.5 L54,63.5 Z" />
+    <group
+        android:translateX="21"
+        android:translateY="21"
+        android:scaleX="1.03125"
+        android:scaleY="1.03125">
+
+        <path
+            android:fillColor="#FFFFFF"
+            android:fillType="evenOdd"
+            android:pathData="M6,36 a26,26 0 1,0 52,0 a26,26 0 1,0 -52,0 ZM20.4,29.4 a3.4,3.4 0 1,0 6.8,0 a3.4,3.4 0 1,0 -6.8,0 ZM36.8,29.4 a3.4,3.4 0 1,0 6.8,0 a3.4,3.4 0 1,0 -6.8,0 ZM32,33.5 L27.5,40.8 L36.5,40.8 Z" />
+
+        <path
+            android:pathData="M32,10 C32,6 36,4 38,6"
+            android:strokeColor="#FFFFFF"
+            android:strokeWidth="4.4"
+            android:strokeLineCap="round"
+            android:fillColor="#00000000" />
+        <path android:fillColor="#FFFFFF" android:pathData="M34.1,7 a4.9,4.9 0 1,0 9.8,0 a4.9,4.9 0 1,0 -9.8,0 Z" />
+    </group>
 </vector>
