@@ -113,6 +113,22 @@ object ReminderSync {
         )
         stores.snoozeOverrides.save(overrides)
         stores.lastIncoming.save(schedulable)
+        // 响铃页要显示「来自 X 的提醒 / X 的留言」,但提醒 DTO 不带昵称;
+        // 这里顺手把亲友昵称(备注优先)缓存到本机,离线响铃也能取到(R2/R3)。
+        runCatching { api.myBonds() }.onSuccess { bonds ->
+            val names = org.json.JSONObject()
+            for (bond in bonds) {
+                val peerId = bond.counterpartId ?: continue
+                if (bond.status != "ACTIVE") continue
+                val name = bond.remark?.takeIf { it.isNotBlank() }
+                    ?: bond.counterpartNickname?.takeIf { it.isNotBlank() }
+                    ?: bond.counterpartRelationTag?.takeIf { it.isNotBlank() }
+                    ?: "亲友"
+                names.put(peerId.toString(), name)
+            }
+            context.getSharedPreferences("bugu_main", Context.MODE_PRIVATE)
+                .edit().putString("bond_names_json", names.toString()).apply()
+        }
         val planned = ReminderPlanner.plan(schedulable, System.currentTimeMillis())
         AlarmScheduler(context, stores.scheduledAlarms).reschedule(planned)
         return incoming

@@ -71,6 +71,7 @@ class AlarmScheduler(
                 putExtra(EXTRA_VOICE, it.voiceEnabled)
                 putExtra(EXTRA_KIND, it.kind)
                 putExtra(EXTRA_SELF, it.selfReminder)
+                putExtra(EXTRA_CREATOR_ID, it.creatorId)
             }
         }
         return PendingIntent.getBroadcast(
@@ -91,5 +92,6 @@ class AlarmScheduler(
         const val EXTRA_VOICE = "voice"
         const val EXTRA_KIND = "kind"
         const val EXTRA_SELF = "selfReminder"
+        const val EXTRA_CREATOR_ID = "creatorId"
     }
 }
