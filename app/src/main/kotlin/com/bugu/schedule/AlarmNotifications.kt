@@ -8,6 +8,8 @@ import android.app.PendingIntent
 import android.content.Context
 import android.content.Intent
 import android.content.pm.PackageManager
+import android.media.AudioAttributes
+import android.net.Uri
 import android.os.Build
 import android.util.Log
 import androidx.core.content.ContextCompat
@@ -21,29 +23,41 @@ import com.bugu.ui.RingActivity
  */
 object AlarmNotifications {
 
-    const val CHANNEL_ID = "bugu_alarm_ring_v2"
+    const val CHANNEL_ID = "bugu_alarm_ring_v3"
+    private const val LEGACY_CHANNEL_ID_V2 = "bugu_alarm_ring_v2"
     private const val LEGACY_CHANNEL_ID = "bugu_alarm_ring"
     private const val CHANNEL_NAME = "布谷闹钟"
     private const val NOTIFICATION_ID_BASE = 100_000
     private const val TAG = "BuguAlarmNotification"
 
     /**
-     * 应用启动时创建;渠道属性(声音/震动/重要性)创建后不可改。
-     * v2 渠道本身静音:声音由 RingActivity 用 alarm_notice + alarm_loop 接管,
-     * 避免系统闹铃与页面循环叠成双重响。旧渠道创建后无法改属性,只能删除后换新 id。
+     * 应用启动时创建;渠道属性(声音/震动/重要性)创建后不可改,只能换 id。
+     *
+     * v3 渠道自带声音与震动:亮屏已解锁时系统会把 Full-Screen Intent 降级成横幅通知,
+     * startActivity 又受后台启动(BAL)限制,RingActivity 起不来;此时渠道声音是唯一
+     * 能让用户听见的兜底。渠道声音只响一次(最多数秒),真正的持续响铃仍由
+     * RingActivity 的 MediaPlayer 负责;RingActivity 进入时会 cancel 通知,渠道声音随之停止,
+     * 因此熄屏路径只有不到 1 秒的重叠,不会长时间双声。
+     * v2(静音)与更早的 v1 创建后属性无法修改,删除后不再使用。
      */
     fun ensureChannel(context: Context) {
         val manager = context.getSystemService(NotificationManager::class.java) ?: return
+        val soundUri = Uri.parse("android.resource://${context.packageName}/${R.raw.alarm_loop}")
+        val audioAttributes = AudioAttributes.Builder()
+            .setUsage(AudioAttributes.USAGE_ALARM)
+            .setContentType(AudioAttributes.CONTENT_TYPE_SONIFICATION)
+            .build()
         val channel = NotificationChannel(CHANNEL_ID, CHANNEL_NAME, NotificationManager.IMPORTANCE_HIGH).apply {
-            description = "到点全屏响铃与确认通知;声音由响铃页统一播放"
-            setSound(null, null)
-            // 震动由 RingActivity 统一负责,渠道震动关闭,避免两份震动叠加。
-            enableVibration(false)
+            description = "到点全屏响铃;全屏被系统降级时以铃声与震动提醒"
+            setSound(soundUri, audioAttributes)
+            enableVibration(true)
+            vibrationPattern = longArrayOf(0, 600, 400, 600, 1_200)
             lockscreenVisibility = Notification.VISIBILITY_PUBLIC
             setShowBadge(false)
         }
         manager.createNotificationChannel(channel)
         // 迁移收尾:旧渠道声音/震动设置不可改,删除后不再使用。
+        manager.deleteNotificationChannel(LEGACY_CHANNEL_ID_V2)
         manager.deleteNotificationChannel(LEGACY_CHANNEL_ID)
     }
 
