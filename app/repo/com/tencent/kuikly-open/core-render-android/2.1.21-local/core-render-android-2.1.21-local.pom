@@ -1,0 +1,7 @@
+<project xmlns="http://maven.apache.org/POM/4.0.0"><modelVersion>4.0.0</modelVersion>
+<groupId>com.tencent.kuikly-open</groupId><artifactId>core-render-android</artifactId><version>2.1.21-local</version><packaging>aar</packaging>
+<dependencies>
+<dependency><groupId>androidx.recyclerview</groupId><artifactId>recyclerview</artifactId><version>1.1.0</version></dependency>
+<dependency><groupId>androidx.appcompat</groupId><artifactId>appcompat</artifactId><version>1.2.0</version></dependency>
+<dependency><groupId>androidx.dynamicanimation</groupId><artifactId>dynamicanimation</artifactId><version>1.0.0</version></dependency>
+</dependencies></project>

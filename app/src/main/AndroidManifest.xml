@@ -3,6 +3,9 @@
     xmlns:tools="http://schemas.android.com/tools">
 
     <uses-permission android:name="android.permission.INTERNET" />
+    <!-- C5 语音输入:AI 帮填浮层内的系统语音识别,运行时按需申请 -->
+    <uses-permission android:name="android.permission.RECORD_AUDIO" />
+
     <!-- FR-07 可信调度:精确闹钟(闹钟类目,Android 14 默认授予)+ 开机重排 + 全屏响铃 -->
     <uses-permission android:name="android.permission.USE_EXACT_ALARM" />
     <uses-permission android:name="android.permission.SCHEDULE_EXACT_ALARM" />
@@ -12,6 +15,13 @@
     <uses-permission android:name="android.permission.DISABLE_KEYGUARD" />
     <uses-permission android:name="android.permission.USE_FULL_SCREEN_INTENT" />
     <uses-permission android:name="android.permission.VIBRATE" />
+
+    <!-- Android 11+ 包可见性:语音识别服务(Google/厂商) -->
+    <queries>
+        <intent>
+            <action android:name="android.speech.RecognitionService" />
+        </intent>
+    </queries>
 
     <!-- 极光 AAR 会带入以下与应用能力无关的权限,合并时显式移除(本应用无定位/电话状态/应用列表需求) -->
     <uses-permission android:name="android.permission.ACCESS_BACKGROUND_LOCATION" tools:node="remove" />

@@ -10,13 +10,14 @@ pluginManagement {
     plugins {
         kotlin("jvm") version "2.3.21"
         kotlin("plugin.serialization") version "2.3.21"
-        kotlin("plugin.compose") version "2.3.21"
         id("com.android.application") version "9.4.1"
     }
 }
 
 dependencyResolutionManagement {
     repositories {
+        // Kuikly 2.1.21 编译产物的本地仓库(AAR 由 KuiklyUI 工程构建后同步)
+        maven { url = uri("repo") }
         maven { url = uri("https://maven.aliyun.com/repository/google") }
         maven { url = uri("https://maven.aliyun.com/repository/public") }
         mavenCentral()

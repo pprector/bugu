@@ -4,8 +4,6 @@ import org.gradle.api.GradleException
 
 plugins {
     id("com.android.application")
-    // AGP 9 内置 Kotlin 支持；Compose 编译器需要官方 Compose Compiler Gradle 插件
-    kotlin("plugin.compose")
     // API DTO(kotlinx-serialization)与离线上报队列持久化
     kotlin("plugin.serialization")
 }
@@ -43,6 +41,15 @@ val appVersionName: String = versionProps.getProperty("versionName")?.takeIf { i
     ?: error("app/version.properties 缺少 versionName")
 version = appVersionName
 
+repositories {
+    // Kuikly 2.1.21 编译产物(AAR)的本地仓库:由 KuiklyUI 工程构建后同步到 app/repo
+    maven { url = uri(rootProject.layout.projectDirectory.dir("repo")) }
+    maven { url = uri("https://maven.aliyun.com/repository/google") }
+    maven { url = uri("https://maven.aliyun.com/repository/public") }
+    mavenCentral()
+    google()
+}
+
 android {
     namespace = "com.bugu"
     // Compose BOM 2026.09 依赖面向 android-37.2 编译(AGP 9 支持次版本 SDK)
@@ -65,13 +72,14 @@ android {
         targetSdk = 36
         versionCode = appVersionCode
         versionName = appVersionName
+        // 生产接口地址;debug 变体在 buildTypes.debug 覆盖为本地服务(10.0.2.2)
+        buildConfigField("String", "API_BASE_URL", "\"https://www.yzhzhaohao.cn\"")
         manifestPlaceholders["JPUSH_APPKEY"] = jpushAppKey
         // 极光 SDK AAR 的 manifest 引用 ${JPUSH_CHANNEL},统计维度用,固定 developer
         manifestPlaceholders["JPUSH_CHANNEL"] = "developer"
     }
 
     buildFeatures {
-        compose = true
         buildConfig = true
     }
 
@@ -81,6 +89,10 @@ android {
     }
 
     buildTypes {
+        debug {
+            // 设备联验走本机服务(模拟器 10.0.2.2);release 仍为生产域名
+            buildConfigField("String", "API_BASE_URL", "\"http://10.0.2.2:8081\"")
+        }
         release {
             isMinifyEnabled = true
             isShrinkResources = true
@@ -126,18 +138,20 @@ dependencies {
     implementation("androidx.work:work-runtime-ktx:2.10.1")
     implementation("androidx.lifecycle:lifecycle-runtime-ktx:2.9.4")
 
+    // Kuikly UI 运行时:AAR 由 KuiklyUI 工程(Kotlin 2.1.21/AGP 7.4.2)构建,本工程 2.3.21 消费
+    implementation("com.bugu.kuikly:bugu-entry:0.1.0")
+    implementation("com.bugu.kuikly:bugu-ui:0.1.0")
+    implementation("com.tencent.kuikly-open:core:2.1.21-local")
+    implementation("com.tencent.kuikly-open:compose:2.1.21-local")
+    implementation("com.tencent.kuikly-open:core-annotations:2.1.21-local")
+    implementation("com.tencent.kuikly-open:core-render-android:2.1.21-local")
+    implementation("androidx.appcompat:appcompat:1.7.0")
+    implementation("androidx.core:core-ktx:1.13.0")
+    implementation("com.google.android.material:material:1.12.0")
+
     // 极光 JPush(mavenCentral);6.x 要求通知权限(已声明)与 minSdk 21+
     implementation("cn.jiguang.sdk:jpush:6.3.0")
     implementation("cn.jiguang.sdk:jcore:5.6.0")
-
-    implementation(platform("androidx.compose:compose-bom:2026.09.00"))
-    implementation("androidx.activity:activity-compose:1.13.0")
-    implementation("androidx.compose.ui:ui")
-    implementation("androidx.compose.foundation:foundation")
-    implementation("androidx.compose.material3:material3")
-    implementation("androidx.compose.material:material-icons-core")
-    implementation("androidx.compose.material:material-icons-extended")
-    debugImplementation("androidx.compose.ui:ui-tooling")
 
     // JVM 单测(纯逻辑):AGP 内置 Kotlin 下无 kotlin("test") 助手,显式 junit4 版 kotlin-test
     testImplementation("org.jetbrains.kotlin:kotlin-test:2.3.21")
