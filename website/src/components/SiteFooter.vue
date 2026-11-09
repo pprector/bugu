@@ -12,7 +12,7 @@
 
         <nav class="links" aria-label="页脚导航">
           <a href="#how">它怎么叫你</a>
-          <a href="#companion">有人惦记你</a>
+          <a href="#companion">有人提醒你</a>
           <a href="#promise">不鸽保证</a>
           <a href="#download">下载 App</a>
           <a href="./privacy.html">隐私政策</a>
@@ -22,7 +22,7 @@
 
       <div class="bottom">
         <span>© 2026 布谷 BUGU · v1.1.0</span>
-        <span>布谷布谷，有人惦记你。</span>
+        <span>布谷布谷，有人提醒你。</span>
       </div>
     </div>
   </footer>

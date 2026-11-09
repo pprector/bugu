@@ -1,6 +1,6 @@
 <script setup lang="ts">
 const features = [
-  { title: '互相惦记', desc: '你惦记 TA，TA 也惦记你，回执看得见。' },
+  { title: '互相提醒', desc: '你替 TA 记得，TA 也替你记得，回执看得见。' },
   { title: '到点必响', desc: '端侧闹钟准时全屏响铃，锁屏时也看得见。' },
   { title: '大字关怀', desc: '字号与按钮一键放大，长辈自己也能看得清。' },
   { title: '按你的节奏', desc: '几点响、隔多久再提醒，创建时就由你定。' },
@@ -11,10 +11,10 @@ const features = [
   <section id="companion" class="section">
     <div class="container duo">
       <div class="copy">
-        <p class="eyebrow" v-reveal>有人惦记你</p>
-        <h2 class="section-title" v-reveal="80">为重要的人，<br />设一条惦记。</h2>
+        <p class="eyebrow" v-reveal>有人提醒你</p>
+        <h2 class="section-title" v-reveal="80">为重要的人，<br />设一条提醒。</h2>
         <p class="section-lead" v-reveal="160">
-          和家人、恋人绑定为互伴，布谷就成了你们之间那只传话的鸟——你放心忙你的，惦记交给它。
+          和家人、恋人绑定为互伴，布谷就成了你们之间那只传话的鸟——你放心忙你的，提醒交给它。
         </p>
 
         <ul class="features">
@@ -26,7 +26,7 @@ const features = [
       </div>
 
       <div class="chat-wrap" v-reveal="180">
-        <div class="chat" aria-label="互伴惦记演示">
+        <div class="chat" aria-label="互相提醒演示">
           <div class="chat-head">
             <span class="chat-dot" aria-hidden="true"></span>
             <span>布谷 · 互伴</span>
@@ -55,7 +55,7 @@ const features = [
                 d="M12 20.5C12 20.5 4 15 4 9.5C4 6.4 6.3 4.5 8.7 4.5C10.1 4.5 11.3 5.2 12 6.3C12.7 5.2 13.9 4.5 15.3 4.5C17.7 4.5 20 6.4 20 9.5C20 15 12 20.5 12 20.5Z"
               />
             </svg>
-            这份惦记，有回音了
+            这份提醒，有回音了
           </p>
         </div>
       </div>

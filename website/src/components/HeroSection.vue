@@ -12,10 +12,10 @@ interface Notif {
 
 /* 文案全部取自布谷 App 真实推送语气（brand/布谷-品牌信息体系.md §3.2） */
 const notifs: Notif[] = [
-  { mood: 'bell', tag: '布谷铃', time: '08:00', text: '布谷！到点啦——别忘了惦记你的人呀' },
-  { mood: 'note', tag: 'TA 的惦记', time: '12:30', text: '降温了，记得把外套穿上再出门' },
-  { mood: 'happy', tag: '回音', time: '12:41', text: '「好啦好啦，这就去」——TA 回应了你的惦记' },
-  { mood: 'sleep', tag: '温和催办', time: '21:00', text: '这条惦记还在等你～要现在看吗？' },
+  { mood: 'bell', tag: '布谷铃', time: '08:00', text: '布谷！到点啦——别忘了提醒你的人呀' },
+  { mood: 'note', tag: 'TA 的提醒', time: '12:30', text: '降温了，记得把外套穿上再出门' },
+  { mood: 'happy', tag: '回音', time: '12:41', text: '「好啦好啦，这就去」——TA 回应了你的提醒' },
+  { mood: 'sleep', tag: '温和催办', time: '21:00', text: '这条提醒还在等你～要现在看吗？' },
 ]
 
 const idx = ref(0)
@@ -52,7 +52,7 @@ onUnmounted(() => window.clearInterval(timer))
           <em>都有回音</em>。
         </h1>
         <p class="sub" v-reveal="180">
-          布谷布谷，有人惦记你。设一条惦记，布谷准时叫你，也把你的惦记，稳稳送到
+          布谷布谷，有人提醒你。设一条提醒，布谷准时叫你，也把你的提醒，稳稳送到
           TA 手上。
         </p>
         <div class="actions" v-reveal="270">

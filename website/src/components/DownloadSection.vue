@@ -35,7 +35,7 @@ function peck() {
       <h2 class="section-title" v-reveal="90">把这只布谷，带回家。</h2>
       <p class="meta" v-reveal="170">免费 · Android 8.0 以上 · 安装包约 5MB</p>
       <a class="btn btn-primary dl-btn" :href="APK_URL" v-reveal="250">下载 Android 版</a>
-      <p class="reassure" v-reveal="330">装好之后，它会先对你说一声：布谷布谷，有人惦记你。</p>
+      <p class="reassure" v-reveal="330">装好之后，它会先对你说一声：布谷布谷，有人提醒你。</p>
       <p class="upgrade-note" v-reveal="390">若手机上装过旧版本，请先卸载旧版再安装本次安装包。</p>
     </div>
   </section>

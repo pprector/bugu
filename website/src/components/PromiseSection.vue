@@ -6,7 +6,7 @@
     <div class="container band-inner">
       <p class="band-kicker" v-reveal>咕咕向你保证</p>
       <h2 class="band-title" v-reveal="90">不鸽保证</h2>
-      <p class="band-line" v-reveal="180">提醒、闹钟、看板、互伴惦记，<br />当前全部免费，没有付费项目。</p>
+      <p class="band-line" v-reveal="180">提醒、闹钟、看板、互相提醒，<br />当前全部免费，没有付费项目。</p>
       <p class="band-sub" v-reveal="270">
         漏了不责备，误了不吼叫——布谷只负责，再叫你一次。
       </p>

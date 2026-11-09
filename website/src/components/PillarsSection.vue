@@ -8,13 +8,13 @@ const pillars = [
   },
   {
     title: '温柔不催的陪伴',
-    desc: '漏了就是漏了，咕咕从不责备。它只会轻轻说：「这条惦记还在等你～」。',
+    desc: '漏了就是漏了，咕咕从不责备。它只会轻轻说：「这条提醒还在等你～」。',
     icon: 'leaf',
     tone: 'mint',
   },
   {
-    title: '有人惦记你',
-    desc: '把惦记送给重要的人，也收到 TA 发来的那一条。提醒是功能，惦记是关系。',
+    title: '有人提醒你',
+    desc: '把提醒送给重要的人，也收到 TA 发来的那一条。',
     icon: 'heart',
     tone: 'rose',
   },
@@ -25,7 +25,7 @@ const pillars = [
   <section id="why" class="section">
     <div class="container">
       <p class="eyebrow" v-reveal>为什么是布谷</p>
-      <h2 class="section-title" v-reveal="80">提醒是功能，惦记是关系。</h2>
+      <h2 class="section-title" v-reveal="80">提醒是功能，陪伴是关系。</h2>
 
       <div class="pillars">
         <article
