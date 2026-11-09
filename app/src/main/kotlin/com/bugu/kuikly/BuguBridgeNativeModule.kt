@@ -30,6 +30,7 @@ import androidx.activity.result.contract.ActivityResultContracts
 import androidx.core.content.ContextCompat
 import com.bugu.ApiFactory
 import com.bugu.PushReporter
+import com.bugu.R
 import com.bugu.schedule.AlarmScheduler
 import com.bugu.schedule.ReminderSync
 import com.bugu.ui.RingActivity
@@ -278,7 +279,7 @@ class BuguBridgeNativeModule : KuiklyRenderBaseModule() {
         )
         val deliver = {
             val notification = android.app.Notification.Builder(ctx, CHANNEL_TEST)
-                .setSmallIcon(android.R.drawable.ic_dialog_info)
+                .setSmallIcon(R.drawable.ic_notification)
                 .setContentTitle("咕咕的本机测试提醒")
                 .setContentText("布谷本机通知已送达，看到这条就说明系统通知链路是通的。")
                 .setAutoCancel(true)
