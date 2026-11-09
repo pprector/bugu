@@ -134,6 +134,13 @@ class BuguKuiklyHost(
     // ---- 导航 ----
 
     private fun openDashboard() {
+        // 首次通知权限门:只拦「还没过门」的登录态。过了这道门之后,即便用户之后在系统设置里
+        // 关掉通知,也不再阻断,只由看板顶部红条提示(见 BuguRealDashboardPage 的通知横幅)。
+        if (token().isNotEmpty() && !BuguBridgeNativeModule.permissionGatePassed(activity)) {
+            Log.i(TAG, "permission gate not passed -> BuguPermissionGuidePage(gate=1)")
+            attach("BuguPermissionGuidePage", mapOf("gate" to "1"), replaceAll = true)
+            return
+        }
         val t = token()
         activity.lifecycleScope.launch {
             // 看板 payload 走阻塞 HTTP,必须切 IO,主线程会抛 NetworkOnMainThreadException

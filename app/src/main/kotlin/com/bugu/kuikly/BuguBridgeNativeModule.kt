@@ -180,6 +180,16 @@ class BuguBridgeNativeModule : KuiklyRenderBaseModule() {
             "pickAvatar" -> pickAvatar(callback)
             "permissionStatus" -> permissionStatus(callback)
             "permissionRequest" -> permissionRequest(json.optString("kind"), callback, json.optString("channelId"))
+            "permissionGateGet" -> {
+                val passed = mainPrefs().getBoolean(KEY_PERMISSION_GATE_PASSED, false)
+                Log.i(TAG, "permissionGate.get=$passed")
+                callback?.invoke(mapOf("ok" to true, "passed" to passed))
+            }
+            "permissionGateSet" -> {
+                mainPrefs().edit().putBoolean(KEY_PERMISSION_GATE_PASSED, true).apply()
+                Log.i(TAG, "permissionGate.set=true")
+                callback?.invoke(mapOf("ok" to true))
+            }
             "openSettings" -> openSettings(json.optString("kind"), callback)
             "voiceInput" -> voiceInput(callback)
             "takeCode" -> {
@@ -757,9 +767,16 @@ class BuguBridgeNativeModule : KuiklyRenderBaseModule() {
             }
             "exactAlarm" -> Intent(Settings.ACTION_REQUEST_SCHEDULE_EXACT_ALARM, Uri.parse("package:${act.packageName}"))
             "battery" -> Intent(Settings.ACTION_IGNORE_BATTERY_OPTIMIZATION_SETTINGS)
+            // 勿扰引导:只跳系统勿扰设置,不申请 ACCESS_NOTIFICATION_POLICY、不改渠道 bypassDnd
+            // android.provider.Settings 未公开勿扰首页常量,直接用 AOSP Settings 声明的 action
+            "dnd" -> Intent("android.settings.ZEN_MODE_SETTINGS")
             else -> Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS, Uri.parse("package:${act.packageName}"))
         }
-        val opened = runCatching { act.startActivity(target) }.isSuccess
+        var opened = runCatching { act.startActivity(target) }.isSuccess
+        // 个别 ROM 没有独立的勿扰页,退回系统设置首页,仍然不崩溃
+        if (!opened && kind == "dnd") {
+            opened = runCatching { act.startActivity(Intent(Settings.ACTION_SETTINGS)) }.isSuccess
+        }
         Log.i(TAG, "settings.open kind=$kind opened=$opened")
         callback?.invoke(mapOf("ok" to opened))
     }
@@ -903,6 +920,18 @@ class BuguBridgeNativeModule : KuiklyRenderBaseModule() {
         private const val KEY_EXPIRED_FIRES = "expired_fire_ids"
         private const val KEY_AGREEMENT_ACCEPTED = "agreement_agreed"
         private const val KEY_CODE_SENT_AT = "code_sent_at"
+
+        /**
+         * 首次通知权限门:写入一次后永不再拦。
+         * 门只拦「过了这道门之前的登录后首次进入」;通过后用户即便在系统设置里关掉通知,
+         * 也只由看板顶部红条提示,不再阻断。冷启动分流([BuguKuiklyHost.openDashboard])读同一个键。
+         */
+        private const val KEY_PERMISSION_GATE_PASSED = "permission_gate_passed"
+
+        /** 冷启动分流用:首次通知权限门是否已通过(只读)。 */
+        fun permissionGatePassed(context: Context): Boolean =
+            context.getSharedPreferences("bugu_main", Context.MODE_PRIVATE)
+                .getBoolean(KEY_PERMISSION_GATE_PASSED, false)
         private const val CHANNEL_TEST = "bugu_probe_test"
         private const val TEST_NOTIFY_ID = 9001
         private const val REQ_NOTI = 1001

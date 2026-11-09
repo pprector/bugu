@@ -7,8 +7,14 @@ import android.util.Log
 import com.bugu.ui.RingActivity
 
 /**
- * 闹钟广播(E8-S4):到点启动全屏响铃 Activity(通知权限关闭时同样全屏,FR-07 降级);
+ * 闹钟广播(E8-S4):到点先发闹钟通知,再尝试拉起全屏响铃 Activity;
  * 开机完成按持久化的 incoming 列表重排精确闹钟(进程被杀/重启恢复)。
+ *
+ * 已知限制(Android 14+ 后台启动限制决定,不是可修复的 bug):
+ * 通知权限缺失时通知发不出去,全屏路径也随之不可用——应用在后台或锁屏时
+ * startActivity 会被 BAL 拦截,用户到点只能经历完全静默(2026-11-09 实测:
+ * POST_NOTIFICATIONS unavailable + Background activity launch blocked)。
+ * 这是系统行为,任何应用侧代码都无法绕过,只能靠应用内提示引导用户开启通知权限。
  */
 class AlarmReceiver : BroadcastReceiver() {
 
