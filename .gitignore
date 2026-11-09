@@ -61,3 +61,8 @@ TERM_REPLACE_VERIFY_*/
 # agent 工具产物
 _bmad/
 _bmad-output/
+
+# 已被产品否决的图标备选方向与早期设计原型(保留本地,勿入库)
+brand/variants/
+companion-sketch.html
+new-reminder-prototype.html
