@@ -55,6 +55,21 @@ class BuguKuiklyHost(
 
     fun onCreate(initialPage: String? = null, initialParams: String = "{}") {
         INSTANCE = this
+        // 深链解析结果的统一出口:合法码已写入 pending 槽由登录页/亲友页回填;
+        // 非法码(缺码、非 6 位等)此前在 Kuikly 壳里无人消费而静默,这里补一次明确提示。
+        activity.lifecycleScope.launch {
+            InviteDeepLink.events.collect { event ->
+                when (event) {
+                    is InviteDeepLink.Event.Invalid -> {
+                        Log.i(TAG, "deeplink invalid: ${event.message}")
+                        Toast.makeText(activity, event.message, Toast.LENGTH_LONG).show()
+                    }
+                    is InviteDeepLink.Event.Code -> Unit
+                    null -> Unit
+                }
+                InviteDeepLink.clearEvent()
+            }
+        }
         container.setBackgroundColor(Color.parseColor("#FAF8F5"))
         // 系统栏兜底:页面用固定 top padding,底部由壳统一避让导航栏,避免末行按钮/入口被覆盖
         container.setOnApplyWindowInsetsListener { v, insets ->
