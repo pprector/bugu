@@ -238,6 +238,26 @@ adb logcat -d > bugu-real-device-$(date +%Y%m%d-%H%M).log
 - 排队队列未做本地持久化，取舍见第 4 节；进程被杀期间仅在途 AlarmManager 闹钟与已 post 通知可恢复，第三条及以后的内存排队会丢。
 - 国产 ROM/真实极光送达/真实闹钟听感必须在真机验证，模拟器只能证明逻辑路径。
 
+### 已知限制（2026-11-09 模拟器硬结论）
+
+> 环境：5556，debug 包（targetSdk 36）+ 本地 8081 后端；以下均为实测，不是推测。
+
+1. **后台 + 通知权限关闭 = 完全静默**
+   `pm revoke POST_NOTIFICATIONS` 后进程被杀、熄屏到点：无铃声、无震动、无通知、无响铃页，且不崩溃。
+   证据：`audio_1842=0` / `vibrate_1842=0` / `notif_bugu=0`；日志 `BuguAlarmNotification: POST_NOTIFICATIONS unavailable; full-screen fallback skipped fire=8090` 与 `Background activity launch blocked! ... BAL_BLOCK`。
+   应用内可以检测（看板红色横幅「通知权限未开启」+ 冷启动权限对话框 + `canPost()` 日志），但**检测不等于解决**：用户不主动打开 App 就永远发现不了。
+
+2. **勿扰「完全静默」模式 = 听不到也感觉不到**
+   `zen_mode=2` + 亮屏：18:33 无任何播放器记录、无震动记录，响铃页未拉起，只有通知栏里一条静态通知。
+   对照：`zen_mode=1`（优先级）+ 熄屏时铃声与震动均正常（`mutedState:none`，震动节奏 `[0,600,400,600,1200]`）。
+   国产 ROM 的勿扰豁免策略与 AOSP 不同，**验不了**，需真机按 D6 复测。
+
+3. **`am force-stop` 后完全静默**
+   force-stop 会取消该应用全部 AlarmManager 闹钟（`pending alarm=0`），到点无进程、无通知、无音频、无震动。系统语义如此，应用侧无解。
+
+4. **「已静音」铃铛标记与真实出声方向相反（仅记录，未修）**
+   正常模式亮屏横幅（真实出声 10.3 秒）带静音铃铛标记；勿扰完全静默场景反而不带该标记。说明该标记反映的是通知记录的 `sound=null`，与是否真实出声无关，容易误导用户。
+
 ## 五、必须用户真机验证清单（逐项操作）
 
 > 每项失败：先 `adb logcat -c`，复现后 `adb logcat -d > bugu-$(date +%H%M).log`，再按「失败看什么」定位。
@@ -252,5 +272,5 @@ adb logcat -d > bugu-real-device-$(date +%Y%m%d-%H%M).log
 | D6 | 任意真机，勿扰模式 | 开启勿扰（分别允许/禁止闹钟例外）→ 锁屏等待 | 系统允许时突破勿扰；不允许时不崩溃、至少留通知 | `logcat -s BuguAlarmNotification BuguRing`；`dumpsys notification` 中 `mBypassDnd` |
 | D7 | 任意真机，耳机/蓝牙/播放音乐 | 到点时连接耳机或正在播放音乐 | 闹钟不被媒体抢占，暂停/压低媒体后响铃 | `dumpsys audio`；`logcat -s BuguRing` |
 | D8 | 任意真机，省电模式 + 待机 30 分钟 | 开启省电模式 → 建 10 分钟后提醒 → 息屏待机 | 到点仍触发（厂商允许时） | `dumpsys deviceidle`；`dumpsys alarm`；厂商省电白名单 |
-| D9 | 任意真机，通知权限关闭 | 关闭通知权限 → 建 2 分钟后提醒 → 后台等待 | 首页有 Banner；到点仍能进响铃页（视系统 BAL 策略） | `logcat -s BuguAlarmNotification`；截图/Dashboard Banner |
+| D9 | 任意真机，通知权限关闭 | 关闭通知权限 → 建 2 分钟后提醒 → 后台等待 | 首页有 Banner；后台/锁屏到点为**完全静默**（Android 14+ BAL 限制，见「已知限制」第 1 条）；应用在前台时仍能进响铃页 | `logcat -s BuguAlarmNotification BuguAlarm`；截图/Dashboard Banner |
 | D10 | 两台真机，互相惦记 | A 给 B 建 1 分钟后提醒，B 锁屏 | B 到点响铃；A 的「TA 的惦记」状态更新为 ACKED | 两端首页状态；服务端 `/incoming`；`logcat -s BuguAlarm BuguRing` |
