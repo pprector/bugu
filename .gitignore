@@ -55,6 +55,7 @@ shots-b*/
 shot_*.png
 screenshot.png
 logcat_*.txt
+docs/kuikly-compare/
 *.patch
 TERM_REPLACE_VERIFY_*/
 
