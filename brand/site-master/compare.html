@@ -1,0 +1,230 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<title>布谷 · 三方案并排（同画布 / 同底色）</title>
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<style>
+  :root{
+    --canvas:#faf8f5;--card:#fff;--hairline:#efece6;--warm:#f4f1ea;
+    --ink:#1e1b18;--ink2:#5c564e;--ink3:#9c9488;
+    --coral:#fa5e38;--mint:#10b981;--deep:#f04e27;--amber:#ffc966;
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0;background:var(--canvas);color:var(--ink);
+    font-family:"PingFang SC","Noto Sans SC",-apple-system,"Helvetica Neue",Arial,sans-serif;
+    -webkit-font-smoothing:antialiased}
+  .wrap{max-width:1240px;margin:0 auto;padding:52px 28px 92px}
+  h1{font-size:30px;margin:0 0 10px;letter-spacing:.01em}
+  h2{font-size:19px;margin:0}
+  p{margin:0;color:var(--ink2);font-size:14px;line-height:1.75}
+  .muted{color:var(--ink3)}
+  .mono{font-family:"SF Mono",ui-monospace,Menlo,monospace}
+  .sec{margin-top:56px}
+  .sec-head{display:flex;align-items:baseline;gap:14px;margin-bottom:18px;
+    border-bottom:1px solid var(--hairline);padding-bottom:12px}
+  .no{font-size:12px;font-weight:800;letter-spacing:.18em;color:var(--coral)}
+  .card{background:var(--card);border:1px solid var(--hairline);border-radius:22px;padding:22px}
+
+  /* 四列并排 */
+  .opts{display:grid;grid-template-columns:repeat(4,1fr);gap:14px}
+  .opt{background:var(--card);border:1px solid var(--hairline);border-radius:20px;overflow:hidden;
+    display:flex;flex-direction:column}
+  .opt.pick{border-color:rgba(250,94,56,.45);box-shadow:0 0 0 3px rgba(250,94,56,.08)}
+  .opt .hd{padding:13px 16px 11px;border-bottom:1px solid var(--hairline)}
+  .opt .hd b{display:block;font-size:14px;letter-spacing:.01em}
+  .opt .hd span{display:block;font-size:11px;color:var(--ink3);margin-top:3px}
+  .opt .big{padding:16px;background:#fff}
+  .opt .big img{width:100%;display:block;aspect-ratio:1/1;object-fit:contain}
+  .opt .body{padding:0 16px 16px;display:flex;flex-direction:column;gap:9px}
+
+  .pix{background:var(--canvas);border:1px solid var(--hairline);border-radius:12px;padding:9px 10px}
+  .pix .row{display:flex;align-items:center;gap:10px}
+  .pix .real{width:16px;height:16px;flex:0 0 16px;image-rendering:pixelated}
+  .pix .zoom{width:128px;height:128px;image-rendering:pixelated;display:block;margin:10px auto 2px}
+  .pix .t{font-size:10.5px;line-height:1.45;color:var(--ink3)}
+  .pix .t b{display:block;color:var(--ink2);font-size:11px}
+
+  .bars{display:grid;gap:6px}
+  .bar{display:flex;align-items:center;gap:9px;border-radius:10px;padding:6px 10px;font-size:10.5px}
+  .bar img{width:24px;height:24px;flex:0 0 24px}
+  .bar.d{background:#171614;color:#f6f3ee}
+  .bar.l{background:#f2efe9;color:#1e1b18}
+  .bar.l img{filter:brightness(0)}
+  .bar span{opacity:.7}
+  .chip{display:flex;align-items:center;gap:7px;font-size:10.5px;color:var(--ink3)}
+  .chip i{width:12px;height:12px;border-radius:3px;border:1px solid rgba(0,0,0,.08);display:block}
+
+  table{width:100%;border-collapse:collapse;font-size:13px}
+  th,td{text-align:left;padding:11px 12px;border-bottom:1px solid var(--hairline);vertical-align:top}
+  th{font-size:11px;letter-spacing:.07em;color:var(--ink3);font-weight:700;text-transform:uppercase}
+  td:first-child{white-space:nowrap;color:var(--ink2)}
+  .y{color:#0b8f63;font-weight:700}
+  .n{color:#d4380d;font-weight:700}
+  .h{color:#b06a00;font-weight:700}
+
+  .verdict{background:linear-gradient(180deg,#fff 0%,#fffaf7 100%);
+    border:1px solid rgba(250,94,56,.28);border-radius:22px;padding:26px 28px}
+  .verdict h3{margin:0 0 10px;font-size:17px}
+  .verdict .pick{font-size:15px;color:var(--ink);line-height:1.9}
+  .verdict b{color:var(--coral)}
+  .note{display:flex;gap:10px;padding:12px 15px;background:var(--warm);border-radius:14px;font-size:13px;color:var(--ink2);line-height:1.7}
+  .note.warn{background:rgba(250,94,56,.07)}
+  footer{margin-top:64px;padding-top:20px;border-top:1px solid var(--hairline);font-size:12px;color:var(--ink3)}
+  @media (max-width:1080px){.opts{grid-template-columns:repeat(2,1fr)}}
+  @media (max-width:640px){.opts{grid-template-columns:1fr}}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>三方案并排：同画布、同底色</h1>
+  <p>同一张 512 画布、同一个白色底衬，四列并排。每列下方是各自的 16px 真像素（原尺寸 + 8 倍放大）与 24dp 深/浅两种通知栏。</p>
+  <p class="muted" style="margin-top:6px">方案二逐字照抄 <span class="mono">app/src/main/res/drawable/ic_launcher_foreground.xml</span> 与 <span class="mono">ic_notification.xml</span>，未做任何修改。</p>
+
+  <section class="sec">
+    <div class="sec-head"><span class="no">01</span><h2>四个候选</h2></div>
+    <div class="opts">
+
+      <div class="opt pick">
+        <div class="hd"><b>方案一 · 站点母版</b><span>绿芽 · 无声波 · 直接来自线上 favicon</span></div>
+        <div class="big"><img src="compare/option1-512-nobg.png" alt="方案一"></div>
+        <div class="body">
+          <div class="pix">
+            <div class="row"><img class="real" src="compare/option1-16.png"><div class="t"><b>16px 真像素</b>左侧为原尺寸</div></div>
+            <img class="zoom" src="compare/option1-16.png">
+            <div class="t" style="text-align:center">8× 放大</div>
+          </div>
+          <div class="bars">
+            <div class="bar d"><img src="compare/option1-24.svg"><span>深色通知栏 24dp</span></div>
+            <div class="bar l"><img src="compare/option1-24.svg"><span>浅色通知栏 24dp</span></div>
+          </div>
+          <div class="chip"><i style="background:#FAF8F5"></i>官方底色 #FAF8F5</div>
+        </div>
+      </div>
+
+      <div class="opt">
+        <div class="hd"><b>方案二 · App 现有</b><span>双呆毛 + 三道声波 · 原样未改</span></div>
+        <div class="big"><img src="compare/option2-512-nobg.png" alt="方案二"></div>
+        <div class="body">
+          <div class="pix">
+            <div class="row"><img class="real" src="compare/option2-16.png"><div class="t"><b>16px 真像素</b>左侧为原尺寸</div></div>
+            <img class="zoom" src="compare/option2-16.png">
+            <div class="t" style="text-align:center">8× 放大</div>
+          </div>
+          <div class="bars">
+            <div class="bar d"><img src="compare/option2-24.svg"><span>深色通知栏 24dp</span></div>
+            <div class="bar l"><img src="compare/option2-24.svg"><span>浅色通知栏 24dp</span></div>
+          </div>
+          <div class="chip"><i style="background:#FFEDE6"></i>官方底色 #FFEDE6</div>
+        </div>
+      </div>
+
+      <div class="opt">
+        <div class="hd"><b>方案三 A · 双呆毛 + 站点</b><span>造型取 App 双呆毛，配色与比例取站点</span></div>
+        <div class="big"><img src="compare/option3a-512-nobg.png" alt="方案三A"></div>
+        <div class="body">
+          <div class="pix">
+            <div class="row"><img class="real" src="compare/option3a-16.png"><div class="t"><b>16px 真像素</b>左侧为原尺寸</div></div>
+            <img class="zoom" src="compare/option3a-16.png">
+            <div class="t" style="text-align:center">8× 放大</div>
+          </div>
+          <div class="bars">
+            <div class="bar d"><img src="compare/option3a-24.svg"><span>深色通知栏 24dp</span></div>
+            <div class="bar l"><img src="compare/option3a-24.svg"><span>浅色通知栏 24dp</span></div>
+          </div>
+          <div class="chip"><i style="background:#FAF8F5"></i>官方底色 #FAF8F5</div>
+        </div>
+      </div>
+
+      <div class="opt">
+        <div class="hd"><b>方案三 B · 绿芽 + 回声</b><span>保留绿芽，右上加一道极淡回声弧</span></div>
+        <div class="big"><img src="compare/option3b-512-nobg.png" alt="方案三B"></div>
+        <div class="body">
+          <div class="pix">
+            <div class="row"><img class="real" src="compare/option3b-16.png"><div class="t"><b>16px 真像素</b>左侧为原尺寸</div></div>
+            <img class="zoom" src="compare/option3b-16.png">
+            <div class="t" style="text-align:center">8× 放大</div>
+          </div>
+          <div class="bars">
+            <div class="bar d"><img src="compare/option3b-24.svg"><span>深色通知栏 24dp</span></div>
+            <div class="bar l"><img src="compare/option3b-24.svg"><span>浅色通知栏 24dp</span></div>
+          </div>
+          <div class="chip"><i style="background:#FAF8F5"></i>官方底色 #FAF8F5</div>
+        </div>
+      </div>
+
+    </div>
+
+    <div class="note warn" style="margin-top:16px">
+      <span>!</span><div><b>为什么融合必须取舍：</b>站点母版的绿芽（茎 + 叶）与 App 的双呆毛、声波全部落在身体的 <b>10 点钟–2 点钟方向</b>同一块区域。三者叠加会变成“头上长三样东西”，在 32px 以下必然糊在一起。所以方案三只能二选一：<b>A 保呆毛弃绿芽</b>，<b>B 保绿芽弃呆毛、只用一道弧暗示声波</b>。</div>
+    </div>
+  </section>
+
+  <section class="sec">
+    <div class="sec-head"><span class="no">02</span><h2>三个判据</h2></div>
+    <div class="card">
+      <table>
+        <tr><th>判据</th><th>方案一 站点母版</th><th>方案二 App 现有</th><th>方案三 A 双呆毛</th><th>方案三 B 绿芽+回声</th></tr>
+        <tr>
+          <td>16px 能否辨认</td>
+          <td><span class="y">能</span><br>身体 13px、双眼各 2px、绿芽 3px，一眼是“鸟头”</td>
+          <td><span class="n">不能</span><br>图形只占画布 39%，16px 下身体仅 <b>6px</b>；呆毛 0.7px、声波 0.4px，全部消失</td>
+          <td><span class="y">能</span><br>身体 13px、双眼 2px；两根呆毛会粘成一条 3×7px 的横杠（仍读作“有冠的鸟”）</td>
+          <td><span class="h">部分</span><br>身体与眼睛清楚，但回声弧退化成右缘一个 1px 淡粉噪点</td>
+        </tr>
+        <tr>
+          <td>24dp 单色层是否成立</td>
+          <td><span class="y">成立</span><br>专门按 24dp 重排过：负形眼 + 负形嘴 + 嫩芽剪影</td>
+          <td><span class="n">不成立</span><br>原样缩到 24dp 只剩一个 8px 的橙点，呆毛与声波全部丢失</td>
+          <td><span class="y">成立</span><br>两根呆毛在 24dp 仍可辨为两个凸起</td>
+          <td><span class="h">退化为方案一</span><br>回声弧在 24dp 必须删除，删完与方案一完全相同</td>
+        </tr>
+        <tr>
+          <td>与线上站点是否一眼同源</td>
+          <td><span class="y">同源</span><br>就是线上 <span class="mono">favicon.svg</span> 本身（逐字节相同）</td>
+          <td><span class="n">不同源</span><br>比例 39% vs 81%；4 个色值站点没有（#E0523F / #FFF3EC / #1C1917 / #FFB020 / #F59E0B / #FFB8A8）；声波与呆毛是站点语言里不存在的造型</td>
+          <td><span class="h">近似</span><br>身体、肚皮、眼、嘴、腮红、比例全部来自站点；只有头顶换成两根呆毛</td>
+          <td><span class="y">同源</span><br>等于方案一 + 一个 55% 的弧，远看几乎无差别</td>
+        </tr>
+        <tr>
+          <td>引入站点没有的颜色</td>
+          <td>0</td>
+          <td><b>6 个</b></td>
+          <td>0<br>（呆毛用站点已有的 #F04E27）</td>
+          <td>0</td>
+        </tr>
+      </table>
+      <div style="display:flex;gap:14px;margin-top:18px;flex-wrap:wrap">
+        <div style="flex:1;min-width:280px">
+          <div class="note"><span>ⓘ</span><div><b>方案二如果一定要用，24dp 必须先做光学修正。</b>下方两栏是修正后：呆毛加粗到 r1.35/1.55、声波减为一道并加粗到 1.5——能用，但这已经是重新设计，不再是“原样”。</div></div>
+          <div style="display:flex;gap:10px;margin-top:10px;align-items:center">
+            <div class="bar d" style="width:130px"><img src="compare/option2-24-optical.svg"><span>修正后</span></div>
+            <div class="bar l" style="width:130px"><img src="compare/option2-24-optical.svg"><span>修正后</span></div>
+          </div>
+        </div>
+        <div style="flex:1;min-width:280px">
+          <div class="note"><span>ⓘ</span><div><b>方案三 B 的融合在小尺寸下等于零。</b>16px 下那道弧是噪点，24dp 下必须删掉；也就是说它的“融合”只在高分辨率图标和 OG 图里成立，在通知栏和浏览器标签里会退回方案一。</div></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="sec">
+    <div class="sec-head"><span class="no">03</span><h2>结论</h2></div>
+    <div class="verdict">
+      <h3>推荐：方案一（站点母版）作为唯一母版，方案三 A 作为唯一备选</h3>
+      <p class="pick">
+        <b>16px 能辨认</b>：方案一身体 13px、双眼各 2px、绿芽 3px，四个候选里唯一在 16px 仍然“一眼是布谷”的；方案二只有 6px，直接出局。<br>
+        <b>24dp 单色层成立</b>：方案一与三 A 的剪影在 24dp 仍是“鸟头 + 眼睛 + 嘴”的完整结构；方案二原样不成立，三 B 会退化成方案一。<br>
+        <b>与站点一眼同源</b>：方案一就是线上文件本身；三 A 只换了头顶，是唯一还能保住“同源感”的融合。<br><br>
+        所以：<b>主推方案一</b>。它同时赢下三个判据，且不需要任何“因为小尺寸所以改色/改造型”的例外。<br><br>
+        <b>如果产品坚持保留 App 的双呆毛记忆点</b>，唯一可落地的是<b>方案三 A</b>——但它有明确代价：绿芽消失（绿是站点唯一的非珊瑚色品牌资产），并且 16px 下两根呆毛会粘成一条横杠，“两根”这个信息只在 32px 以上成立。<br><br>
+        <b>方案三 B 建议放弃</b>：它的融合在 16px 变成噪点、在 24dp 必须删除，两个最关键的尺寸上都没有增量。
+      </p>
+    </div>
+  </section>
+
+  <footer>布谷 BUGU · 三方案对比 v1 · 2026-11-09 · 资产目录 <span class="mono">brand/site-master/compare/</span> · 未改动 app / website / admin 任何代码</footer>
+</div>
+</body>
+</html>
