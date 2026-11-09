@@ -8,8 +8,6 @@ import android.app.PendingIntent
 import android.content.Context
 import android.content.Intent
 import android.content.pm.PackageManager
-import android.media.AudioAttributes
-import android.media.RingtoneManager
 import android.os.Build
 import android.util.Log
 import androidx.core.content.ContextCompat
@@ -23,29 +21,30 @@ import com.bugu.ui.RingActivity
  */
 object AlarmNotifications {
 
-    const val CHANNEL_ID = "bugu_alarm_ring"
+    const val CHANNEL_ID = "bugu_alarm_ring_v2"
+    private const val LEGACY_CHANNEL_ID = "bugu_alarm_ring"
     private const val CHANNEL_NAME = "布谷闹钟"
     private const val NOTIFICATION_ID_BASE = 100_000
     private const val TAG = "BuguAlarmNotification"
 
-    /** 应用启动时创建;渠道属性(声音/震动/重要性)创建后不可改。 */
+    /**
+     * 应用启动时创建;渠道属性(声音/震动/重要性)创建后不可改。
+     * v2 渠道本身静音:声音由 RingActivity 用 alarm_notice + alarm_loop 接管,
+     * 避免系统闹铃与页面循环叠成双重响。旧渠道创建后无法改属性,只能删除后换新 id。
+     */
     fun ensureChannel(context: Context) {
         val manager = context.getSystemService(NotificationManager::class.java) ?: return
-        val alarmSound = RingtoneManager.getDefaultUri(RingtoneManager.TYPE_ALARM)
-            ?: RingtoneManager.getDefaultUri(RingtoneManager.TYPE_NOTIFICATION)
-        val audioAttributes = AudioAttributes.Builder()
-            .setUsage(AudioAttributes.USAGE_ALARM)
-            .setContentType(AudioAttributes.CONTENT_TYPE_SONIFICATION)
-            .build()
         val channel = NotificationChannel(CHANNEL_ID, CHANNEL_NAME, NotificationManager.IMPORTANCE_HIGH).apply {
-            description = "到点全屏响铃与确认通知"
-            if (alarmSound != null) setSound(alarmSound, audioAttributes)
-            enableVibration(true)
-            vibrationPattern = longArrayOf(0, 500, 300, 500, 1_000)
+            description = "到点全屏响铃与确认通知;声音由响铃页统一播放"
+            setSound(null, null)
+            // 震动由 RingActivity 统一负责,渠道震动关闭,避免两份震动叠加。
+            enableVibration(false)
             lockscreenVisibility = Notification.VISIBILITY_PUBLIC
             setShowBadge(false)
         }
         manager.createNotificationChannel(channel)
+        // 迁移收尾:旧渠道声音/震动设置不可改,删除后不再使用。
+        manager.deleteNotificationChannel(LEGACY_CHANNEL_ID)
     }
 
     /** 返回 false 表示通知权限缺失/系统拒绝,由调用方决定是否只保留 startActivity 路径。 */
