@@ -86,7 +86,7 @@ object AlarmNotifications {
         )
         val displayTitle = title.ifBlank { "到点了" }
         val builder = Notification.Builder(context, CHANNEL_ID)
-            .setSmallIcon(R.drawable.ic_launcher_foreground)
+            .setSmallIcon(R.drawable.ic_notification)
             .setContentTitle("布谷来叫你啦")
             .setContentText(displayTitle)
             .setContentIntent(pendingIntent)

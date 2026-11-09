@@ -3,5 +3,5 @@
     <background android:drawable="@drawable/ic_launcher_bg" />
     <foreground android:drawable="@drawable/ic_launcher_foreground" />
     <!-- Material You 主题图标：Android 13+ 长按桌面换主题色时咕咕跟随染色 -->
-    <monochrome android:drawable="@drawable/ic_launcher_foreground" />
+    <monochrome android:drawable="@drawable/ic_launcher_monochrome" />
 </adaptive-icon>

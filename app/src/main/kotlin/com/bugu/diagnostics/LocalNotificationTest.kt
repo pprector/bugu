@@ -38,7 +38,7 @@ object LocalNotificationTest {
         if (!notifications.areNotificationsEnabled()) return
         val open = PendingIntent.getActivity(context, ID, Intent(context, MainActivity::class.java), PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE)
         notifications.notify("local_test", ID, Notification.Builder(context, CHANNEL)
-            .setSmallIcon(R.drawable.ic_launcher_foreground)
+            .setSmallIcon(R.drawable.ic_notification)
             .setContentTitle("布谷 · 本地测试提醒")
             .setContentText("这是本机通知测试，不代表服务器推送已送达。")
             .setContentIntent(open).setAutoCancel(true).setTimeoutAfter(60000).build())

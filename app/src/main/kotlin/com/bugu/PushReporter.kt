@@ -2,6 +2,7 @@ package com.bugu
 
 import android.content.Context
 import android.util.Log
+import cn.jpush.android.api.BasicPushNotificationBuilder
 import cn.jpush.android.api.JPushInterface
 import com.bugu.client.api.GeitaApi
 import kotlinx.coroutines.CoroutineScope
@@ -30,6 +31,12 @@ object PushReporter {
                 JPushInterface.init(appContext)
                 // 登出时 stopPush,同一账号重新登录后恢复推送。
                 JPushInterface.resumePush(appContext)
+                // 极光默认回落到 App 彩色图标(状态栏会糊成白块),这里固定为单色剪影。
+                JPushInterface.setDefaultPushNotificationBuilder(
+                    BasicPushNotificationBuilder(appContext).apply {
+                        statusBarDrawable = R.drawable.ic_notification
+                    },
+                )
             }.onFailure { Log.e(TAG, "JPush init failed", it) }
             val regId = pollRegistrationId(appContext)
             if (regId == null) {
